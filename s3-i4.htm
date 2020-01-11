@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
+      <script type="text/javascript" src="https://d3js.org/d3-color.v1.min.js"></script>
+      <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lodash@4.17.15/lodash.min.js"></script>
+
+  </head>
+  <body>
+      <div id=context markdown="1">
+          ## Changes with this iteration:
+          - Added lodash support ...
+          - Now figuring out what circles are going to be drawn before attempting to draw them
+          - Capturing notes per html with markdown using: https://marked.js.org/#/README.md#README.md
+          ## Problems with this iteration:
+          - [ ] The recursion is in-efficient ...
+          - The recursion still start on one side of the main circle ... and extens east ... until it finishes going east ...
+            then it starts going north east ... north ... etc until it finishes ... I want the recursion to be more like a raindrop ... !
+
+      </div>
+      <!--  Script Section   -->
+      <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+      <script type="text/javascript">
+       document.getElementById('context').innerHTML =
+           marked(document.getElementById('context').innerHTML);
+      </script>
+      <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/js-markdown-extra@1.2.4/js-markdown-extra.min.js"></script>
+      <script type="text/javascript" src="./draw-circles-i4.js"></script>
+      <!-- The above should be placed in the body section since it edits body content ...
+           https://stackoverflow.com/questions/38407962/when-to-use-the-script-tag-in-the-head-and-body-section-of-a-html-page?noredirect=1&lq=1
+           ... it didnt work when it was in head!
+       -->
+
+  </body>
+</html>

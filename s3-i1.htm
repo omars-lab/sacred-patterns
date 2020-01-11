@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
+  </head>
+  <body>
+    <script>
+        // create svg element:
+        var svg = d3.select("body").append("svg").attr("width", 200).attr("height", 200)
+        // Add Middle Circle
+        svg.append('circle')
+          .attr('cx', 100)
+          .attr('cy', 100)
+          .attr('r', 50)
+          .attr('stroke', 'black')
+          .attr('fill', 'none');
+    </script>
+  </body>
+</html>

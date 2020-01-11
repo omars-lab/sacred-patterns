@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
+      <script type="text/javascript" src="https://d3js.org/d3-color.v1.min.js"></script>
+
+  </head>
+  <body>
+    <script>
+
+        function colorForLevel(level){
+            // The higher the level ... the more clear ...
+            if (level === undefined) {
+                return 'rgb(0,0,0,1)';
+            }
+            else {
+                var color = 200 / level;
+                return `rgb(${color},${color},${color},${Math.max(1, 0.1*level)})`;
+            }
+        }
+
+        function appendCircleWithMidpoint(onto, x, y, r, level) {
+            // Append Circle
+            onto.append('circle')
+              .attr('cx', x)
+              .attr('cy', y)
+              .attr('r', r)
+              .attr('stroke', colorForLevel(level))
+              // .attr('stroke', 'black')
+              .attr('fill', 'none')
+            ;
+            // Append Midpoint
+            onto.append('circle')
+              .attr('cx', x)
+              .attr('cy', y)
+              .attr('r', 1)
+              .attr('stroke', colorForLevel(level))
+              // .attr('stroke', 'black');
+              .attr('fill', colorForLevel(level))
+            ;
+        }
+
+        function appendFlowerAround(onto, x, y, r, current_level) {
+             for (i = 0; i <= 2 * Math.PI; i+=(Math.PI/3)) {
+                 appendCircleWithMidpoint(onto,
+                     x + (Math.cos(i)*radius),
+                     y + (Math.sin(i)*radius),
+                     radius,
+                     current_level,
+                 );
+             }
+        }
+
+        function appendFlowersRecursively(onto, x, y, r, limit) {
+            appendFlowerAround(onto, x, y, r, limit);
+            if (limit > 0) {
+                for (i = 0; i <= 2 * Math.PI; i+=(Math.PI/3)) {
+                    appendFlowersRecursively(onto,
+                        x + (Math.cos(i) * r),
+                        y + (Math.sin(i) * r),
+                        r,
+                        limit - 1
+                    );
+                }
+            }
+        }
+
+        var radius = 50;
+        var size = 16;
+        var svg = d3.select("body").append("svg").attr("width", radius*size).attr("height", radius*size);
+        // Add middle circle
+        appendCircleWithMidpoint(svg, radius*(Math.sqrt(size)), radius*(Math.sqrt(size)), radius);
+        // Recursively Add circles around middle circle ...
+        appendFlowersRecursively(svg, radius*(Math.sqrt(size)), radius*(Math.sqrt(size)), radius, 2);
+
+    </script>
+  </body>
+</html>
