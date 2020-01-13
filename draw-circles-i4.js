@@ -1,8 +1,3 @@
-const maxLevels = 5;
-// const existantCircles = {};
-var radius = 100;
-var size = maxLevels * 4;
-
 function circleId(x, y, r) {
     return `x:${Math.ceil(x)}-y:${Math.ceil(y)}-r:${r}`;
 }
@@ -107,31 +102,3 @@ function appendCircleWithMidpoint(onto, c) {
       // .attr('stroke', 'black');
       .attr('fill', colorForLevel(c.level, maxLevels));
 }
-
-// Have the recursion ... not draw the circles ... but just list out what would get drawn ...
-// Final step is to draw everything!
-// Also use ldoash ...
-
-// Next step is to change how the recursion is working to go inside out with each step ...
-
-var svg = (
-    d3.select("body").append("svg")
-      .attr("width", radius*size)
-      .attr("height", radius*size)
-);
-
-// Recursively Add circles around middle circle ...
-var circles = appendFlowersRecursively(radius*size/2, radius*size/2, radius, maxLevels);
-console.log(circles, _.values(circles));
-_.forEach(
-    _.values(circles),
-    c => {
-        console.log("appending c", c);
-        appendCircleWithMidpoint(svg, c);
-    }
-);
-
-// Add middle circle
-central = _.values(circle(radius*size/2, radius*size/2, radius))[0];
-console.log(central);
-appendCircleWithMidpoint(svg, central);
