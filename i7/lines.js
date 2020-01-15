@@ -19,7 +19,7 @@ const Line = class {
     }
 
     isHorizontal() {
-        if ( this.p1.y ===  this.p2.y || Math.abs(this.slope()) < (1.0/1000000.0) ) {
+        if ( this.p1.y === this.p2.y || Math.abs(this.slope()) < (1.0/1000000.0) ) {
             return true;
         }
         return false;
