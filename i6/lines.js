@@ -1,4 +1,6 @@
 function slope(p1, p2) {
+    var [x1, y1] = p1;
+    var [x2, y2] = p2;
     return (y2 - y1) / (x2 - x1);
 }
 
@@ -30,7 +32,7 @@ function distanceBetweenPoints(p1, p2) {
 function extendLineRight(p1, p2, newDistance) {
     var [x1, y1] = p1;
     var [x2, y2] = p2;
-    if isHorizontalLine(p1, p2) {
+    if (isHorizontalLine(p1, p2)) {
         return [x1+newDistance, y1];
     }
     var currentDistance = distanceBetweenPoints(p1, p2);
@@ -51,7 +53,7 @@ function extendLineRight(p1, p2, newDistance) {
 function extendLineLeft(p1, p2, newDistance) {
     var [x1, y1] = p1;
     var [x2, y2] = p2;
-    if isHorizontalLine(p1, p2) {
+    if (isHorizontalLine(p1, p2)) {
         return [x1-newDistance, y1];
     }
     var currentDistance = distanceBetweenPoints(p1, p2);
