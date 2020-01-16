@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
+      <script type="text/javascript" src="https://d3js.org/d3-color.v1.min.js"></script>
+      <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lodash@4.17.15/lodash.min.js"></script>
+
+  </head>
+  <body>
+      <div id=context markdown="1">
+          ## Changes with this iteration:
+          - [x] Making this type script oriented ...
+          ## Changes to make ...
+          - [ ] Add a "grid" class that knowns what elements "contain" other elements ... and what elemets "surround other elements ..."
+          - [ ] Add the following methods
+              - [ ] Points on circle(6, shift)
+              - [ ] Make Polar Slices Method
+              - [ ] Make Verticle Slices Method
+              - [ ] Make Horizontal Slices Method
+              - [ ] Connect Midpoints of two different circles ...
+              - [ ] Hexagon within circle ...
+              - [ ] Octagon within circle ...
+          - [ ] Make a lines class ...
+              - [ ] Extend Line ...
+      </div>
+      <!--  Script Section   -->
+      <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+      <script type="text/javascript">
+       document.getElementById('context').innerHTML =
+           marked(document.getElementById('context').innerHTML);
+      </script>
+      <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/js-markdown-extra@1.2.4/js-markdown-extra.min.js"></script>
+      <script type="text/javascript" src="./points.js"></script>
+      <script type="text/javascript" src="./lines.js"></script>
+      <script type="text/javascript" src="./circles.js"></script>
+      <script type="text/javascript" src="./canvas.js"></script>
+      <script type="text/javascript" src="./draw-circles-i8.js"></script>
+      <!-- The above should be placed in the body section since it edits body content ...
+           https://stackoverflow.com/questions/38407962/when-to-use-the-script-tag-in-the-head-and-body-section-of-a-html-page?noredirect=1&lq=1
+           ... it didnt work when it was in head!
+       -->
+
+  </body>
+</html>
