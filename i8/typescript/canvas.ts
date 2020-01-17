@@ -6,6 +6,7 @@ type d3SvgElement<T extends d3.BaseType> = d3.Selection<T, unknown, HTMLElement,
 type d3SVG = d3SvgElement<SVGSVGElement>;
 type d3CIRCLE = d3SvgElement<SVGCircleElement>;
 type d3LINE = d3SvgElement<SVGLineElement>;
+type d3POLYLINE = d3SvgElement<SVGPolylineElement>;
 
 // Introspecting types ...
 // var x = d3.select("body");
@@ -13,8 +14,9 @@ type d3LINE = d3SvgElement<SVGLineElement>;
 // var x = d3.select("body").append("circle");
 
 function colorForLevel(level?:number, maxLevels?:number){
+    console.log(level, maxLevels);
     // The higher the level ... the more clear ...
-    if (_.isEmpty(level) || _.isEmpty(maxLevels)) {
+    if (_.isUndefined(level) || _.isUndefined(maxLevels)) {
         return 'red';
     }
     else {
@@ -24,7 +26,7 @@ function colorForLevel(level?:number, maxLevels?:number){
 }
 
 function appendCircleWithMidpoint(onto:d3SVG, c:Circle, maxLevels?:number) {
-    console.log("HIIIII", c);
+    console.log("HIIIII", c, c.metadata, maxLevels);
     // Append Circle
     (<d3CIRCLE>onto.append('circle'))
       .attr('cx', c.x)
@@ -52,4 +54,20 @@ function appendLine(onto:d3SVG, l:Line, color="black") {
        .attr("y2", l.p2.y)
        .attr("class","line")
        .style("stroke", color);
+}
+
+function appendPolygon(onto:d3SVG, lines:Line[], color="black") {
+    // Assumes lines are in connected order ...
+    if (_.isEmpty(lines)) {
+        return;
+    }
+    var last_line = (<Line>_.last(lines));
+    var last_point = [last_line.p2.x, last_line.p2.y];
+    // Skip over the ending points of the line ... except for the last line ...
+    var points = _.concat(_.map(lines, l => [l.p1.x, l.p1.y]), [last_point]);
+    var poly_points = _.join(_.map(points, p =>_.join(p, ",")), ", ");
+    (<d3POLYLINE>onto.append("polyline"))        // attach a polyline
+        .style("stroke",color)                   // colour the line
+        .style("fill", "none")                   // remove any fill colour
+        .attr("points", poly_points);            // x,y points
 }

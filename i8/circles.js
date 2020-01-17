@@ -1,4 +1,10 @@
 "use strict";
+// https://github.com/lodash/lodash/issues/2173
+function _rotate_list_right(arr) {
+    var arr_copy = _.concat([], arr);
+    arr_copy.push(arr_copy.shift());
+    return arr_copy;
+}
 var Circle = /** @class */ (function () {
     function Circle(x, y, r, _metadata) {
         this.x = x;
@@ -15,20 +21,24 @@ var Circle = /** @class */ (function () {
     });
     Object.defineProperty(Circle.prototype, "metadata", {
         get: function () {
-            var default_metadata = { level: 0 };
-            return _.isEmpty(this._metadata) ? default_metadata : this._metadata;
+            return _.isEmpty(this._metadata) ? {} : this._metadata;
         },
         enumerable: true,
         configurable: true
     });
+    Circle.prototype.pointsOnCircumference = function (numberOfPoints, shift_in_radians) {
+        if (shift_in_radians === void 0) { shift_in_radians = 0; }
+        var _a = this, x = _a.x, y = _a.y, r = _a.r;
+        return _.map(_.range(0, 2 * Math.PI, 2 * Math.PI / numberOfPoints), function (radians) { return new Point(x + (Math.cos(radians + shift_in_radians) * r), y + (Math.sin(radians + shift_in_radians) * r)); });
+    };
     // circlesAround
+    // https://stackoverflow.com/questions/17186566/how-do-i-fix-error-ts1015-parameter-cannot-have-question-mark-and-initializer
     Circle.prototype.surroundingCircles = function (count, distance_modifier, shift_in_radians, metadata) {
-        var _this = this;
         if (distance_modifier === void 0) { distance_modifier = 1; }
         if (shift_in_radians === void 0) { shift_in_radians = 0; }
-        if (metadata === void 0) { metadata = {}; }
+        if (metadata === void 0) { metadata = undefined; }
         var _a = this, x = _a.x, y = _a.y, r = _a.r;
-        var circles = _.map(_.range(0, 2 * Math.PI, 2 * Math.PI / count), function (radians) { return new Circle(x + (Math.cos(radians + shift_in_radians) * r * distance_modifier), y + (Math.sin(radians + shift_in_radians) * r * distance_modifier), r, _.merge({}, _this.metadata, _.isEmpty(metadata) ? {} : metadata)); });
+        var circles = _.map(_.range(0, 2 * Math.PI, 2 * Math.PI / count), function (radians) { return new Circle(x + (Math.cos(radians + shift_in_radians) * r * distance_modifier), y + (Math.sin(radians + shift_in_radians) * r * distance_modifier), r, _.isEmpty(metadata) ? undefined : _.merge({}, metadata)); });
         return circles;
     };
     // flowersAround
@@ -46,9 +56,9 @@ var Circle = /** @class */ (function () {
         console.log("around center", aroundCenter);
         circlesToDraw = _.merge({}, aroundCenter);
         if (recursionLevel > 0) {
-            var recursiveCircles = Circle.indexCircles(_.flatMap(this.surroundWithFlower({ level: recursionLevel - 1 }), function (c) { return _.values(c._surroundWithFlowersRecursively(recursionLevel - 1)); }));
+            var recursiveCircles = _.flatMap(this.surroundWithFlower({ level: recursionLevel - 1 }), function (c) { return c._surroundWithFlowersRecursively(recursionLevel - 1); });
             console.log("recursiveCircles", recursiveCircles);
-            circlesToDraw = _.mergeWith({}, circlesToDraw, recursiveCircles, Circle.pickHigherLevel);
+            circlesToDraw = _.mergeWith.apply(_, [{}, circlesToDraw].concat(recursiveCircles, [Circle.pickHigherLevel]));
         }
         // console.log("circlesToDraw", circlesToDraw);
         return circlesToDraw;
@@ -67,7 +77,7 @@ var Circle = /** @class */ (function () {
         return new Line(c1.midpoint, c2.midpoint);
     };
     Circle.pickHigherLevel = function (ca, cb) {
-        if (_.isEmpty(ca) || _.isEmpty(cb)) {
+        if (_.isUndefined(ca) || _.isUndefined(cb)) {
             return undefined;
         }
         // https://dzone.com/articles/using-casting-typescript
@@ -77,6 +87,18 @@ var Circle = /** @class */ (function () {
         }
         // console.log('picked cb over ca', ca, cb);
         return cb;
+    };
+    // https://codepen.io/Elf/details/rOrRaw
+    // https://www.d3indepth.com/shapes/
+    Circle.prototype.hexagonWithinCircle = function (shift_in_radians) {
+        if (shift_in_radians === void 0) { shift_in_radians = Math.PI / 2; }
+        var points_of_hexagon = this.pointsOnCircumference(6, shift_in_radians);
+        return _.map(
+        // https://www.tutorialsteacher.com/typescript/typescript-tuple
+        _.zip(points_of_hexagon, _rotate_list_right(points_of_hexagon)), function (_a) {
+            var p1 = _a[0], p2 = _a[1];
+            return new Line(p1, p2);
+        });
     };
     return Circle;
 }());

@@ -6,8 +6,9 @@
 // var x = d3.select("body").append("line");
 // var x = d3.select("body").append("circle");
 function colorForLevel(level, maxLevels) {
+    console.log(level, maxLevels);
     // The higher the level ... the more clear ...
-    if (_.isEmpty(level) || _.isEmpty(maxLevels)) {
+    if (_.isUndefined(level) || _.isUndefined(maxLevels)) {
         return 'red';
     }
     else {
@@ -16,7 +17,7 @@ function colorForLevel(level, maxLevels) {
     }
 }
 function appendCircleWithMidpoint(onto, c, maxLevels) {
-    console.log("HIIIII", c);
+    console.log("HIIIII", c, c.metadata, maxLevels);
     // Append Circle
     onto.append('circle')
         .attr('cx', c.x)
@@ -44,4 +45,20 @@ function appendLine(onto, l, color) {
         .attr("y2", l.p2.y)
         .attr("class", "line")
         .style("stroke", color);
+}
+function appendPolygon(onto, lines, color) {
+    if (color === void 0) { color = "black"; }
+    // Assumes lines are in connected order ...
+    if (_.isEmpty(lines)) {
+        return;
+    }
+    var last_line = _.last(lines);
+    var last_point = [last_line.p2.x, last_line.p2.y];
+    // Skip over the ending points of the line ... except for the last line ...
+    var points = _.concat(_.map(lines, function (l) { return [l.p1.x, l.p1.y]; }), [last_point]);
+    var poly_points = _.join(_.map(points, function (p) { return _.join(p, ","); }), ", ");
+    onto.append("polyline") // attach a polyline
+        .style("stroke", color) // colour the line
+        .style("fill", "none") // remove any fill colour
+        .attr("points", poly_points); // x,y points
 }

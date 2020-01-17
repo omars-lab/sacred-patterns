@@ -2,6 +2,13 @@ interface CircleMetadata {
     level: number;
 }
 
+// https://github.com/lodash/lodash/issues/2173
+function _rotate_list_right(arr:any[]): any[] {
+    var arr_copy = _.concat([], arr);
+    arr_copy.push(arr_copy.shift())
+    return arr_copy;
+}
+
 class Circle {
 
     constructor(public x:number, public y:number, public r:number, private _metadata?:CircleMetadata) {}
@@ -10,13 +17,23 @@ class Circle {
         return `x:${Math.ceil(this.x)}-y:${Math.ceil(this.y)}-r:${this.r}`;
     }
 
-    get metadata() {
-        const default_metadata = { level: 0 };
-        return _.isEmpty(this._metadata) ? default_metadata : (<CircleMetadata>this._metadata);
+    get metadata(): CircleMetadata | any {
+        return _.isEmpty(this._metadata) ? {} : (<CircleMetadata>this._metadata);
     }
 
+    pointsOnCircumference(numberOfPoints:number, shift_in_radians=0) {
+        const {x, y, r} = this;
+        return _.map(
+            _.range(0, 2 * Math.PI, 2 * Math.PI / numberOfPoints),
+            radians => new Point(
+                x + (Math.cos(radians + shift_in_radians) * r),
+                y + (Math.sin(radians + shift_in_radians) * r),
+            )
+        );
+    }
     // circlesAround
-    surroundingCircles(count:number, distance_modifier=1, shift_in_radians=0, metadata={}) {
+    // https://stackoverflow.com/questions/17186566/how-do-i-fix-error-ts1015-parameter-cannot-have-question-mark-and-initializer
+    surroundingCircles(count:number, distance_modifier=1, shift_in_radians=0, metadata:CircleMetadata|undefined=undefined) {
         const {x, y, r} = this;
         var circles = _.map(
             _.range(0, 2 * Math.PI, 2 * Math.PI / count),
@@ -24,18 +41,14 @@ class Circle {
                 x + (Math.cos(radians + shift_in_radians) * r * distance_modifier),
                 y + (Math.sin(radians + shift_in_radians) * r * distance_modifier),
                 r,
-                _.merge(
-                    {},
-                    this.metadata,
-                    _.isEmpty(metadata) ? {} : metadata,
-                ),
+                _.isEmpty(metadata) ? undefined : _.merge({}, metadata),
             )
         );
         return circles;
     }
 
     // flowersAround
-    surroundWithFlower(metadata?:object) {
+    surroundWithFlower(metadata?:CircleMetadata) {
         return this.surroundingCircles(6, 1, 0, metadata);
     }
 
@@ -55,14 +68,12 @@ class Circle {
         console.log("around center", aroundCenter);
         circlesToDraw = _.merge({}, aroundCenter);
         if (recursionLevel > 0) {
-            var recursiveCircles =  Circle.indexCircles(
-                _.flatMap(
-                    this.surroundWithFlower({level: recursionLevel - 1}),
-                    (c) => _.values(c._surroundWithFlowersRecursively(recursionLevel - 1))
-                )
+            var recursiveCircles =  _.flatMap(
+                this.surroundWithFlower({level: recursionLevel - 1}),
+                (c) => c._surroundWithFlowersRecursively(recursionLevel - 1)
             );
             console.log("recursiveCircles", recursiveCircles);
-            circlesToDraw = _.mergeWith({}, circlesToDraw, recursiveCircles, Circle.pickHigherLevel);
+            circlesToDraw = _.mergeWith({}, circlesToDraw, ...recursiveCircles, Circle.pickHigherLevel);
         }
         // console.log("circlesToDraw", circlesToDraw);
         return circlesToDraw;
@@ -80,10 +91,11 @@ class Circle {
         return new Line(c1.midpoint, c2.midpoint);
     }
 
-    static pickHigherLevel(ca: Circle, cb: Circle) {
-        if (_.isEmpty(ca) || _.isEmpty(cb)) {
+    static pickHigherLevel(ca?: Circle, cb?: Circle) {
+        if (_.isUndefined(ca) || _.isUndefined(cb)) {
             return undefined;
         }
+
         // https://dzone.com/articles/using-casting-typescript
         if ((<CircleMetadata>ca.metadata).level >= (<CircleMetadata>cb.metadata).level) {
             // console.log('picked ca over cb', ca, cb);
@@ -91,6 +103,20 @@ class Circle {
         }
         // console.log('picked cb over ca', ca, cb);
         return cb;
+    }
+
+    // https://codepen.io/Elf/details/rOrRaw
+    // https://www.d3indepth.com/shapes/
+    hexagonWithinCircle(shift_in_radians=Math.PI/2): Line[] {
+        var points_of_hexagon = this.pointsOnCircumference(6, shift_in_radians);
+        return _.map(
+            // https://www.tutorialsteacher.com/typescript/typescript-tuple
+            (<[Point, Point][]>_.zip(
+                points_of_hexagon,
+                _rotate_list_right(points_of_hexagon)
+            )),
+            ([p1, p2]) => new Line(p1, p2),
+        );
     }
 
 };
