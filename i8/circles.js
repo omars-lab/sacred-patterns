@@ -55,7 +55,7 @@ var Circle = /** @class */ (function () {
         var aroundCenter = Circle.indexCircles(this.surroundWithFlower({ level: recursionLevel }));
         console.log("around center", aroundCenter);
         circlesToDraw = _.merge({}, aroundCenter);
-        if (recursionLevel > 0) {
+        if (recursionLevel > 1) {
             var recursiveCircles = _.flatMap(this.surroundWithFlower({ level: recursionLevel - 1 }), function (c) { return c._surroundWithFlowersRecursively(recursionLevel - 1); });
             console.log("recursiveCircles", recursiveCircles);
             circlesToDraw = _.mergeWith.apply(_, [{}, circlesToDraw].concat(recursiveCircles, [Circle.pickHigherLevel]));

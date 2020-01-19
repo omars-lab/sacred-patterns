@@ -1,4 +1,4 @@
-const maxLevels = 2;
+const maxLevels = 5;
 var radius = 100;
 var size = maxLevels * 4;
 
@@ -9,14 +9,19 @@ var svg = (
 );
 
 // Recursively Add circles around middle circle ...
-var circles = (new Circle(radius*size/2, radius*size/2,radius*2/5.25)).surroundWithFlowersRecursively(maxLevels);
+var circle = new Circle(radius*size/2, radius*size/2,radius*2/5.25);
+
+var circles = (circle).surroundWithFlowersRecursively(maxLevels);
 _.forEach(
     circles,
     c => {
         console.log("appending c", c);
         appendCircleWithMidpoint(<d3SVG>svg, c, maxLevels);
+        // appendPolygon(<d3SVG>svg, c.hexagonWithinCircle());
     }
 );
+
+appendCircleWithMidpoint(<d3SVG>svg, circle);
 
 // ---------------------- ---------------------- ---------------------- ----------------------
 

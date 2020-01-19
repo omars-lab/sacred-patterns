@@ -1,16 +1,19 @@
 "use strict";
-var maxLevels = 2;
+var maxLevels = 5;
 var radius = 100;
 var size = maxLevels * 4;
 var svg = (d3.select("body").append("svg")
     .attr("width", radius * size)
     .attr("height", radius * size));
 // Recursively Add circles around middle circle ...
-var circles = (new Circle(radius * size / 2, radius * size / 2, radius * 2 / 5.25)).surroundWithFlowersRecursively(maxLevels);
+var circle = new Circle(radius * size / 2, radius * size / 2, radius * 2 / 5.25);
+var circles = (circle).surroundWithFlowersRecursively(maxLevels);
 _.forEach(circles, function (c) {
     console.log("appending c", c);
     appendCircleWithMidpoint(svg, c, maxLevels);
+    // appendPolygon(<d3SVG>svg, c.hexagonWithinCircle());
 });
+appendCircleWithMidpoint(svg, circle);
 // ---------------------- ---------------------- ---------------------- ----------------------
 var svg2 = (d3.select("body").append("svg")
     .attr("width", radius * size)
