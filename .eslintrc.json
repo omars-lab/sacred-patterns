@@ -5,14 +5,28 @@
     },
     "extends": "eslint:recommended",
     "globals": {
-	"_": "readonly",
-	"d3": "readonly",
+        "_": "readonly",
+        "d3": "readonly",
         "Atomics": "readonly",
-        "SharedArrayBuffer": "readonly"
+        "SharedArrayBuffer": "readonly",
+        "Point": "readonly",
+        "Circle": "readonly",
+        "Line": "readonly",
+        "Polygon": "readonly",
+        "Star": "readonly",
+        "Hexagon": "readonly",
+        "PolygonWithSides": "readonly",
+        "appendCircleWithMidpoint": "readonly",
+        "appendLine": "readonly",
+        "appendPolygon": "readonly"
     },
     "parserOptions": {
-        "ecmaVersion": 2018
+        "ecmaVersion": 6,
+        "ecmaFeatures": {
+            "experimentalObjectRestSpread": true
+        }
     },
     "rules": {
+        "no-prototype-builtins": "off"
     }
 }

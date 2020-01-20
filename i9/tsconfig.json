@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "rootDir": "./typescript",
+        "outDir": "./",
+        "lib": ["es5", "dom", "es2015.core"],  // This is so it can find Math.hypot ... https://github.com/Microsoft/TypeScript/issues/9555
+        "strict": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "noImplicitThis": true,
+        "alwaysStrict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "removeComments": false, // Needed for eslint comments ...
+    },
+    "include": ["**/*"],
+    "exclude": []
+}
