@@ -49,6 +49,41 @@ function drawDifferentStars() {
         appendCircleWithMidpoint(svg, star.outerCircle);
     });
 }
+var svg = (d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size));
+var centralCircle = new Circle(radius * size / 2, radius * size / 2, radius);
+var centralSVGS = appendCircle(svg, centralCircle);
+var currentShift = 0;
+var outerCircles = centralCircle.surroundingCircles(6, 1, currentShift * Math.PI * 2 / 6);
+var outerCirclesSVGS = (_.map(outerCircles, function (c) { return appendCircle(svg, c); }));
+var outerCirclesL2 = _.flatMap(centralCircle.surroundingCircles(6, 1, currentShift * Math.PI * 2 / 6), function (c) { return c.surroundingCircles(6, 1, currentShift * Math.PI * 2 / 6); });
+var outerCirclesSVGSL2 = (_.map(outerCirclesL2, function (c) { return appendCircle(svg, c); }));
+// eslint-disable-next-line no-unused-vars
+function drawCircles() {
+    _.forEach(_.range(6, 12, 1), function (points) {
+        star = new Star(new Point(radius * size / 2, radius * size / 2), points, radius);
+        svg = (d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size));
+        appendPolygon(svg, star.lines);
+        appendCircleWithMidpoint(svg, star.outerCircle);
+    });
+}
+function rotateOuterCircles() {
+    currentShift = currentShift + 1;
+    console.log("Current shfit", currentShift);
+    var newOuterCircles = centralCircle.surroundingCircles(6, 1, (currentShift / 10) * Math.PI * 2 / 6);
+    _.forEach(_.zip(newOuterCircles, outerCirclesSVGS), function (_a) {
+        var newCircle = _a[0], circleToTransition = _a[1];
+        circleToTransition
+            .transition()
+            .ease(d3.easeLinear)
+            .duration(50)
+            .attr('cx', newCircle.x)
+            .attr('cy', newCircle.y)
+            .attr('r', newCircle.r);
+    });
+    outerCircles = newOuterCircles;
+}
+// I wanted the central ring to completely rotate ... but the problem with the flowers ... is that they get drawn by other surrounding circles ...
+setInterval(rotateOuterCircles, 50);
 // drawDifferentPolygons();
 // drawStarGrid();
 // drawRotatedStar();

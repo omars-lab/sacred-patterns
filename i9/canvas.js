@@ -37,6 +37,18 @@ function appendCircleWithMidpoint(onto, c, maxLevels) {
         .attr('fill', colorForLevel(c.metadata.level, maxLevels));
 }
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
+function appendCircle(onto, c, maxLevels) {
+    console.log("HIIIII", c, c.metadata, maxLevels);
+    // Append Circle
+    return (onto.append('circle')
+        .attr('cx', c.x)
+        .attr('cy', c.y)
+        .attr('r', c.r)
+        .attr('stroke', colorForLevel(c.metadata.level, maxLevels))
+        // .attr('stroke', 'black')
+        .attr('fill', 'none'));
+}
+/* eslint-disable-next-line no-unused-vars, no-redeclare */
 function appendLine(onto, l, color) {
     if (color === void 0) { color = "black"; }
     console.log("Drawing Line From", l.p1, " to ", l.p2);

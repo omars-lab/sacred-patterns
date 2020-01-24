@@ -46,6 +46,22 @@ function appendCircleWithMidpoint(onto:d3SVG, c:Circle, maxLevels?:number) {
       .attr('fill', colorForLevel(c.metadata.level, maxLevels));
 }
 
+
+/* eslint-disable-next-line no-unused-vars, no-redeclare */
+function appendCircle(onto:d3SVG, c:Circle, maxLevels?:number) {
+    console.log("HIIIII", c, c.metadata, maxLevels);
+    // Append Circle
+    return (
+        (<d3CIRCLE>onto.append('circle'))
+          .attr('cx', c.x)
+          .attr('cy', c.y)
+          .attr('r', c.r)
+          .attr('stroke', colorForLevel(c.metadata.level, maxLevels))
+          // .attr('stroke', 'black')
+          .attr('fill', 'none')
+    );
+}
+
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
 function appendLine(onto:d3SVG, l:Line, color="black") {
     console.log("Drawing Line From", l.p1, " to ", l.p2);
