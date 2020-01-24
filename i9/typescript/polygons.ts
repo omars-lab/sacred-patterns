@@ -25,6 +25,12 @@ class Polygon {
     get lines() {
         return Line.fromPoints(this.points);
     }
+
+    rotate(increment_radial_shift:number) {
+        // Make this return a new Polygon polymorphically ...
+        this.radial_shift = this.radial_shift + increment_radial_shift;
+        return this;
+    }
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
@@ -56,9 +62,23 @@ class Hexagon extends Polygon {
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
+class Heptagon extends Polygon {
+    get number_of_points() {
+        return 7;
+    }
+}
+
+/* eslint-disable-next-line no-unused-vars, no-redeclare */
 class Octagon extends Polygon {
     get number_of_points() {
         return 8;
+    }
+}
+
+/* eslint-disable-next-line no-unused-vars, no-redeclare */
+class Nonagon extends Polygon {
+    get number_of_points() {
+        return 9;
     }
 }
 
@@ -75,6 +95,8 @@ const PolygonWithSides = {
     4: Square,
     5: Pentagon,
     6: Hexagon,
+    7: Heptagon,
     8: Octagon,
+    9: Nonagon,
     10: Decagon,
 };

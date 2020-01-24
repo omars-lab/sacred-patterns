@@ -54,6 +54,11 @@ var Polygon = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
+    Polygon.prototype.rotate = function (increment_radial_shift) {
+        // Make this return a new Polygon polymorphically ...
+        this.radial_shift = this.radial_shift + increment_radial_shift;
+        return this;
+    };
     return Polygon;
 }());
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
@@ -117,6 +122,21 @@ var Hexagon = /** @class */ (function (_super) {
     return Hexagon;
 }(Polygon));
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
+var Heptagon = /** @class */ (function (_super) {
+    __extends(Heptagon, _super);
+    function Heptagon() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    Object.defineProperty(Heptagon.prototype, "number_of_points", {
+        get: function () {
+            return 7;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    return Heptagon;
+}(Polygon));
+/* eslint-disable-next-line no-unused-vars, no-redeclare */
 var Octagon = /** @class */ (function (_super) {
     __extends(Octagon, _super);
     function Octagon() {
@@ -130,6 +150,21 @@ var Octagon = /** @class */ (function (_super) {
         configurable: true
     });
     return Octagon;
+}(Polygon));
+/* eslint-disable-next-line no-unused-vars, no-redeclare */
+var Nonagon = /** @class */ (function (_super) {
+    __extends(Nonagon, _super);
+    function Nonagon() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    Object.defineProperty(Nonagon.prototype, "number_of_points", {
+        get: function () {
+            return 9;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    return Nonagon;
 }(Polygon));
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
 var Decagon = /** @class */ (function (_super) {
@@ -152,6 +187,8 @@ var PolygonWithSides = {
     4: Square,
     5: Pentagon,
     6: Hexagon,
+    7: Heptagon,
     8: Octagon,
+    9: Nonagon,
     10: Decagon,
 };
