@@ -44,9 +44,9 @@ function appendCircle(onto, c, maxLevels) {
         .attr('cx', c.x)
         .attr('cy', c.y)
         .attr('r', c.r)
-        .attr('stroke', colorForLevel(c.metadata.level, maxLevels))
+        .attr('stroke', _.get(c.metadata, "stroke", colorForLevel(c.metadata.level, maxLevels)))
         // .attr('stroke', 'black')
-        .attr('fill', 'none'));
+        .attr('fill', _.get(c.metadata, "fill", 'none')));
 }
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
 function appendLine(onto, l, color) {
@@ -61,8 +61,8 @@ function appendLine(onto, l, color) {
         .style("stroke", color);
 }
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-function appendPolygon(onto, lines, color) {
-    if (color === void 0) { color = "black"; }
+function appendPolygon(onto, lines, metadata) {
+    if (metadata === void 0) { metadata = {}; }
     // Assumes lines are in connected order ...
     if (_.isEmpty(lines)) {
         return;
@@ -73,7 +73,9 @@ function appendPolygon(onto, lines, color) {
     var points = _.concat(_.map(lines, function (l) { return [l.p1.x, l.p1.y]; }), [last_point]);
     var poly_points = _.join(_.map(points, function (p) { return _.join(p, ","); }), ", ");
     onto.append("polyline") // attach a polyline
-        .style("stroke", color) // colour the line
-        .style("fill", "none") // remove any fill colour
+        .style('stroke', _.get(metadata, "stroke", "black"))
+        .style('stroke-width', _.get(metadata, "stroke-width", "1"))
+        // .attr('stroke', 'black')
+        .style('fill', _.get(metadata, "fill", 'none'))
         .attr("points", poly_points); // x,y points
 }

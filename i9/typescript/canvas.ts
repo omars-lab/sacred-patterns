@@ -50,15 +50,22 @@ function appendCircleWithMidpoint(onto:d3SVG, c:Circle, maxLevels?:number) {
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
 function appendCircle(onto:d3SVG, c:Circle, maxLevels?:number) {
     console.log("HIIIII", c, c.metadata, maxLevels);
+
     // Append Circle
     return (
         (<d3CIRCLE>onto.append('circle'))
           .attr('cx', c.x)
           .attr('cy', c.y)
           .attr('r', c.r)
-          .attr('stroke', colorForLevel(c.metadata.level, maxLevels))
+          .attr(
+              'stroke',
+              _.get(c.metadata, "stroke", colorForLevel(c.metadata.level, maxLevels))
+          )
           // .attr('stroke', 'black')
-          .attr('fill', 'none')
+          .attr(
+              'fill',
+              _.get(c.metadata, "fill", 'none')
+          )
     );
 }
 
@@ -75,7 +82,7 @@ function appendLine(onto:d3SVG, l:Line, color="black") {
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-function appendPolygon(onto:d3SVG, lines:Line[], color="black") {
+function appendPolygon(onto:d3SVG, lines:Line[], metadata:any={}) {
     // Assumes lines are in connected order ...
     if (_.isEmpty(lines)) {
         return;
@@ -86,7 +93,18 @@ function appendPolygon(onto:d3SVG, lines:Line[], color="black") {
     var points = _.concat(_.map(lines, l => [l.p1.x, l.p1.y]), [last_point]);
     var poly_points = _.join(_.map(points, p =>_.join(p, ",")), ", ");
     (<d3POLYLINE>onto.append("polyline"))        // attach a polyline
-        .style("stroke",color)                   // colour the line
-        .style("fill", "none")                   // remove any fill colour
+        .style(
+            'stroke',
+            _.get(metadata, "stroke", "black")
+        )
+        .style(
+            'stroke-width',
+            _.get(metadata, "stroke-width", "1")
+        )
+        // .attr('stroke', 'black')
+        .style(
+            'fill',
+            _.get(metadata, "fill", 'none')
+        )
         .attr("points", poly_points);            // x,y points
 }

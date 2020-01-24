@@ -138,7 +138,7 @@ function drawHexagonWithSurroundingNonagons() {
     var svg = <d3SVG>(d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size));
     var centralCircle = new Circle(radius * size / 2, radius * size / 2, radius);
     var outerCircles = centralCircle.surroundingCircles(6, 1);
-    appendPolygon(svg, new Hexagon(centralCircle.midpoint, centralCircle.r).lines);
+    // appendPolygon(svg, new Hexagon(centralCircle.midpoint, centralCircle.r).lines);
     var surroundingPolygons = _.map(outerCircles, c => new Nonagon(c.midpoint, centralCircle.r * 0.75));
     // Rotate every other polygon ...
     surroundingPolygons = _map_even_odd(
@@ -146,7 +146,12 @@ function drawHexagonWithSurroundingNonagons() {
         nonagon => nonagon.rotate(Math.PI)
     );
     _.forEach(surroundingPolygons, p => {
-        appendPolygon(svg, p.lines);
+        appendPolygon(svg, p.lines, {
+            // "fill": "RGBA(118,215,196,0.5)",
+            "fill": "RGBA(118,215,196,0.75)",
+            "stroke": "RGB(244,208,63)",
+            "stroke-width": "5",
+        });
     });
 }
 

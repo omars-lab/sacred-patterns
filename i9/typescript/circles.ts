@@ -1,5 +1,7 @@
 interface CircleMetadata {
     level: number;
+    fill?: string;
+    stroke?: string;
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
