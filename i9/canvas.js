@@ -36,6 +36,9 @@ function appendCircleWithMidpoint(onto, c, maxLevels) {
         // .attr('stroke', 'black');
         .attr('fill', colorForLevel(c.metadata.level, maxLevels));
 }
+// function applyStylesTo(to, styleParams, defaultStyleParams) {
+//
+// }
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
 function appendCircle(onto, c, maxLevels) {
     console.log("HIIIII", c, c.metadata, maxLevels);
@@ -45,7 +48,6 @@ function appendCircle(onto, c, maxLevels) {
         .attr('cy', c.y)
         .attr('r', c.r)
         .attr('stroke', _.get(c.metadata, "stroke", colorForLevel(c.metadata.level, maxLevels)))
-        // .attr('stroke', 'black')
         .attr('fill', _.get(c.metadata, "fill", 'none')));
 }
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
@@ -72,10 +74,9 @@ function appendPolygon(onto, lines, metadata) {
     // Skip over the ending points of the line ... except for the last line ...
     var points = _.concat(_.map(lines, function (l) { return [l.p1.x, l.p1.y]; }), [last_point]);
     var poly_points = _.join(_.map(points, function (p) { return _.join(p, ","); }), ", ");
-    onto.append("polyline") // attach a polyline
+    onto.append("polyline")
         .style('stroke', _.get(metadata, "stroke", "black"))
         .style('stroke-width', _.get(metadata, "stroke-width", "1"))
-        // .attr('stroke', 'black')
         .style('fill', _.get(metadata, "fill", 'none'))
-        .attr("points", poly_points); // x,y points
+        .attr("points", poly_points);
 }

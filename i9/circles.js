@@ -89,5 +89,36 @@ var Circle = /** @class */ (function () {
         // console.log('picked cb over ca', ca, cb);
         return cb;
     };
+    Circle.prototype.adjacent = function (x_shift, y_shift, r_scaler, metadata) {
+        if (x_shift === void 0) { x_shift = 0; }
+        if (y_shift === void 0) { y_shift = 0; }
+        if (r_scaler === void 0) { r_scaler = 1; }
+        if (metadata === void 0) { metadata = this.metadata; }
+        console.log(this);
+        return new Circle(this.x + x_shift, this.y + y_shift, this.r * r_scaler, metadata);
+    };
+    // These ratios ... are so hexagons are above each other ... not circless ...
+    Circle.prototype.above = function () {
+        return this.adjacent(0, -(this.r * 1.725));
+    };
+    Circle.prototype.below = function () {
+        return this.adjacent(0, (this.r * 1.725));
+    };
+    Circle.prototype.right = function () {
+        return this.adjacent(-(this.r * 2.15), 0);
+    };
+    Circle.prototype.left = function () {
+        return this.adjacent((this.r * 2.15), 0);
+    };
+    Circle.prototype.northWest = function () {
+        // https://riptutorial.com/d3-js/example/8402/coordinate-system
+        // in s3 ... 0,0 is top left of screen ... not top right ...
+        return this.adjacent(-1 * Math.cos(Math.PI / 4 + Math.PI * 1.5) * this.r * 2.15, Math.sin(Math.PI / 4 + Math.PI * 1.5) * this.r * 1.2);
+    };
+    Circle.prototype.southEast = function () {
+        // https://riptutorial.com/d3-js/example/8402/coordinate-system
+        // in s3 ... 0,0 is top left of screen ... not top right ...
+        return this.adjacent(Math.cos(Math.PI / 4 + Math.PI * 1.5) * this.r * 2.15, -1 * Math.sin(Math.PI / 4 + Math.PI * 1.5) * this.r * 1.2);
+    };
     return Circle;
 }());

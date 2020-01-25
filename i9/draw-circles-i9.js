@@ -91,40 +91,65 @@ function drawRotatingCircles() {
         _a = rotateOuterCircles(centralCircle, currentShift, outerCirclesSVGS), currentShift = _a[0], outerCircles = _a[1];
     }, 50);
 }
-function isEven(value) {
-    if (value % 2 == 0)
-        return true;
-    else
-        return false;
-}
-function _map_even_odd(array_to_map, even_func, odd_func) {
-    if (even_func === void 0) { even_func = _.identity; }
-    if (odd_func === void 0) { odd_func = _.identity; }
-    var list = [];
-    _.takeRightWhile(array_to_map, function (value, index, array) {
-        list.push(isEven(index) ? even_func(value, index, array) : odd_func(value, index, array));
-        return true;
-    });
-    return list;
-}
-// eslint-disable-next-line no-unused-vars
-function drawHexagonWithSurroundingNonagons() {
-    var svg = (d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size));
-    var centralCircle = new Circle(radius * size / 2, radius * size / 2, radius);
+// // eslint-disable-next-line no-unused-vars
+// function drawHexagonWithSurroundingNonagons() {
+//     // var svg = <d3SVG>(d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size));
+//     var svg = <d3SVG>(d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size).style("background", "RGBA(118,215,196,0.9)"));
+//     var centralCircle = new Circle(radius * size / 2, radius * size / 2, radius);
+//     var outerCircles = centralCircle.surroundingCircles(6, 1);
+//     // appendPolygon(svg, new Hexagon(centralCircle.midpoint, centralCircle.r).lines);
+//     var surroundingPolygons = _.map(outerCircles, c => new Nonagon(c.midpoint, centralCircle.r * 0.75));
+//     // Rotate every other polygon ...
+//     surroundingPolygons = _map_even_odd(
+//         surroundingPolygons,
+//         nonagon => (<Nonagon>nonagon).rotate(Math.PI),
+//     );
+//     _.forEach(surroundingPolygons, p => {
+//         appendPolygon(svg, p.lines, {
+//             // "fill": "RGBA(118,215,196,0.5)",
+//             // "fill": "RGBA(118,215,196,0.75)",
+//             "stroke": "RGB(244,208,63)",
+//             "stroke-width": "5",
+//         });
+//     });
+// }
+function nonagonsThatFormA6PointStarCenteredAt(centralCircle) {
     var outerCircles = centralCircle.surroundingCircles(6, 1);
     // appendPolygon(svg, new Hexagon(centralCircle.midpoint, centralCircle.r).lines);
     var surroundingPolygons = _.map(outerCircles, function (c) { return new Nonagon(c.midpoint, centralCircle.r * 0.75); });
     // Rotate every other polygon ...
     surroundingPolygons = _map_even_odd(surroundingPolygons, function (nonagon) { return nonagon.rotate(Math.PI); });
-    _.forEach(surroundingPolygons, function (p) {
+    return _.concat(
+    // Nonagons
+    surroundingPolygons, 
+    // Hexagons
+    Hexagon.onCircle(centralCircle));
+}
+// eslint-disable-next-line no-unused-vars
+function drawHexagonWithSurroundingNonagons() {
+    // var svg = <d3SVG>(d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size));
+    var svg = (d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size).style("background", "RGBA(118,215,196,0.9)"));
+    var circle = new Circle(radius * size / 2, radius * size / 2, radius);
+    var circles = [
+        circle,
+        circle.below(),
+        circle.southEast(),
+        circle.southEast().above(),
+        circle.southEast().below(),
+        circle.southEast().southEast(),
+        circle.southEast().southEast().above(),
+    ];
+    _.forEach(_.flatMap(circles, nonagonsThatFormA6PointStarCenteredAt), function (p) {
         appendPolygon(svg, p.lines, {
             // "fill": "RGBA(118,215,196,0.5)",
-            "fill": "RGBA(118,215,196,0.75)",
+            // "fill": "RGBA(118,215,196,0.75)",
             "stroke": "RGB(244,208,63)",
             "stroke-width": "5",
         });
     });
 }
+// do drawHexagonWithSurroundingNonagons but in a grid ...
+// do the whole draw outer ring so I can roteate inner ring!
 drawHexagonWithSurroundingNonagons();
 // drawRotatingCircles();
 // drawDifferentPolygons();

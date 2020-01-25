@@ -47,6 +47,10 @@ function appendCircleWithMidpoint(onto:d3SVG, c:Circle, maxLevels?:number) {
 }
 
 
+// function applyStylesTo(to, styleParams, defaultStyleParams) {
+//
+// }
+
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
 function appendCircle(onto:d3SVG, c:Circle, maxLevels?:number) {
     console.log("HIIIII", c, c.metadata, maxLevels);
@@ -57,15 +61,8 @@ function appendCircle(onto:d3SVG, c:Circle, maxLevels?:number) {
           .attr('cx', c.x)
           .attr('cy', c.y)
           .attr('r', c.r)
-          .attr(
-              'stroke',
-              _.get(c.metadata, "stroke", colorForLevel(c.metadata.level, maxLevels))
-          )
-          // .attr('stroke', 'black')
-          .attr(
-              'fill',
-              _.get(c.metadata, "fill", 'none')
-          )
+          .attr('stroke', _.get(c.metadata, "stroke", colorForLevel(c.metadata.level, maxLevels)))
+          .attr('fill', _.get(c.metadata, "fill", 'none'))
     );
 }
 
@@ -77,7 +74,7 @@ function appendLine(onto:d3SVG, l:Line, color="black") {
        .attr("y1", l.p1.y)
        .attr("x2", l.p2.x)
        .attr("y2", l.p2.y)
-       .attr("class","line")
+       .attr("class", "line")
        .style("stroke", color);
 }
 
@@ -92,19 +89,9 @@ function appendPolygon(onto:d3SVG, lines:Line[], metadata:any={}) {
     // Skip over the ending points of the line ... except for the last line ...
     var points = _.concat(_.map(lines, l => [l.p1.x, l.p1.y]), [last_point]);
     var poly_points = _.join(_.map(points, p =>_.join(p, ",")), ", ");
-    (<d3POLYLINE>onto.append("polyline"))        // attach a polyline
-        .style(
-            'stroke',
-            _.get(metadata, "stroke", "black")
-        )
-        .style(
-            'stroke-width',
-            _.get(metadata, "stroke-width", "1")
-        )
-        // .attr('stroke', 'black')
-        .style(
-            'fill',
-            _.get(metadata, "fill", 'none')
-        )
-        .attr("points", poly_points);            // x,y points
+    (<d3POLYLINE>onto.append("polyline"))
+        .style('stroke', _.get(metadata, "stroke", "black"))
+        .style('stroke-width', _.get(metadata, "stroke-width", "1"))
+        .style('fill', _.get(metadata, "fill", 'none'))
+        .attr("points", poly_points);
 }

@@ -107,4 +107,47 @@ class Circle {
         // console.log('picked cb over ca', ca, cb);
         return cb;
     }
+
+    adjacent(x_shift:number=0, y_shift:number=0, r_scaler:number=1, metadata:CircleMetadata=this.metadata) {
+        console.log(this);
+        return new Circle(
+            this.x+x_shift, this.y+y_shift, this.r * r_scaler, metadata
+        );
+    }
+
+    // These ratios ... are so hexagons are above each other ... not circless ...
+
+    above() {
+        return this.adjacent(0, -(this.r * 1.725));
+    }
+
+    below() {
+        return this.adjacent(0, (this.r * 1.725));
+    }
+
+    right() {
+        return this.adjacent(-(this.r * 2.15), 0);
+    }
+
+    left() {
+        return this.adjacent((this.r * 2.15), 0);
+    }
+
+    northWest() {
+        // https://riptutorial.com/d3-js/example/8402/coordinate-system
+        // in s3 ... 0,0 is top left of screen ... not top right ...
+        return this.adjacent(
+            -1 * Math.cos(Math.PI/4 + Math.PI*1.5) * this.r * 2.15,
+            Math.sin(Math.PI/4 + Math.PI*1.5) * this.r * 1.2
+        );
+    }
+
+    southEast() {
+        // https://riptutorial.com/d3-js/example/8402/coordinate-system
+        // in s3 ... 0,0 is top left of screen ... not top right ...
+        return this.adjacent(
+            Math.cos(Math.PI/4 + Math.PI*1.5) * this.r * 2.15,
+            -1 * Math.sin(Math.PI/4 + Math.PI*1.5) * this.r * 1.2
+        );
+    }
 }
