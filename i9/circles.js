@@ -110,15 +110,25 @@ var Circle = /** @class */ (function () {
     Circle.prototype.left = function () {
         return this.adjacent((this.r * 2.15), 0);
     };
+    Circle.prototype.southWest = function () {
+        // https://riptutorial.com/d3-js/example/8402/coordinate-system
+        // in s3 ... 0,0 is top left of screen ... not top right ...
+        return this.adjacent(((this.r * Math.cos(2 * Math.PI * (4 / 6))) + (this.r * Math.cos(Math.PI))), -1 * ((this.r * Math.sin(2 * Math.PI * (4 / 6))) + (this.r * Math.sin(Math.PI))));
+    };
     Circle.prototype.northWest = function () {
         // https://riptutorial.com/d3-js/example/8402/coordinate-system
         // in s3 ... 0,0 is top left of screen ... not top right ...
-        return this.adjacent(-1 * Math.cos(Math.PI / 4 + Math.PI * 1.5) * this.r * 2.15, Math.sin(Math.PI / 4 + Math.PI * 1.5) * this.r * 1.2);
+        return this.adjacent(((this.r * Math.cos(2 * Math.PI * (2 / 6))) + (this.r * Math.cos(Math.PI))), -1 * ((this.r * Math.sin(2 * Math.PI * (2 / 6))) + (this.r * Math.sin(Math.PI))));
+    };
+    Circle.prototype.northEast = function () {
+        // https://riptutorial.com/d3-js/example/8402/coordinate-system
+        // in s3 ... 0,0 is top left of screen ... not top right ...
+        return this.adjacent(((this.r * Math.cos(2 * Math.PI * (1 / 6))) + (this.r * Math.cos(0))), -1 * ((this.r * Math.sin(2 * Math.PI * (1 / 6))) + (this.r * Math.sin(0))));
     };
     Circle.prototype.southEast = function () {
         // https://riptutorial.com/d3-js/example/8402/coordinate-system
         // in s3 ... 0,0 is top left of screen ... not top right ...
-        return this.adjacent(Math.cos(Math.PI / 4 + Math.PI * 1.5) * this.r * 2.15, -1 * Math.sin(Math.PI / 4 + Math.PI * 1.5) * this.r * 1.2);
+        return this.adjacent(((this.r * Math.cos(2 * Math.PI * (5 / 6))) + (this.r * Math.cos(0))), -1 * ((this.r * Math.sin(2 * Math.PI * (5 / 6))) + (this.r * Math.sin(0))));
     };
     return Circle;
 }());
