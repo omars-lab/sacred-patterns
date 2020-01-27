@@ -97,38 +97,5 @@ var Circle = /** @class */ (function () {
         console.log(this);
         return new Circle(this.x + x_shift, this.y + y_shift, this.r * r_scaler, metadata);
     };
-    // These ratios ... are so hexagons are above each other ... not circless ...
-    Circle.prototype.above = function () {
-        return this.adjacent(0, -(this.r * 1.725));
-    };
-    Circle.prototype.below = function () {
-        return this.adjacent(0, (this.r * 1.725));
-    };
-    Circle.prototype.right = function () {
-        return this.adjacent(-(this.r * 2.15), 0);
-    };
-    Circle.prototype.left = function () {
-        return this.adjacent((this.r * 2.15), 0);
-    };
-    Circle.prototype.southWest = function () {
-        // https://riptutorial.com/d3-js/example/8402/coordinate-system
-        // in s3 ... 0,0 is top left of screen ... not top right ...
-        return this.adjacent(((this.r * Math.cos(2 * Math.PI * (4 / 6))) + (this.r * Math.cos(Math.PI))), -1 * ((this.r * Math.sin(2 * Math.PI * (4 / 6))) + (this.r * Math.sin(Math.PI))));
-    };
-    Circle.prototype.northWest = function () {
-        // https://riptutorial.com/d3-js/example/8402/coordinate-system
-        // in s3 ... 0,0 is top left of screen ... not top right ...
-        return this.adjacent(((this.r * Math.cos(2 * Math.PI * (2 / 6))) + (this.r * Math.cos(Math.PI))), -1 * ((this.r * Math.sin(2 * Math.PI * (2 / 6))) + (this.r * Math.sin(Math.PI))));
-    };
-    Circle.prototype.northEast = function () {
-        // https://riptutorial.com/d3-js/example/8402/coordinate-system
-        // in s3 ... 0,0 is top left of screen ... not top right ...
-        return this.adjacent(((this.r * Math.cos(2 * Math.PI * (1 / 6))) + (this.r * Math.cos(0))), -1 * ((this.r * Math.sin(2 * Math.PI * (1 / 6))) + (this.r * Math.sin(0))));
-    };
-    Circle.prototype.southEast = function () {
-        // https://riptutorial.com/d3-js/example/8402/coordinate-system
-        // in s3 ... 0,0 is top left of screen ... not top right ...
-        return this.adjacent(((this.r * Math.cos(2 * Math.PI * (5 / 6))) + (this.r * Math.cos(0))), -1 * ((this.r * Math.sin(2 * Math.PI * (5 / 6))) + (this.r * Math.sin(0))));
-    };
     return Circle;
 }());

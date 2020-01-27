@@ -22,16 +22,16 @@ function drawStarGrid() {
     var svg = <d3SVG> (d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size));
     appendPolygon(svg, star.lines);
     appendPolygon(svg, star.rotate(Math.PI/2).lines);
-    appendPolygon(svg, Hexagon.onCircle(star.outerCircle).lines);
+    appendPolygon(svg, Hexagon.withinCircle(star.outerCircle).lines);
     appendPolygon(svg, star.right().lines);
     appendPolygon(svg, star.right().rotate(Math.PI/2).lines);
-    appendPolygon(svg, Hexagon.onCircle(star.right().outerCircle).lines);
+    appendPolygon(svg, Hexagon.withinCircle(star.right().outerCircle).lines);
     appendPolygon(svg, star.above().lines);
     appendPolygon(svg, star.above().rotate(Math.PI/2).lines);
-    appendPolygon(svg, Hexagon.onCircle(star.above().outerCircle).lines);
+    appendPolygon(svg, Hexagon.withinCircle(star.above().outerCircle).lines);
     appendPolygon(svg, star.above().right().lines);
     appendPolygon(svg, star.above().right().rotate(Math.PI/2).lines);
-    appendPolygon(svg, Hexagon.onCircle(star.above().right().outerCircle).lines);
+    appendPolygon(svg, Hexagon.withinCircle(star.above().right().outerCircle).lines);
 }
 // eslint-disable-next-line no-unused-vars
 function drawRotatedStar() {
@@ -126,7 +126,8 @@ function drawRotatingCircles() {
 // }
 
 
-function nonagonsThatFormA6PointStarCenteredAt(centralCircle:Circle) {
+function nonagonsThatFormA6PointStarCenteredAt(centralHexagon:Hexagon) {
+    var centralCircle = centralHexagon.outerCircle;
     var outerCircles = centralCircle.surroundingCircles(6, 1);
     // appendPolygon(svg, new Hexagon(centralCircle.midpoint, centralCircle.r).lines);
     var surroundingPolygons = _.map(outerCircles, function (c) { return new Nonagon(c.midpoint, centralCircle.r * 0.75); });
@@ -136,7 +137,7 @@ function nonagonsThatFormA6PointStarCenteredAt(centralCircle:Circle) {
         // Nonagons
         surroundingPolygons,
         // Hexagons
-        Hexagon.onCircle(centralCircle)
+        centralHexagon
     );
 }
 
@@ -146,13 +147,15 @@ function drawHexagonWithSurroundingNonagons() {
     var svg = <d3SVG>(d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size).style("background", "RGBA(118,215,196,0.9)"));
     var circle = new Circle(radius * size / 2, radius * size / 2, radius);
     var circles = [
-        circle.northWest(),
-        circle.northEast(),
-        circle,
-        circle.southWest(),
-        circle.southEast(),
-        circle.above(),
-        circle.below(),
+        // - [ ] How do I make this cleaner ...?
+        // https://medium.com/@rossbulat/typescript-generics-explained-15c6493b510f
+        Hexagon.withinCircle<Hexagon>(circle).northWest(),
+        Hexagon.withinCircle<Hexagon>(circle).northEast(),
+        Hexagon.withinCircle<Hexagon>(circle),
+        Hexagon.withinCircle<Hexagon>(circle).southWest(),
+        Hexagon.withinCircle<Hexagon>(circle).southEast(),
+        Hexagon.withinCircle<Hexagon>(circle).above(),
+        Hexagon.withinCircle<Hexagon>(circle).below(),
         // circle.southEast().above(),
         // circle.southEast().below(),
         // circle.southEast().southEast(),
@@ -192,7 +195,7 @@ function drawCirclesRecursively() {
         c => {
             console.log("appending c", c);
             appendCircleWithMidpoint(<d3SVG>svg, c, maxLevels);
-            appendPolygon(<d3SVG>svg, Hexagon.onCircle(c).lines);
+            appendPolygon(<d3SVG>svg, Hexagon.withinCircle(c).lines);
         }
     );
     // appendCircleWithMidpoint(<d3SVG>svg, circle);
@@ -202,7 +205,7 @@ function drawCirclesRecursively() {
 // do drawHexagonWithSurroundingNonagons but in a grid ...
 // do the whole draw outer ring so I can roteate inner ring!
 
-drawCirclesRecursively();
+// drawCirclesRecursively();
 drawHexagonWithSurroundingNonagons();
 // drawRotatingCircles();
 // drawDifferentPolygons();

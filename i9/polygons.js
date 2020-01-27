@@ -29,8 +29,10 @@ var Polygon = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
-    Polygon.onCircle = function (c) {
-        return new Hexagon(new Point(c.midpoint.x, c.midpoint.y), c.r);
+    Polygon.withinCircle = function (c) {
+        // Does this work in a static and non static setting?
+        // No ... 'this' in a static method ... is the type of the class itself ...
+        return (new this(c.midpoint, c.r));
     };
     Object.defineProperty(Polygon.prototype, "outerCircle", {
         get: function () {
@@ -119,6 +121,51 @@ var Hexagon = /** @class */ (function (_super) {
         enumerable: true,
         configurable: true
     });
+    // Figure out why these numbers are right ... and not sin / cos based ...
+    Hexagon.prototype.above = function () {
+        var refCircle = this.outerCircle;
+        var circleAbove = refCircle.adjacent(0, -(refCircle.r * 1.725));
+        return this.constructor.withinCircle(circleAbove);
+    };
+    Hexagon.prototype.below = function () {
+        var refCircle = this.outerCircle;
+        var circleBelow = refCircle.adjacent(0, (refCircle.r * 1.725));
+        return this.constructor.withinCircle(circleBelow);
+    };
+    Hexagon.prototype.right = function () {
+        var refCircle = this.outerCircle;
+        var circleRight = refCircle.adjacent(-(refCircle.r * 2.15), 0);
+        return this.constructor.withinCircle(circleRight);
+    };
+    Hexagon.prototype.left = function () {
+        var refCircle = this.outerCircle;
+        var circleLeft = refCircle.adjacent((refCircle.r * 2.15), 0);
+        return this.constructor.withinCircle(circleLeft);
+    };
+    Hexagon.prototype.southWest = function () {
+        // https://riptutorial.com/d3-js/example/8402/coordinate-system
+        // in s3 ... 0,0 is top left of screen ... not top right ...
+        var refCircle = this.outerCircle;
+        var newCricle = refCircle.adjacent(((refCircle.r * Math.cos(2 * Math.PI * (4 / 6))) + (refCircle.r * Math.cos(Math.PI))), -1 * ((refCircle.r * Math.sin(2 * Math.PI * (4 / 6))) + (refCircle.r * Math.sin(Math.PI))));
+        return this.constructor.withinCircle(newCricle);
+    };
+    Hexagon.prototype.northWest = function () {
+        // https://riptutorial.com/d3-js/example/8402/coordinate-system
+        // in s3 ... 0,0 is top left of screen ... not top right ...
+        var refCircle = this.outerCircle;
+        var newCricle = refCircle.adjacent(((refCircle.r * Math.cos(2 * Math.PI * (2 / 6))) + (refCircle.r * Math.cos(Math.PI))), -1 * ((refCircle.r * Math.sin(2 * Math.PI * (2 / 6))) + (refCircle.r * Math.sin(Math.PI))));
+        return this.constructor.withinCircle(newCricle);
+    };
+    Hexagon.prototype.northEast = function () {
+        var refCircle = this.outerCircle;
+        var newCricle = refCircle.adjacent(((refCircle.r * Math.cos(2 * Math.PI * (1 / 6))) + (refCircle.r * Math.cos(0))), -1 * ((refCircle.r * Math.sin(2 * Math.PI * (1 / 6))) + (refCircle.r * Math.sin(0))));
+        return this.constructor.withinCircle(newCricle);
+    };
+    Hexagon.prototype.southEast = function () {
+        var refCircle = this.outerCircle;
+        var newCricle = refCircle.adjacent(((refCircle.r * Math.cos(2 * Math.PI * (5 / 6))) + (refCircle.r * Math.cos(0))), -1 * ((refCircle.r * Math.sin(2 * Math.PI * (5 / 6))) + (refCircle.r * Math.sin(0))));
+        return this.constructor.withinCircle(newCricle);
+    };
     return Hexagon;
 }(Polygon));
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
