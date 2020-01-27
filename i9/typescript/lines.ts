@@ -10,18 +10,6 @@ class Line {
 
     constructor(public p1:Point, public p2:Point) {}
 
-    static fromPoints(points:Point[]): Line[] {
-        // Form lines by connecting the points ...
-        return _.map(
-            // https://www.tutorialsteacher.com/typescript/typescript-tuple
-            (<[Point, Point][]>_.zip(
-                points,
-                _rotate_list_right(points)
-            )),
-            ([p1, p2]) => new Line(p1, p2),
-        );
-    }
-
     get dx() {
         return this.p2.x - this.p1.x;
     }
@@ -33,6 +21,14 @@ class Line {
     slope() {
         return this.dy / this.dx;
     }
+
+    // get yIntercept(): Point | undefined {
+    //     if (this.isHorizontal() && this.p1.y != 0) {
+    //         return undefined;
+    //     }
+    //
+    //     // return
+    // }
 
     isHorizontal() {
         if ( this.p1.y === this.p2.y || Math.abs(this.slope()) < (1.0/1000000.0) ) {
@@ -132,5 +128,22 @@ class Line {
         return this.extendLineRight(newDistance);
     }
 
+}
+
+class Lines {
+
+    static fromPoints(points:Point[]): Line[] {
+        // Form lines by connecting the points ...
+        return _.map(
+            // https://www.tutorialsteacher.com/typescript/typescript-tuple
+            (<[Point, Point][]>_.zip(
+                points,
+                _rotate_list_right(points)
+            )),
+            ([p1, p2]) => new Line(p1, p2),
+        );
+    }
+
+    // static intersection(l1:Line, l2:Line): Point | undefined {}
 
 }

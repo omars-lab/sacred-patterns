@@ -116,3 +116,8 @@ class Circle {
     }
 
 }
+
+
+// Intersection of Circles ...
+// http://jsfiddle.net/g0r9n090/
+// https://stackoverflow.com/questions/33330074/d3-js-detect-intersection-area

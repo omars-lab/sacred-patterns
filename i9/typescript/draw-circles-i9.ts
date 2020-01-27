@@ -151,11 +151,13 @@ function drawHexagonWithSurroundingNonagons() {
         // https://medium.com/@rossbulat/typescript-generics-explained-15c6493b510f
         Hexagon.withinCircle<Hexagon>(circle).northWest(),
         Hexagon.withinCircle<Hexagon>(circle).northEast(),
+        Hexagon.withinCircle<Hexagon>(circle).above(),
         Hexagon.withinCircle<Hexagon>(circle),
+        Hexagon.withinCircle<Hexagon>(circle).below(),
         Hexagon.withinCircle<Hexagon>(circle).southWest(),
         Hexagon.withinCircle<Hexagon>(circle).southEast(),
-        Hexagon.withinCircle<Hexagon>(circle).above(),
-        Hexagon.withinCircle<Hexagon>(circle).below(),
+
+
         // circle.southEast().above(),
         // circle.southEast().below(),
         // circle.southEast().southEast(),
