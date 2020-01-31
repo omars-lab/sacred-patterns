@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "private": true,
-  "main": "i9/draw-circles-i9.js",
+  "main": "app/runner.js",
   "scripts": {
     "site": "node app/runner.js",
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -12,6 +12,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/d3": "^5.7.2",
+    "@types/lodash": "^4.14.149",
     "eslint": "^6.8.0",
     "html-webpack-plugin": "^3.2.0",
     "ts-loader": "^6.2.1",
@@ -21,8 +23,6 @@
   },
   "eslintConfig": "./.eslintrc.js",
   "dependencies": {
-    "@types/d3": "^5.7.2",
-    "@types/lodash": "^4.14.149",
     "d3": "^5.15.0",
     "express": "^4.17.1",
     "lodash": "^4.17.15"

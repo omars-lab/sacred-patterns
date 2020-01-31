@@ -3,6 +3,7 @@ ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 build:
 	npm run build
+	docker build -t sacred-patterns .
 
 compile:
 	find ${ROOT_DIR}/ -name '*.js' -exec eslint {} \;
@@ -14,6 +15,9 @@ open: compile
 
 ~compile:
 	tsc -w
+
+run: 
+	docker logs $$( docker run -d -p 3001:3000 sacred-patterns:latest ; sleep 1 ) 
 
  # typescript
  # @types/lodash
