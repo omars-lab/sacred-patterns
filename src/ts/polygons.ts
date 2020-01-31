@@ -1,8 +1,12 @@
+import {Point} from "./points"
+import {Circle} from "./circles"
+import {Lines} from "./lines"
+
 // https://codepen.io/Elf/details/rOrRaw
 // https://www.d3indepth.com/shapes/
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-class Polygon {
+export class Polygon {
     constructor(public center:Point, public size:number, public radial_shift:number=0) {}
 
     get number_of_points(): number {
@@ -37,28 +41,28 @@ class Polygon {
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-class Triangle extends Polygon {
+export class Triangle extends Polygon {
     get number_of_points() {
         return 3;
     }
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-class Square extends Polygon {
+export class Square extends Polygon {
     get number_of_points() {
         return 4;
     }
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-class Pentagon extends Polygon {
+export class Pentagon extends Polygon {
     get number_of_points() {
         return 5;
     }
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-class Hexagon extends Polygon {
+export class Hexagon extends Polygon {
 
     get number_of_points() {
         return 6;
@@ -131,35 +135,35 @@ class Hexagon extends Polygon {
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-class Heptagon extends Polygon {
+export class Heptagon extends Polygon {
     get number_of_points() {
         return 7;
     }
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-class Octagon extends Polygon {
+export class Octagon extends Polygon {
     get number_of_points() {
         return 8;
     }
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-class Nonagon extends Polygon {
+export class Nonagon extends Polygon {
     get number_of_points() {
         return 9;
     }
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-class Decagon extends Polygon {
+export class Decagon extends Polygon {
     get number_of_points() {
         return 10;
     }
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-const PolygonWithSides = {
+export const PolygonWithSides = {
     3: Triangle,
     4: Square,
     5: Pentagon,

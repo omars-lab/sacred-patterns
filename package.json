@@ -12,6 +12,9 @@
   "license": "ISC",
   "devDependencies": {
     "eslint": "^6.8.0",
+    "html-webpack-plugin": "^3.2.0",
+    "ts-loader": "^6.2.1",
+    "typescript": "^3.7.5",
     "webpack": "^4.41.5",
     "webpack-cli": "^3.3.10"
   },
@@ -19,8 +22,8 @@
   "dependencies": {
     "@types/d3": "^5.7.2",
     "@types/lodash": "^4.14.149",
+    "d3": "^5.15.0",
     "express": "^4.17.1",
-    "lodash": "^4.17.15",
-    "typescript": "^3.7.4"
+    "lodash": "^4.17.15"
   }
 }

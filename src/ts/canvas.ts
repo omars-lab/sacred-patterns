@@ -1,19 +1,23 @@
+import * as _ from "lodash";
+import {Circle} from "./circles"
+import {Line} from "./lines"
+
 // https://www.typescriptlang.org/docs/handbook/advanced-types.html
 // https://www.logicbig.com/tutorials/misc/typescript/ts-config-json.html
 
-type d3SvgElement<T extends d3.BaseType> = d3.Selection<T, unknown, HTMLElement, any>;
 // type d3SvgElement<T extends d3.BaseType> = d3.Selection<T, {}, HTMLElement, any> | d3.Selection<T, unknown, HTMLElement, any>;
-type d3SVG = d3SvgElement<SVGSVGElement>;
-type d3CIRCLE = d3SvgElement<SVGCircleElement>;
-type d3LINE = d3SvgElement<SVGLineElement>;
-type d3POLYLINE = d3SvgElement<SVGPolylineElement>;
+export type d3SvgElement<T extends d3.BaseType> = d3.Selection<T, unknown, HTMLElement, any>;
+export type d3SVG = d3SvgElement<SVGSVGElement>;
+export type d3CIRCLE = d3SvgElement<SVGCircleElement>;
+export type d3LINE = d3SvgElement<SVGLineElement>;
+export type d3POLYLINE = d3SvgElement<SVGPolylineElement>;
 
 // Introspecting types ...
 // var x = d3.select("body");
 // var x = d3.select("body").append("line");
 // var x = d3.select("body").append("circle");
 
-function colorForLevel(level?:number, maxLevels?:number){
+export function colorForLevel(level?:number, maxLevels?:number){
     console.log(level, maxLevels);
     // The higher the level ... the more clear ...
     if (_.isUndefined(level) || _.isUndefined(maxLevels)) {
@@ -26,7 +30,7 @@ function colorForLevel(level?:number, maxLevels?:number){
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-function appendCircleWithMidpoint(onto:d3SVG, c:Circle, maxLevels?:number) {
+export function appendCircleWithMidpoint(onto:d3SVG, c:Circle, maxLevels?:number) {
     console.log("HIIIII", c, c.metadata, maxLevels);
     // Append Circle
     (<d3CIRCLE>onto.append('circle'))
@@ -52,7 +56,7 @@ function appendCircleWithMidpoint(onto:d3SVG, c:Circle, maxLevels?:number) {
 // }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-function appendCircle(onto:d3SVG, c:Circle, maxLevels?:number) {
+export function appendCircle(onto:d3SVG, c:Circle, maxLevels?:number) {
     console.log("HIIIII", c, c.metadata, maxLevels);
 
     // Append Circle
@@ -67,7 +71,7 @@ function appendCircle(onto:d3SVG, c:Circle, maxLevels?:number) {
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-function appendLine(onto:d3SVG, l:Line, color="black") {
+export function appendLine(onto:d3SVG, l:Line, color="black") {
     console.log("Drawing Line From", l.p1, " to ", l.p2);
     (<d3LINE>onto.append("line"))
        .attr("x1", l.p1.x)
@@ -79,7 +83,7 @@ function appendLine(onto:d3SVG, l:Line, color="black") {
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-function appendPolygon(onto:d3SVG, lines:Line[], metadata:any={}) {
+export function appendPolygon(onto:d3SVG, lines:Line[], metadata:any={}) {
     // Assumes lines are in connected order ...
     if (_.isEmpty(lines)) {
         return;

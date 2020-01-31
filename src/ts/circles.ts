@@ -1,11 +1,15 @@
-interface CircleMetadata {
+import * as _ from "lodash";
+import {Line} from "./lines";
+import {Point} from "./points";
+
+export interface CircleMetadata {
     level: number;
     fill?: string;
     stroke?: string;
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-class Circle {
+export class Circle {
 
     constructor(public x:number, public y:number, public r:number, private _metadata?:CircleMetadata) {}
 
@@ -19,7 +23,7 @@ class Circle {
 
     pointsOnCircumference(numberOfPoints:number, shift_in_radians=0) {
         return _.map(
-            _.range(0, 2 * Math.PI, 2 * Math.PI / numberOfPoints),
+            <number[]>(_.range(0, 2 * Math.PI, 2 * Math.PI / numberOfPoints)),
             radians => this.pointOnCircumferenceAtRadian(radians + shift_in_radians)
         );
     }

@@ -1,5 +1,5 @@
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
- class Point {
+export class Point {
 
     constructor(public x:number, public y:number) {}
 

@@ -1,8 +1,10 @@
-interface Function1<A, B> {
+import * as _ from "lodash";
+
+export interface Function1<A, B> {
     (arg1: A): B;
 }
 
-function isEven(value:number) {
+export function isEven(value:number) {
 	if (value%2 == 0)
 		return true;
 	else
@@ -10,7 +12,7 @@ function isEven(value:number) {
 }
 
 
-function _map_even_odd<T>(array_to_map:T[], even_func:_.ArrayIterator<T, T>=_.identity, odd_func:_.ArrayIterator<T, T>=_.identity) {
+export function _map_even_odd<T>(array_to_map:T[], even_func:_.ArrayIterator<T, T>=_.identity, odd_func:_.ArrayIterator<T, T>=_.identity) {
     var list:T[] = [];
     _.takeRightWhile(
         array_to_map,
@@ -23,7 +25,7 @@ function _map_even_odd<T>(array_to_map:T[], even_func:_.ArrayIterator<T, T>=_.id
 }
 
 
-function applyTransformationPipeline<A>(a: A, pipeline:Function1<A, A>[]) {
+export function applyTransformationPipeline<A>(a: A, pipeline:Function1<A, A>[]) {
 	var returnVal = a;
 	_.forEach(
 		pipeline,

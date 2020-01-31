@@ -1,3 +1,5 @@
+import * as _ from "lodash";
+import {Point} from "./points"
 // https://github.com/lodash/lodash/issues/2173
 function _rotate_list_right(arr:any[]): any[] {
     var arr_copy = _.concat([], arr);
@@ -6,7 +8,7 @@ function _rotate_list_right(arr:any[]): any[] {
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
-class Line {
+export class Line {
 
     constructor(public p1:Point, public p2:Point) {}
 
@@ -130,7 +132,7 @@ class Line {
 
 }
 
-class Lines {
+export class Lines {
 
     static fromPoints(points:Point[]): Line[] {
         // Form lines by connecting the points ...
