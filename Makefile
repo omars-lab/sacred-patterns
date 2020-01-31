@@ -2,7 +2,7 @@ SHELL := /bin/bash
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 build:
-	npx webpack --config webpack.config.js
+	npm run build
 
 compile:
 	find ${ROOT_DIR}/ -name '*.js' -exec eslint {} \;

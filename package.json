@@ -5,6 +5,7 @@
   "private": true,
   "main": "i9/draw-circles-i9.js",
   "scripts": {
+    "site": "node app/runner.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npx webpack --config webpack.config.js"
   },
