@@ -2,20 +2,25 @@
   "name": "sacred-patterns",
   "version": "1.0.0",
   "description": "",
-  "main": "draw-circles-i4.js",
+  "private": true,
+  "main": "i9/draw-circles-i9.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx webpack --config webpack.config.js"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "eslint": "^6.8.0"
+    "eslint": "^6.8.0",
+    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10"
   },
   "eslintConfig": "./.eslintrc.js",
   "dependencies": {
     "@types/d3": "^5.7.2",
     "@types/lodash": "^4.14.149",
     "express": "^4.17.1",
+    "lodash": "^4.17.15",
     "typescript": "^3.7.4"
   }
 }

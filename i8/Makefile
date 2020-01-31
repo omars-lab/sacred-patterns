@@ -1,2 +1,0 @@
-~compile:
-	tsc -w
