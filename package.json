@@ -1,5 +1,5 @@
 {
-  "name": "islamic-design",
+  "name": "sacred-patterns",
   "version": "1.0.0",
   "description": "",
   "main": "draw-circles-i4.js",
@@ -15,6 +15,7 @@
   "dependencies": {
     "@types/d3": "^5.7.2",
     "@types/lodash": "^4.14.149",
+    "express": "^4.17.1",
     "typescript": "^3.7.4"
   }
 }

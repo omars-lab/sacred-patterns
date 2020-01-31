@@ -128,11 +128,11 @@ function drawHexagonWithSurroundingNonagons() {
         // https://medium.com/@rossbulat/typescript-generics-explained-15c6493b510f
         Hexagon.withinCircle(circle).northWest(),
         Hexagon.withinCircle(circle).northEast(),
+        Hexagon.withinCircle(circle).above(),
         Hexagon.withinCircle(circle),
+        Hexagon.withinCircle(circle).below(),
         Hexagon.withinCircle(circle).southWest(),
         Hexagon.withinCircle(circle).southEast(),
-        Hexagon.withinCircle(circle).above(),
-        Hexagon.withinCircle(circle).below(),
     ];
     _.forEach(_.flatMap(circles, nonagonsThatFormA6PointStarCenteredAt), function (p) {
         appendPolygon(svg, p.lines, {

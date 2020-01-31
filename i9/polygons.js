@@ -51,7 +51,7 @@ var Polygon = /** @class */ (function () {
     });
     Object.defineProperty(Polygon.prototype, "lines", {
         get: function () {
-            return Line.fromPoints(this.points);
+            return Lines.fromPoints(this.points);
         },
         enumerable: true,
         configurable: true

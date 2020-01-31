@@ -11,15 +11,6 @@ var Line = /** @class */ (function () {
         this.p1 = p1;
         this.p2 = p2;
     }
-    Line.fromPoints = function (points) {
-        // Form lines by connecting the points ...
-        return _.map(
-        // https://www.tutorialsteacher.com/typescript/typescript-tuple
-        _.zip(points, _rotate_list_right(points)), function (_a) {
-            var p1 = _a[0], p2 = _a[1];
-            return new Line(p1, p2);
-        });
-    };
     Object.defineProperty(Line.prototype, "dx", {
         get: function () {
             return this.p2.x - this.p1.x;
@@ -37,6 +28,13 @@ var Line = /** @class */ (function () {
     Line.prototype.slope = function () {
         return this.dy / this.dx;
     };
+    // get yIntercept(): Point | undefined {
+    //     if (this.isHorizontal() && this.p1.y != 0) {
+    //         return undefined;
+    //     }
+    //
+    //     // return
+    // }
     Line.prototype.isHorizontal = function () {
         if (this.p1.y === this.p2.y || Math.abs(this.slope()) < (1.0 / 1000000.0)) {
             return true;
@@ -95,4 +93,18 @@ var Line = /** @class */ (function () {
         return this.extendLineRight(newDistance);
     };
     return Line;
+}());
+var Lines = /** @class */ (function () {
+    function Lines() {
+    }
+    Lines.fromPoints = function (points) {
+        // Form lines by connecting the points ...
+        return _.map(
+        // https://www.tutorialsteacher.com/typescript/typescript-tuple
+        _.zip(points, _rotate_list_right(points)), function (_a) {
+            var p1 = _a[0], p2 = _a[1];
+            return new Line(p1, p2);
+        });
+    };
+    return Lines;
 }());

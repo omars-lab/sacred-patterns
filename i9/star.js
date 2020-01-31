@@ -72,7 +72,7 @@ var Star = /** @class */ (function () {
     });
     Object.defineProperty(Star.prototype, "lines", {
         get: function () {
-            return Line.fromPoints(this.points);
+            return Lines.fromPoints(this.points);
         },
         enumerable: true,
         configurable: true

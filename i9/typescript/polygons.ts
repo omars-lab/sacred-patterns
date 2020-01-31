@@ -25,7 +25,7 @@ class Polygon {
     }
 
     get lines() {
-        return Line.fromPoints(this.points);
+        return Lines.fromPoints(this.points);
     }
 
     rotate(increment_radial_shift:number) {

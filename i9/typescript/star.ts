@@ -56,7 +56,7 @@ class Star {
     }
 
     get lines() {
-        return Line.fromPoints(this.points);
+        return Lines.fromPoints(this.points);
     }
 
     rotate(radians:number) {
