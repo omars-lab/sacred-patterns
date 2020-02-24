@@ -1,12 +1,19 @@
 # How will I enhance the capabilities of the code?
 
+
 # Improve Performance …
 - [ ] Improve the Recursion …
 - [ ] Leverage the GPU?
   - [ ] Check out [Enabling high-performance Metal rendering with drawingGroup()](https://www.hackingwithswift.com/books/ios-swiftui/enabling-high-performance-metal-rendering-with-drawinggroup)
 
+# Turn it into an app!
+- [ ] Look into making some of the basic patterns as an iphone app in swift
+    - [ ] Tinker with this: [How to create Activity Ring in SwiftUI | Sarun](https://sarunw.com/posts/how-to-create-activity-ring-in-swiftui/)
+	- [ ] https://www.reddit.com/r/iOSProgramming/comments/f4toad/how_to_create_activity_ring_in_swiftui/
+
 # Turn it into a site ... with a story ...
-- [ ] Start curating a folder of the patterns I want to implement … and I have implemented …
+- [x] Start curating a folder of the patterns I want to implement … and I have implemented …
+    - https://www.dropbox.com/sh/7pvi6pcwbrgxda3/AADn0p8lTqNIZ1ezAMgU9M22a?dl=0
 - [ ] Serve these on my site as compare and contrast …
 - [ ] Can I show my iterations through a timeline?
 	* [ ] The w3 javascript page I went to had a whole bunch of examples with timelines!
