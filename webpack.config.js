@@ -20,17 +20,27 @@ module.exports = {
   resolve: {
     extensions: [ '.tsx', '.ts'],
   },
+  // https://webpack.js.org/configuration/output/
   output: {
     path: path.resolve(__dirname, 'site'),
     filename: 'bundle.js',
+    library: 'sacredPatterns', // this is needed so other js can use it!
+    libraryTarget: 'umd',
+        // https://github.com/umdjs/umd
   },
   plugins: [
     // Inject the bundle into this html file ...
-    new HtmlWebpackPlugin({template: './templates/index.html'}),
+    new HtmlWebpackPlugin({
+        filename: 'index.html',
+        template: './templates/index.tpl',
+        hash: true,
+        inject: false,
+        minify: false,
+    }),
   ],
   // Dont pack these into the bundle ... https://webpack.js.org/configuration/externals/
   externals: {
     _: 'lodash',
     d3: 'd3'
-  }
+  },
 };

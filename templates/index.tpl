@@ -7,9 +7,9 @@
       <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lodash@4.17.15/lodash.min.js"></script>
       <!-- https://lodash.com/docs/4.17.15#template -->
       <!-- ======= This was auto generated: ======= -->
-      
-      <script type="text/javascript" src="bundle.js?38ea85286d1201067aa3"></script>
-      
+      <% _.each(htmlWebpackPlugin.files.js, function(f) { %>
+      <script type="text/javascript" src="<%= f %>"></script>
+      <% }); %>
       <!-- ======================================== -->
   </head>
   <body>
