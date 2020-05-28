@@ -7,13 +7,9 @@ import * as d3 from 'd3'
 import {_map_even_odd} from "./helpers"
 import {appendPolygon, appendCircle, appendCircleWithMidpoint, d3SVG, d3CIRCLE} from "./canvas"
 
-const maxLevels = 2;
-var radius = 100;
-var size = maxLevels * 4;
-
 
 // eslint-disable-next-line no-unused-vars
-export function drawDifferentPolygons() {
+export function drawDifferentPolygons(radius:number, size:number) {
     var svg:d3SVG;
     _.forOwn(
         PolygonWithSides,
@@ -26,7 +22,7 @@ export function drawDifferentPolygons() {
     )
 }
 // eslint-disable-next-line no-unused-vars
-export function drawStarGrid() {
+export function drawStarGrid(radius:number, size:number) {
     var star = new Star(new Point(radius * size / 2, radius * size / 2), 6, radius);
     var svg = <d3SVG> (d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size));
     appendPolygon(svg, star.lines);
@@ -43,7 +39,7 @@ export function drawStarGrid() {
     appendPolygon(svg, Hexagon.withinCircle(star.above().right().outerCircle).lines);
 }
 // eslint-disable-next-line no-unused-vars
-export function drawRotatedStar() {
+export function drawRotatedStar(radius:number, size:number) {
     var star = new Star(new Point(radius * size / 2, radius * size / 2), 6, radius);
     var svg = <d3SVG>(d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size));
     appendPolygon(svg, star.rotate(Math.PI/4).lines);
@@ -57,7 +53,7 @@ export function drawRotatedStar() {
 }
 
 // eslint-disable-next-line no-unused-vars
-export function drawDifferentStars() {
+export function drawDifferentStars(radius:number, size:number) {
     var star:Star;
     var svg:d3SVG;
     _.forEach(
@@ -92,7 +88,7 @@ export function rotateOuterCircles(centralCircle:Circle, currentShift:number, ou
 }
 
 // eslint-disable-next-line no-unused-vars
-export function drawRotatingCircles() {
+export function drawRotatingCircles(radius:number, size:number) {
     var svg = <d3SVG>(d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size));
     var centralCircle = new Circle(radius * size / 2, radius * size / 2, radius);
     // var centralSVGS = appendCircle(svg, centralCircle);
@@ -151,7 +147,7 @@ export function nonagonsThatFormA6PointStarCenteredAt(centralHexagon:Hexagon) {
 }
 
 // eslint-disable-next-line no-unused-vars
-export function drawHexagonWithSurroundingNonagons() {
+export function drawHexagonWithSurroundingNonagons(radius:number, size:number) {
     // var svg = <d3SVG>(d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size));
     var svg = <d3SVG>(d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size).style("background", "RGBA(118,215,196,0.9)"));
     var circle = new Circle(radius * size / 2, radius * size / 2, radius);
@@ -192,7 +188,7 @@ export function drawHexagonWithSurroundingNonagons() {
 
 
 // eslint-disable-next-line no-unused-vars
-export function drawCirclesRecursively() {
+export function drawCirclesRecursively(radius:number, size:number, maxLevels:number) {
     var svg = <d3SVG>(
         d3.select("body").append("svg")
           .attr("width", radius*size)
@@ -211,15 +207,3 @@ export function drawCirclesRecursively() {
     );
     // appendCircleWithMidpoint(<d3SVG>svg, circle);
 }
-
-
-// do drawHexagonWithSurroundingNonagons but in a grid ...
-// do the whole draw outer ring so I can roteate inner ring!
-
-// drawCirclesRecursively();
-drawHexagonWithSurroundingNonagons();
-// drawRotatingCircles();
-// drawDifferentPolygons();
-// drawStarGrid();
-// drawRotatedStar();
-// drawDifferentStars();

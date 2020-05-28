@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <body>
+      <div id=context markdown="1">
+          # Markdown Sample
+          - Markdown can live here!
+      </div>
+      <!--  Script Section   -->
+      <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+      <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/js-markdown-extra@1.2.4/js-markdown-extra.min.js"></script>
+      <script type="text/javascript">
+       document.getElementById('context').innerHTML =
+           marked(document.getElementById('context').innerHTML);
+      </script>
+      <!-- The above should be placed in the body section since it edits body content ...
+           https://stackoverflow.com/questions/38407962/when-to-use-the-script-tag-in-the-head-and-body-section-of-a-html-page?noredirect=1&lq=1
+           ... it didnt work when it was in head!
+       -->
+</html>
