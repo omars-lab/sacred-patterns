@@ -18,12 +18,23 @@
         const radius = 100;
         const maxLevels = 2;
         const size = maxLevels * 4;
+        const background_theme = {
+            // "background": "RGBA(118,215,196,0.9)", // turquise
+            "background": "RGBA(0,0,0,0.9)", // black
+        };
+        const line_theme = {
+           // "fill": "RGBA(118,215,196,0.5)",
+           // "fill": "RGBA(118,215,196,0.75)",
+           "stroke": "RGB(244,208,63)",  // Gold
+           "stroke": "RGB(192,192,192)", // Silver
+           "stroke-width": "7",
+       };
 
         // do drawHexagonWithSurroundingNonagons but in a grid ...
         // do the whole draw outer ring so I can roteate inner ring!
 
         // drawCirclesRecursively();
-        sacredPatterns.drawHexagonWithSurroundingNonagons(radius, size);
+        sacredPatterns.drawHexagonWithSurroundingNonagons(radius, size, background_theme, line_theme);
         // drawRotatingCircles();
         // drawDifferentPolygons();
         // drawStarGrid();

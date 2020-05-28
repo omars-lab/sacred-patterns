@@ -146,46 +146,48 @@ export function nonagonsThatFormA6PointStarCenteredAt(centralHexagon:Hexagon) {
     );
 }
 
-// eslint-disable-next-line no-unused-vars
-export function drawHexagonWithSurroundingNonagons(radius:number, size:number) {
-    // var svg = <d3SVG>(d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size));
-    var svg = <d3SVG>(d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size).style("background", "RGBA(118,215,196,0.9)"));
-    var circle = new Circle(radius * size / 2, radius * size / 2, radius);
-    var circles = [
+export function surroundingHexagons(circle:Circle) {
+    return [
         // - [ ] How do I make this cleaner ...?
         // https://medium.com/@rossbulat/typescript-generics-explained-15c6493b510f
         Hexagon.withinCircle<Hexagon>(circle).northWest(),
         Hexagon.withinCircle<Hexagon>(circle).northEast(),
         Hexagon.withinCircle<Hexagon>(circle).above(),
-        Hexagon.withinCircle<Hexagon>(circle),
         Hexagon.withinCircle<Hexagon>(circle).below(),
         Hexagon.withinCircle<Hexagon>(circle).southWest(),
         Hexagon.withinCircle<Hexagon>(circle).southEast(),
-
-
-        // circle.southEast().above(),
-        // circle.southEast().below(),
-        // circle.southEast().southEast(),
-        // circle.southEast().southEast().above(),
-        // circle.above().southEast(),
-        // circle.left(),
     ];
+}
+
+// eslint-disable-next-line no-unused-vars
+export function drawHexagonWithSurroundingNonagons(radius:number, size:number, background_theme:object, lines_theme:object) {
+    // var svg = <d3SVG>(d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size));
+    var svg = <d3SVG>(
+        d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size)
+    );
+    _.forOwn(background_theme, (v, k) => {
+        console.log(k, v);
+        svg.style(k, v);
+    })
+
+    var circle = new Circle(radius * size / 2, radius * size / 2, radius);
+    var hexagons = _.concat(
+        _.flatMap(
+            _.map(surroundingHexagons(circle), 'outerCircle'),
+            surroundingHexagons
+        ),
+        Hexagon.withinCircle<Hexagon>(circle),
+    );
     _.forEach(
         _.flatMap(
-            circles,
+            hexagons,
             nonagonsThatFormA6PointStarCenteredAt
         ),
         function (p) {
-            appendPolygon(svg, p.lines, {
-                // "fill": "RGBA(118,215,196,0.5)",
-                // "fill": "RGBA(118,215,196,0.75)",
-                "stroke": "RGB(244,208,63)",
-                "stroke-width": "5",
-            });
+            appendPolygon(svg, p.lines, lines_theme);
         }
     );
 }
-
 
 // eslint-disable-next-line no-unused-vars
 export function drawCirclesRecursively(radius:number, size:number, maxLevels:number) {
