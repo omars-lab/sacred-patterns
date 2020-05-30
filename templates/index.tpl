@@ -13,7 +13,11 @@
       <!-- ======================================== -->
   </head>
   <body>
-
+      <div>
+          <%= VERSION %>
+          <%= COMMITHASH %>
+          <%= BRANCH %>
+      </div>
       <script type="text/javascript">
         const radius = 100;
         const maxLevels = 2;

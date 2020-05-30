@@ -1,5 +1,9 @@
-var HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const GitRevisionPlugin = require('git-revision-webpack-plugin');
 const path = require('path');
+
+const gitRevisionPlugin = new GitRevisionPlugin();
 
 // Web pack is useful ... since I can add more type script files and not have to modify the HTML ...
 // https://webpack.js.org/guides/getting-started/
@@ -36,6 +40,13 @@ module.exports = {
         hash: true,
         inject: false,
         minify: false,
+    }),
+    // https://stackoverflow.com/questions/38400314/including-git-commit-hash-and-date-in-webpack-build
+    // https://webpack.js.org/plugins/define-plugin/
+    new webpack.DefinePlugin({
+      'VERSION': JSON.stringify(gitRevisionPlugin.version()),
+      'COMMITHASH': JSON.stringify(gitRevisionPlugin.commithash()),
+      'BRANCH': JSON.stringify(gitRevisionPlugin.branch()),
     }),
   ],
   // Dont pack these into the bundle ... https://webpack.js.org/configuration/externals/
