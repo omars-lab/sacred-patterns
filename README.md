@@ -1,0 +1,3 @@
+
+# How do I have it such that if I add new typescript files ... I don't have to add the script to HTML ...?
+- [x] Learn how to use webpack ...
