@@ -19,7 +19,7 @@ export function appendSVGToDOM(id: string, width:number, height:number): d3SVG {
 
 // eslint-disable-next-line no-unused-vars
 export function drawDifferentPolygons(drawingId:string, radius:number, size:number) {
-    var svg:d3SVG;
+    let svg:d3SVG;
     _.forOwn(
         PolygonWithSides,
         (cls, num_sides) => {
@@ -33,8 +33,8 @@ export function drawDifferentPolygons(drawingId:string, radius:number, size:numb
 
 // eslint-disable-next-line no-unused-vars
 export function drawStarGrid(drawingId:string, radius:number, size:number) {
-    var star = new Star(new Point(radius * size / 2, radius * size / 2), 6, radius);
-    var svg = appendSVGToDOM(drawingId, radius * size, radius * size);
+    let star = new Star(new Point(radius * size / 2, radius * size / 2), 6, radius);
+    let svg = appendSVGToDOM(drawingId, radius * size, radius * size);
     appendPolygon(svg, star.lines);
     appendPolygon(svg, star.rotate(Math.PI/2).lines);
     appendPolygon(svg, Hexagon.withinCircle(star.outerCircle).lines);
@@ -50,8 +50,8 @@ export function drawStarGrid(drawingId:string, radius:number, size:number) {
 }
 // eslint-disable-next-line no-unused-vars
 export function drawRotatedStar(drawingId:string, radius:number, size:number) {
-    var star = new Star(new Point(radius * size / 2, radius * size / 2), 6, radius);
-    var svg = appendSVGToDOM(drawingId, radius * size, radius * size);
+    let star = new Star(new Point(radius * size / 2, radius * size / 2), 6, radius);
+    let svg = appendSVGToDOM(drawingId, radius * size, radius * size);
     appendPolygon(svg, star.rotate(Math.PI/4).lines);
     _.forEach(
         star.rotate(Math.PI/4).circles,
@@ -64,8 +64,8 @@ export function drawRotatedStar(drawingId:string, radius:number, size:number) {
 
 // eslint-disable-next-line no-unused-vars
 export function drawDifferentStars(drawingId:string, radius:number, size:number) {
-    var star:Star;
-    var svg:d3SVG;
+    let star:Star;
+    let svg:d3SVG;
     _.forEach(
         _.range(6, 12, 1),
         points => {
@@ -79,9 +79,9 @@ export function drawDifferentStars(drawingId:string, radius:number, size:number)
 
 // eslint-disable-next-line no-unused-vars
 export function rotateOuterCircles(centralCircle:Circle, currentShift:number, outerCirclesSVGS:d3CIRCLE[]) {
-    var newShift = currentShift + 1;
+    let newShift = currentShift + 1;
     console.log("Current shfit", newShift);
-    var newOuterCircles = centralCircle.surroundingCircles(6, 1, (newShift/10)*Math.PI*2/6);
+    let newOuterCircles = centralCircle.surroundingCircles(6, 1, (newShift/10)*Math.PI*2/6);
     _.forEach(
         _.zip(newOuterCircles, outerCirclesSVGS),
         ([newCircle, circleToTransition]) => {
@@ -99,13 +99,13 @@ export function rotateOuterCircles(centralCircle:Circle, currentShift:number, ou
 
 // eslint-disable-next-line no-unused-vars
 export function drawRotatingCircles(drawingId:string, radius:number, size:number) {
-    var svg = appendSVGToDOM(drawingId, radius * size, radius * size);
-    var centralCircle = new Circle(radius * size / 2, radius * size / 2, radius);
-    // var centralSVGS = appendCircle(svg, centralCircle);
-    var currentShift = 0;
-    var outerCircles = centralCircle.surroundingCircles(6, 1, currentShift*Math.PI*2/6);
-    var outerCirclesSVGS = <d3CIRCLE[]>(_.map(outerCircles, c => appendCircle(svg, c)));
-    var outerCirclesL2 = _.flatMap(
+    let svg = appendSVGToDOM(drawingId, radius * size, radius * size);
+    let centralCircle = new Circle(radius * size / 2, radius * size / 2, radius);
+    // let centralSVGS = appendCircle(svg, centralCircle);
+    let currentShift = 0;
+    let outerCircles = centralCircle.surroundingCircles(6, 1, currentShift*Math.PI*2/6);
+    let outerCirclesSVGS = <d3CIRCLE[]>(_.map(outerCircles, c => appendCircle(svg, c)));
+    let outerCirclesL2 = _.flatMap(
         centralCircle.surroundingCircles(6, 1, currentShift*Math.PI*2/6),
         c => c.surroundingCircles(6, 1, currentShift*Math.PI*2/6)
     );
@@ -119,12 +119,12 @@ export function drawRotatingCircles(drawingId:string, radius:number, size:number
 
 // // eslint-disable-next-line no-unused-vars
 // function drawHexagonWithSurroundingNonagons() {
-//     // var svg = <d3SVG>(d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size));
-//     var svg = <d3SVG>(d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size).style("background", "RGBA(118,215,196,0.9)"));
-//     var centralCircle = new Circle(radius * size / 2, radius * size / 2, radius);
-//     var outerCircles = centralCircle.surroundingCircles(6, 1);
+//     // let svg = <d3SVG>(d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size));
+//     let svg = <d3SVG>(d3.select("body").append("svg").attr("width", radius * size).attr("height", radius * size).style("background", "RGBA(118,215,196,0.9)"));
+//     let centralCircle = new Circle(radius * size / 2, radius * size / 2, radius);
+//     let outerCircles = centralCircle.surroundingCircles(6, 1);
 //     // appendPolygon(svg, new Hexagon(centralCircle.midpoint, centralCircle.r).lines);
-//     var surroundingPolygons = _.map(outerCircles, c => new Nonagon(c.midpoint, centralCircle.r * 0.75));
+//     let surroundingPolygons = _.map(outerCircles, c => new Nonagon(c.midpoint, centralCircle.r * 0.75));
 //     // Rotate every other polygon ...
 //     surroundingPolygons = _map_even_odd(
 //         surroundingPolygons,
@@ -142,10 +142,10 @@ export function drawRotatingCircles(drawingId:string, radius:number, size:number
 
 
 export function nonagonsThatFormA6PointStarCenteredAt(centralHexagon:Hexagon) {
-    var centralCircle = centralHexagon.outerCircle;
-    var outerCircles = centralCircle.surroundingCircles(6, 1);
+    let centralCircle = centralHexagon.outerCircle;
+    let outerCircles = centralCircle.surroundingCircles(6, 1);
     // appendPolygon(svg, new Hexagon(centralCircle.midpoint, centralCircle.r).lines);
-    var surroundingPolygons = _.map(
+    let surroundingPolygons = _.map(
         outerCircles,
         function (c) {
             return new Nonagon(c.midpoint, centralCircle.r * 0.75);
@@ -181,15 +181,15 @@ export function surroundingHexagons(circle:Circle) {
 
 // eslint-disable-next-line no-unused-vars
 export function drawHexagonWithSurroundingNonagons(drawingId:string, radius:number, size:number, background_theme:object, lines_theme:object) {
-    var svg = appendSVGToDOM(drawingId, radius * size, radius * size);
+    let svg = appendSVGToDOM(drawingId, radius * size, radius * size);
 
     _.forOwn(background_theme, (v, k) => {
         console.log(k, v);
         svg.style(k, v);
     })
 
-    var circle = new Circle(radius * size / 2, radius * size / 2, radius);
-    var hexagons = _.concat(
+    let circle = new Circle(radius * size / 2, radius * size / 2, radius);
+    let hexagons = _.concat(
         _.flatMap(
             _.map(surroundingHexagons(circle), 'outerCircle'),
             surroundingHexagons
@@ -209,10 +209,10 @@ export function drawHexagonWithSurroundingNonagons(drawingId:string, radius:numb
 
 // eslint-disable-next-line no-unused-vars
 export function drawCirclesRecursively(drawingId:string, radius:number, size:number, maxLevels:number) {
-    var svg = appendSVGToDOM(drawingId, radius * size, radius * size);
+    let svg = appendSVGToDOM(drawingId, radius * size, radius * size);
     // Recursively Add circles around middle circle ...
-    var circle = new Circle(radius*size/2, radius*size/2,radius*2/5.25);
-    var circles = (circle).surroundWithFlowersRecursively(maxLevels);
+    let circle = new Circle(radius*size/2, radius*size/2,radius*2/5.25);
+    let circles = (circle).surroundWithFlowersRecursively(maxLevels);
     _.forEach(
         circles,
         c => {

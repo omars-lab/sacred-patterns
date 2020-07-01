@@ -2,7 +2,7 @@ import * as _ from "lodash";
 import {Point} from "./points"
 // https://github.com/lodash/lodash/issues/2173
 function _rotate_list_right(arr:any[]): any[] {
-    var arr_copy = _.concat([], arr);
+    let arr_copy = _.concat([], arr);
     arr_copy.push(arr_copy.shift())
     return arr_copy;
 }
@@ -63,7 +63,7 @@ export class Line {
                 )
             );
         }
-        var currentDistance = this.distanceBetweenPoints();
+        let currentDistance = this.distanceBetweenPoints();
         if (this.slope() > 0) {
             return this.replaceEndingPoint(
                 new Point(
@@ -91,7 +91,7 @@ export class Line {
                 )
             );
         }
-        var currentDistance = this.distanceBetweenPoints();
+        let currentDistance = this.distanceBetweenPoints();
         if (this.slope() > 0) {
             return this.replaceEndingPoint(
                 new Point(
@@ -112,8 +112,8 @@ export class Line {
 
     extendLine(newDistance:number) {
         console.log("Extending line between", this.p1, this.p2);
-        // var [x1, y1] = p1;
-        // var [x2, y2] = p2;
+        // let [x1, y1] = p1;
+        // let [x2, y2] = p2;
         if (this.isVerticle()) {
             if (this.p2.isUnder(this.p1)) {
                 return this.replaceEndingPoint(

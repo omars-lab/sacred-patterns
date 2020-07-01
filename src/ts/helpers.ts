@@ -13,7 +13,7 @@ export function isEven(value:number) {
 
 
 export function _map_even_odd<T>(array_to_map:T[], even_func:_.ArrayIterator<T, T>=_.identity, odd_func:_.ArrayIterator<T, T>=_.identity) {
-    var list:T[] = [];
+    let list:T[] = [];
     _.takeRightWhile(
         array_to_map,
         (value, index:number, array) => {
@@ -26,7 +26,7 @@ export function _map_even_odd<T>(array_to_map:T[], even_func:_.ArrayIterator<T, 
 
 
 export function applyTransformationPipeline<A>(a: A, pipeline:Function1<A, A>[]) {
-	var returnVal = a;
+	let returnVal = a;
 	_.forEach(
 		pipeline,
 		p => {

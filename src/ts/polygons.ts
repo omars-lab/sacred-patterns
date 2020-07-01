@@ -24,7 +24,7 @@ export class Polygon {
     }
 
     get points() {
-        var points_of_hexagon = this.outerCircle.pointsOnCircumference(this.number_of_points, this.radial_shift);
+        let points_of_hexagon = this.outerCircle.pointsOnCircumference(this.number_of_points, this.radial_shift);
         return points_of_hexagon;
     }
 
@@ -70,34 +70,34 @@ export class Hexagon extends Polygon {
 
     // Figure out why these numbers are right ... and not sin / cos based ...
     above(): Hexagon {
-        var refCircle = this.outerCircle;
-        var circleAbove = refCircle.adjacent(0, -(refCircle.r * 1.725));
+        let refCircle = this.outerCircle;
+        let circleAbove = refCircle.adjacent(0, -(refCircle.r * 1.725));
         return (<typeof Hexagon>this.constructor).withinCircle(circleAbove);
     }
 
     below(): Hexagon {
-        var refCircle = this.outerCircle;
-        var circleBelow = refCircle.adjacent(0, (refCircle.r * 1.725));
+        let refCircle = this.outerCircle;
+        let circleBelow = refCircle.adjacent(0, (refCircle.r * 1.725));
         return (<typeof Hexagon>this.constructor).withinCircle(circleBelow);
     }
 
     right(): Hexagon {
-        var refCircle = this.outerCircle;
-        var circleRight = refCircle.adjacent(-(refCircle.r * 2.15), 0);
+        let refCircle = this.outerCircle;
+        let circleRight = refCircle.adjacent(-(refCircle.r * 2.15), 0);
         return (<typeof Hexagon>this.constructor).withinCircle(circleRight);
     }
 
     left(): Hexagon {
-        var refCircle = this.outerCircle;
-        var circleLeft = refCircle.adjacent((refCircle.r * 2.15), 0);
+        let refCircle = this.outerCircle;
+        let circleLeft = refCircle.adjacent((refCircle.r * 2.15), 0);
         return (<typeof Hexagon>this.constructor).withinCircle(circleLeft);
     }
 
     southWest(): Hexagon {
         // https://riptutorial.com/d3-js/example/8402/coordinate-system
         // in s3 ... 0,0 is top left of screen ... not top right ...
-        var refCircle = this.outerCircle;
-        var newCricle = refCircle.adjacent(
+        let refCircle = this.outerCircle;
+        let newCricle = refCircle.adjacent(
             ((refCircle.r * Math.cos(2*Math.PI*(4/6))) + (refCircle.r * Math.cos(Math.PI))),
             -1 * ((refCircle.r * Math.sin(2*Math.PI*(4/6))) + (refCircle.r * Math.sin(Math.PI)))
         );
@@ -107,8 +107,8 @@ export class Hexagon extends Polygon {
     northWest(): Hexagon {
         // https://riptutorial.com/d3-js/example/8402/coordinate-system
         // in s3 ... 0,0 is top left of screen ... not top right ...
-        var refCircle = this.outerCircle;
-        var newCricle = refCircle.adjacent(
+        let refCircle = this.outerCircle;
+        let newCricle = refCircle.adjacent(
             ((refCircle.r * Math.cos(2*Math.PI*(2/6))) + (refCircle.r * Math.cos(Math.PI))),
             -1 * ((refCircle.r * Math.sin(2*Math.PI*(2/6))) + (refCircle.r * Math.sin(Math.PI)))
         );
@@ -116,8 +116,8 @@ export class Hexagon extends Polygon {
     }
 
     northEast(): Hexagon {
-        var refCircle = this.outerCircle;
-        var newCricle = refCircle.adjacent(
+        let refCircle = this.outerCircle;
+        let newCricle = refCircle.adjacent(
             ((refCircle.r * Math.cos(2*Math.PI*(1/6))) + (refCircle.r * Math.cos(0))),
             -1 * ((refCircle.r * Math.sin(2*Math.PI*(1/6))) + (refCircle.r * Math.sin(0)))
         );
@@ -125,8 +125,8 @@ export class Hexagon extends Polygon {
     }
 
     southEast(): Hexagon {
-        var refCircle = this.outerCircle;
-        var newCricle = refCircle.adjacent(
+        let refCircle = this.outerCircle;
+        let newCricle = refCircle.adjacent(
             ((refCircle.r * Math.cos(2*Math.PI*(5/6))) + (refCircle.r * Math.cos(0))),
             -1 * ((refCircle.r * Math.sin(2*Math.PI*(5/6))) + (refCircle.r * Math.sin(0)))
         );

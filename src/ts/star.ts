@@ -29,14 +29,14 @@ export class Star {
     }
 
     get points() {
-        var _points = [];
+        let _points = [];
         console.log(this.radial_shift);
         _points.push(this.centralCircle.pointOnCircumferenceAtRadian(0+this.radial_shift));
         _.forEach(
             _.range(0, this.numberOfPoints),
             // 2 * Math.PI, 2 * Math.PI /
             circleIndex => {
-                var radian = ((circleIndex + 1) * 2 * Math.PI / this.numberOfPoints) + this.radial_shift;
+                let radian = ((circleIndex + 1) * 2 * Math.PI / this.numberOfPoints) + this.radial_shift;
                 _points.push(this.innerCircles[circleIndex].pointOnCircumferenceAtRadian(radian));
                 _points.push(this.centralCircle.pointOnCircumferenceAtRadian(radian));
             }
