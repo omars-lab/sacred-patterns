@@ -38,7 +38,7 @@
         // do the whole draw outer ring so I can roteate inner ring!
 
         // drawCirclesRecursively();
-        sacredPatterns.drawHexagonWithSurroundingNonagons(radius, size, background_theme, line_theme);
+        sacredPatterns.drawHexagonWithSurroundingNonagons("drawing", radius, size, background_theme, line_theme);
         // drawRotatingCircles();
         // drawDifferentPolygons();
         // drawStarGrid();

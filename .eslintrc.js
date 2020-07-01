@@ -5,7 +5,14 @@ module.exports = {
         "commonjs": true, // this is to allow the use of require/export ts does ...
         "node": true // this is so no errors are thrown on the node __dirname code ...
     },
-    "extends": "eslint:recommended",
+    "parser": '@typescript-eslint/parser',
+    "plugins": [
+        '@typescript-eslint',
+    ],
+    "extends": [
+        "eslint:recommended",
+        'plugin:@typescript-eslint/recommended',
+    ],
     "globals": {
         "_": "readonly",
         "d3": "readonly",
