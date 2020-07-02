@@ -94,5 +94,18 @@ export class Star {
 }
 
 export function FivePointStar(point:Point, size:number): Star {
-    return (new Star(point, 5, size)).rotate(Math.PI/2)
+    const s = (new Star(point, 5, size)).rotate(Math.PI/2);
+    return s;
+}
+
+export class ElongatedFivePointStar {
+    constructor(public star:Star, public elongationFactors: Record<number, number>) {}
+
+    get lines(): Line[] {
+        const points = _.map(
+            this.star.points,
+            (p, i) => (new Line(this.star.center, p)).scaleLine(_.get(this.elongationFactors, i, 1)).p2
+        );
+        return Lines.fromPoints(points);
+    }
 }

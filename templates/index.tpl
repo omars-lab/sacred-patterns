@@ -35,8 +35,7 @@
            "stroke-width": "7",
        };
 
-
-        sacredPatterns.drawChainedStars("d0", radius*7.5, 10);
+        sacredPatterns.drawChainedStars("d0", radius*7.5, 2);
         // sacredPatterns.drawDifferentPolygons("d1", radius,  size);
         // sacredPatterns.drawStarGrid("d2", radius, size);
         // sacredPatterns.drawRotatedStar("d3", radius, size);

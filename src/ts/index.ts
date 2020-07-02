@@ -2,7 +2,7 @@ import * as _ from "lodash";
 import {Circle} from "./circles"
 import {Hexagon, Nonagon, Polygon, PolygonWithSides} from "./polygons"
 import {Point} from "./points"
-import {Star, FivePointStar} from "./star"
+import {Star, ElongatedFivePointStar, FivePointStar} from "./star"
 import * as d3 from 'd3'
 import {_map_even_odd} from "./helpers"
 // import {isEven} from "./helpers"
@@ -223,7 +223,12 @@ export function drawChainedStars(drawingId:string, radius:number, size:number): 
         points,
         (p, i) => {
             const finalRotation = 2*Math.PI - (i * (2*Math.PI/numbereOfStars));
-            const s = FivePointStar(p, radius/numbereOfStars/1.35).rotate(finalRotation);
+            const elongationFactor : Record<number, number> = {};
+            elongationFactor[(3+(i*2)) % 10] = 1.5;
+            const s = new ElongatedFivePointStar(
+                FivePointStar(p, radius/numbereOfStars/1.35).rotate(finalRotation),
+                elongationFactor
+            );
             appendPolygon(<d3SVG>svg, s.lines);
             appendText(<d3SVG>svg, `${i}: ${Math.round(180*finalRotation/Math.PI)}`, p, {
                 "font-size": `${radius/50}px`,

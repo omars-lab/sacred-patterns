@@ -28,6 +28,14 @@ export class Line {
         return this.dy / this.dx;
     }
 
+    get distanceBetweenPoints(): number {
+        return Point.distanceBetweenPoints(this.p1, this.p2);
+    }
+
+    get length(): number {
+        return this.distanceBetweenPoints;
+    }
+
     // get yIntercept(): Point | undefined {
     //     if (this.isHorizontal() && this.p1.y != 0) {
     //         return undefined;
@@ -50,10 +58,6 @@ export class Line {
         return false;
     }
 
-    distanceBetweenPoints(): number {
-        return Point.distanceBetweenPoints(this.p1, this.p2);
-    }
-
     replaceEndingPoint(p2:Point): Line {
         return new Line(this.p1, p2);
     }
@@ -67,7 +71,7 @@ export class Line {
                 )
             );
         }
-        const currentDistance = this.distanceBetweenPoints();
+        const currentDistance = this.distanceBetweenPoints;
         if (this.slope() > 0) {
             return this.replaceEndingPoint(
                 new Point(
@@ -95,7 +99,7 @@ export class Line {
                 )
             );
         }
-        const currentDistance = this.distanceBetweenPoints();
+        const currentDistance = this.distanceBetweenPoints;
         if (this.slope() > 0) {
             return this.replaceEndingPoint(
                 new Point(
@@ -132,6 +136,10 @@ export class Line {
             return this.extendLineLeft(newDistance);
         }
         return this.extendLineRight(newDistance);
+    }
+
+    scaleLine(factor:number) : Line {
+        return this.extendLine(factor*this.length);
     }
 
 }
