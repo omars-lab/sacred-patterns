@@ -1,9 +1,13 @@
 import * as _ from "lodash";
 import {Point} from "./points"
+
 // https://github.com/lodash/lodash/issues/2173
-function _rotate_list_right(arr:any[]): any[] {
-    let arr_copy = _.concat([], arr);
-    arr_copy.push(arr_copy.shift())
+function _rotate_list_right<T>(arr:T[]): T[] {
+    const arr_copy = _.concat([], arr);
+    const head = arr_copy.shift();
+    if (!_.isEmpty(head)) {
+        arr_copy.push(<T>head);
+    }
     return arr_copy;
 }
 
@@ -12,15 +16,15 @@ export class Line {
 
     constructor(public p1:Point, public p2:Point) {}
 
-    get dx() {
+    get dx(): number {
         return this.p2.x - this.p1.x;
     }
 
-    get dy() {
+    get dy(): number {
         return this.p2.y - this.p1.y;
     }
 
-    slope() {
+    slope(): number {
         return this.dy / this.dx;
     }
 
@@ -32,29 +36,29 @@ export class Line {
     //     // return
     // }
 
-    isHorizontal() {
+    isHorizontal(): boolean {
         if ( this.p1.y === this.p2.y || Math.abs(this.slope()) < (1.0/1000000.0) ) {
             return true;
         }
         return false;
     }
 
-    isVerticle() {
+    isVerticle(): boolean {
         if (this.p1.x === this.p2.x || Math.abs(this.slope()) > 1000000) {
             return true;
         }
         return false;
     }
 
-    distanceBetweenPoints() {
+    distanceBetweenPoints(): number {
         return Point.distanceBetweenPoints(this.p1, this.p2);
     }
 
-    replaceEndingPoint(p2:Point) {
+    replaceEndingPoint(p2:Point): Line {
         return new Line(this.p1, p2);
     }
 
-    extendLineRight(newDistance:number) {
+    extendLineRight(newDistance:number): Line {
         if (this.isHorizontal()) {
             return this.replaceEndingPoint(
                 new Point(
@@ -63,7 +67,7 @@ export class Line {
                 )
             );
         }
-        let currentDistance = this.distanceBetweenPoints();
+        const currentDistance = this.distanceBetweenPoints();
         if (this.slope() > 0) {
             return this.replaceEndingPoint(
                 new Point(
@@ -82,7 +86,7 @@ export class Line {
         }
     }
 
-    extendLineLeft(newDistance:number) {
+    extendLineLeft(newDistance:number): Line {
         if (this.isHorizontal()) {
             return this.replaceEndingPoint(
                 new Point(
@@ -91,7 +95,7 @@ export class Line {
                 )
             );
         }
-        let currentDistance = this.distanceBetweenPoints();
+        const currentDistance = this.distanceBetweenPoints();
         if (this.slope() > 0) {
             return this.replaceEndingPoint(
                 new Point(
@@ -110,7 +114,7 @@ export class Line {
         }
     }
 
-    extendLine(newDistance:number) {
+    extendLine(newDistance:number): Line {
         console.log("Extending line between", this.p1, this.p2);
         // let [x1, y1] = p1;
         // let [x2, y2] = p2;

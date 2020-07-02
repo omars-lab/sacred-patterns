@@ -25,6 +25,9 @@ open: compile
 ~compile:
 	npx tsc -w
 
+~run:
+	npx nodemon -w templates -w src/ts --ext 'ts tpl' --exec 'make compile; make _build; node app/runner.js'
+
 _run:
 	# Ensure container is  running ... or run it ...
 	(docker ps -f ancestor=sacred-patterns -f status=running -n 1 -q | grep -v '^$$') || \

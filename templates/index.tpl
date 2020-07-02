@@ -34,16 +34,14 @@
            "stroke-width": "7",
        };
 
-        // do drawHexagonWithSurroundingNonagons but in a grid ...
-        // do the whole draw outer ring so I can roteate inner ring!
+        // sacredPatterns.drawDifferentPolygons("d1", radius,  size);
+        sacredPatterns.drawStarGrid("d2", radius, size);
+        sacredPatterns.drawRotatedStar("d3", radius, size);
+        sacredPatterns.drawDifferentStars("d4", radius, size);
+        sacredPatterns.drawRotatingCircles("d5", radius, size);
+        sacredPatterns.drawHexagonWithSurroundingNonagons("d6", radius, size, background_theme, line_theme);
+        sacredPatterns.drawCirclesRecursively("d7", radius, size, maxLevels);
 
-        // drawCirclesRecursively();
-        sacredPatterns.drawHexagonWithSurroundingNonagons("drawing", radius, size, background_theme, line_theme);
-        // drawRotatingCircles();
-        // drawDifferentPolygons();
-        // drawStarGrid();
-        // drawRotatedStar();
-        // drawDifferentStars();
       </script>
   </body>
 </html>

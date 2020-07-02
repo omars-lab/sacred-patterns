@@ -1,26 +1,26 @@
 import * as _ from "lodash";
 import {Point} from "./points"
 import {Circle} from "./circles"
-import {Lines} from "./lines"
+import {Line, Lines} from "./lines"
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
 export class Star {
 
     constructor(public center:Point, public numberOfPoints:number, public size:number, public radial_shift:number=0) {}
 
-    get centralCircle() {
+    get centralCircle(): Circle {
         return new Circle(this.center.x, this.center.y, this.size);
     }
 
-    get innerCircles() {
+    get innerCircles(): Circle[] {
         return this.centralCircle.surroundingCircles(this.numberOfPoints, undefined, this.radial_shift);
     }
 
-    get outerCircle(){
+    get outerCircle(): Circle {
         return new Circle(this.center.x, this.center.y, this.size * 2);
     }
 
-    get circles() {
+    get circles(): Circle[] {
         return _.concat(
             [this.centralCircle],
             this.innerCircles,
@@ -28,15 +28,15 @@ export class Star {
         );
     }
 
-    get points() {
-        let _points = [];
+    get points(): Point[] {
+        const _points = [];
         console.log(this.radial_shift);
         _points.push(this.centralCircle.pointOnCircumferenceAtRadian(0+this.radial_shift));
         _.forEach(
             _.range(0, this.numberOfPoints),
             // 2 * Math.PI, 2 * Math.PI /
             circleIndex => {
-                let radian = ((circleIndex + 1) * 2 * Math.PI / this.numberOfPoints) + this.radial_shift;
+                const radian = ((circleIndex + 1) * 2 * Math.PI / this.numberOfPoints) + this.radial_shift;
                 _points.push(this.innerCircles[circleIndex].pointOnCircumferenceAtRadian(radian));
                 _points.push(this.centralCircle.pointOnCircumferenceAtRadian(radian));
             }
@@ -60,35 +60,35 @@ export class Star {
         return _points;
     }
 
-    get lines() {
+    get lines(): Line[] {
         return Lines.fromPoints(this.points);
     }
 
-    rotate(radians:number) {
+    rotate(radians:number): Star {
         return new Star(
             this.center, this.numberOfPoints, this.size, this.radial_shift + radians,
         );
     }
 
-    adjacent(x=0, y=0) {
+    adjacent(x=0, y=0): Star {
         return new Star(
             new Point(this.center.x+x, this.center.y+y), this.numberOfPoints, this.size, this.radial_shift,
         );
     }
 
-    above() {
+    above(): Star {
         return this.adjacent(0, (this.size * this.size/1.155));
     }
 
-    below() {
+    below(): Star {
         return this.adjacent(0, -(this.size * this.size/1.155));
     }
 
-    right() {
+    right(): Star {
         return this.adjacent((this.size * this.size/1.155), 0);
     }
 
-    left() {
+    left(): Star {
         return this.adjacent(-(this.size * this.size/1.155), 0);
     }
 }

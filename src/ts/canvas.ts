@@ -1,6 +1,8 @@
 import * as _ from "lodash";
 import {Circle} from "./circles"
 import {Line} from "./lines"
+import {IO} from "./types"
+import {all} from "./helpers"
 
 // https://www.typescriptlang.org/docs/handbook/advanced-types.html
 // https://www.logicbig.com/tutorials/misc/typescript/ts-config-json.html
@@ -11,7 +13,7 @@ export type d3SVG = d3SvgElement<SVGSVGElement>;
 export type d3CIRCLE = d3SvgElement<SVGCircleElement>;
 export type d3LINE = d3SvgElement<SVGLineElement>;
 export type d3POLYLINE = d3SvgElement<SVGPolylineElement>;
-export type IO = void;
+
 // Introspecting types ...
 // let x = d3.select("body");
 // let x = d3.select("body").append("line");
@@ -84,10 +86,11 @@ export function appendLine(onto:d3SVG, l:Line, color="black"): IO {
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
 export function appendPolygon(onto:d3SVG, lines:Line[], metadata:unknown={}): IO {
     // Assumes lines are in connected order ...
-    if (_.isEmpty(lines)) {
+    if (_.isEmpty(lines) || all(lines, _.isEmpty) ) {
         return;
     }
     const last_line = (<Line>_.last(lines));
+    console.log(last_line);
     const last_point = [last_line.p2.x, last_line.p2.y];
     // Skip over the ending points of the line ... except for the last line ...
     const points = _.concat(_.map(lines, l => [l.p1.x, l.p1.y]), [last_point]);
