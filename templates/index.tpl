@@ -19,6 +19,7 @@
           <%= BRANCH %>
       </div>
       <script type="text/javascript">
+
         const radius = 100;
         const maxLevels = 2;
         const size = maxLevels * 4;
@@ -34,13 +35,15 @@
            "stroke-width": "7",
        };
 
+
+        sacredPatterns.drawChainedStars("d0", radius*7.5, 10);
         // sacredPatterns.drawDifferentPolygons("d1", radius,  size);
-        sacredPatterns.drawStarGrid("d2", radius, size);
-        sacredPatterns.drawRotatedStar("d3", radius, size);
-        sacredPatterns.drawDifferentStars("d4", radius, size);
-        sacredPatterns.drawRotatingCircles("d5", radius, size);
-        sacredPatterns.drawHexagonWithSurroundingNonagons("d6", radius, size, background_theme, line_theme);
-        sacredPatterns.drawCirclesRecursively("d7", radius, size, maxLevels);
+        // sacredPatterns.drawStarGrid("d2", radius, size);
+        // sacredPatterns.drawRotatedStar("d3", radius, size);
+        // sacredPatterns.drawDifferentStars("d4", radius, size);
+        // sacredPatterns.drawRotatingCircles("d5", radius, size);
+        // sacredPatterns.drawHexagonWithSurroundingNonagons("d6", radius, size, background_theme, line_theme);
+        // sacredPatterns.drawCirclesRecursively("d7", radius, size, maxLevels);
 
       </script>
   </body>

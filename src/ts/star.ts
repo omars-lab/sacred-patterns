@@ -92,3 +92,7 @@ export class Star {
         return this.adjacent(-(this.size * this.size/1.155), 0);
     }
 }
+
+export function FivePointStar(point:Point, size:number): Star {
+    return (new Star(point, 5, size)).rotate(Math.PI/2)
+}

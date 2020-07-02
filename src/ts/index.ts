@@ -2,10 +2,11 @@ import * as _ from "lodash";
 import {Circle} from "./circles"
 import {Hexagon, Nonagon, Polygon, PolygonWithSides} from "./polygons"
 import {Point} from "./points"
-import {Star} from "./star"
+import {Star, FivePointStar} from "./star"
 import * as d3 from 'd3'
 import {_map_even_odd} from "./helpers"
-import {appendPolygon, appendCircle, appendCircleWithMidpoint, d3SVG, d3CIRCLE} from "./canvas"
+// import {isEven} from "./helpers"
+import {appendText, appendPolygon, appendCircle, appendCircleWithMidpoint, d3SVG, d3CIRCLE} from "./canvas"
 import {IO} from "./types"
 
 
@@ -206,6 +207,50 @@ export function drawCirclesRecursively(drawingId:string, radius:number, size:num
             appendPolygon(<d3SVG>svg, Hexagon.withinCircle(c).lines);
         }
     );
+    // appendCircleWithMidpoint(<d3SVG>svg, circle);
+}
+
+// eslint-disable-next-line no-unused-vars
+export function drawChainedStars(drawingId:string, radius:number, size:number): IO {
+    const numbereOfStars = 12;
+    const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
+    // Recursively Add circles around middle circle ...
+    const circle = new Circle(radius*size/2, radius*size/2, radius*2/4);
+    const points = (circle).pointsOnCircumference(numbereOfStars, Math.PI/12);
+    const rotations : Record<number, number> = {
+         0:2*Math.PI - (0  * (2*Math.PI/12)) +     (0*Math.PI/12/12),
+         1:2*Math.PI - (1  * (2*Math.PI/12)) +  (-2.5*Math.PI/12/12) - (1 * (Math.PI/12)),
+         2:2*Math.PI - (2  * (2*Math.PI/12)) +  (-7.5*Math.PI/12/12) - (1 * (Math.PI/12)),
+         3:2*Math.PI - (3  * (2*Math.PI/12)) +     (0*Math.PI/12/12) + (2 * (Math.PI/12)),
+         4:2*Math.PI - (4  * (2*Math.PI/12)) +    (-5*Math.PI/12/12) + (2 * (Math.PI/12)),
+         5:2*Math.PI - (5  * (2*Math.PI/12)) +     (5*Math.PI/12/12),
+         6:2*Math.PI - (6  * (2*Math.PI/12)) +     (0*Math.PI/12/12),
+         7:2*Math.PI - (7  * (2*Math.PI/12)) +  (-2.5*Math.PI/12/12) - (1 * (Math.PI/12)),
+         8:2*Math.PI - (8  * (2*Math.PI/12)) +     (5*Math.PI/12/12) - (2 * (Math.PI/12)),
+         9:2*Math.PI - (9  * (2*Math.PI/12)) +     (0*Math.PI/12/12) + (2 * (Math.PI/12)),
+        10:2*Math.PI - (10 * (2*Math.PI/12)) +   (7.5*Math.PI/12/12) + (1 * (Math.PI/12)),
+        11:2*Math.PI - (11 * (2*Math.PI/12)) +     (5*Math.PI/12/12),
+    }
+    _.forEach(
+        points,
+        (p, i) => {
+            // https://stackoverflow.com/questions/19461521/how-to-center-an-element-horizontally-and-vertically#:~:text=For%20vertical%20alignment%2C%20set%20the,any%20other%20inline%20children%20elements.
+            // let finalRotation = (numbereOfStars-i)*2*Math.PI/numbereOfStars;
+            // finalRotation = isEven(i) ? (finalRotation) : finalRotation + (4*Math.PI/12/12);
+            // // finalRotation = isEven(i) ? (finalRotation + Math.PI/12) : (finalRotation + Math.PI/12);
+            // finalRotation = isEven(i) ? (finalRotation) : (finalRotation);
+            const finalRotation = rotations[i];
+            const s = FivePointStar(p, radius/numbereOfStars/1.35).rotate(finalRotation);
+            appendPolygon(<d3SVG>svg, s.lines);
+            appendText(<d3SVG>svg, `${i}: ${Math.round(180*finalRotation/Math.PI)}`, p, {
+                "font-size": `${radius/50}px`,
+                "text-anchor": "middle",
+                "vertical-align": "middle",
+            });
+        }
+    );
+    appendPolygon(<d3SVG>svg, FivePointStar(circle.midpoint, radius/numbereOfStars/1.5).lines);
+    // appendPolygon(<d3SVG>svg, (new Star(circle.midpoint, 5, radius/numbereOfStars/1.5)).lines);
     // appendCircleWithMidpoint(<d3SVG>svg, circle);
 }
 

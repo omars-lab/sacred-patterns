@@ -1,6 +1,7 @@
 import * as _ from "lodash";
 import {Circle} from "./circles"
 import {Line} from "./lines"
+import {Point} from "./points"
 import {IO} from "./types"
 import {all} from "./helpers"
 
@@ -13,6 +14,7 @@ export type d3SVG = d3SvgElement<SVGSVGElement>;
 export type d3CIRCLE = d3SvgElement<SVGCircleElement>;
 export type d3LINE = d3SvgElement<SVGLineElement>;
 export type d3POLYLINE = d3SvgElement<SVGPolylineElement>;
+export type d3TEXT = d3SvgElement<SVGTextElement>;
 
 // Introspecting types ...
 // let x = d3.select("body");
@@ -100,4 +102,21 @@ export function appendPolygon(onto:d3SVG, lines:Line[], metadata:unknown={}): IO
         .style('stroke-width', _.get(metadata, "stroke-width", "1"))
         .style('fill', _.get(metadata, "fill", 'none'))
         .attr("points", poly_points);
+}
+
+/* eslint-disable-next-line no-unused-vars, no-redeclare */
+export function appendText(onto:d3SVG, text:string, point:Point, metadata:unknown={}): IO {
+    const x = (<d3TEXT>onto.append("text"))
+        .attr("x", point.x)
+        .attr("y", point.y)
+        .style('stroke', _.get(metadata, "stroke", "black"))
+        .style('stroke-width', _.get(metadata, "stroke-width", "1"))
+        .style('fill', _.get(metadata, "fill", 'none'))
+        .text((_) => <string>text);
+    _.forOwn(
+        metadata,
+        (value,  key) => {
+            x.style(key, value)
+        }
+    )
 }

@@ -29,6 +29,10 @@ export function isEven(value:number): boolean {
 }
 
 
+export function isOdd(value:number): boolean {
+	return ! isEven(value);
+}
+
 export function _map_even_odd<T>(array_to_map:T[], even_func:_.ArrayIterator<T, T>=_.identity, odd_func:_.ArrayIterator<T, T>=_.identity): T[] {
     const list:T[] = [];
     _.takeRightWhile(
