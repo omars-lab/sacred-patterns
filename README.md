@@ -1,3 +1,4 @@
+# Sacred Patterns
+> *Leveraging Design Patterns through the recreation of Sacred, Geometric Patterns*
 
-# How do I have it such that if I add new typescript files ... I don't have to add the script to HTML ...?
-- [x] Learn how to use webpack ...
+- [x] Add requirements to sacred patterns as markdown!

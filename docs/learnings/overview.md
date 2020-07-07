@@ -1,4 +1,5 @@
-# Learningss
+# Learnings
+
 - What am I keeping record of as I progress through this project?
 - What have I learned as I have been working on this project?
 - What issues did I run into as I worked on this project?

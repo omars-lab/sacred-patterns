@@ -1,5 +1,8 @@
 # Learning Webpack
 
+- [x] Learn how to use webpack ...
+    - How do I have it such that if I add new typescript files ... I don't have to add the script to HTML ...?
+
 How can I bundle all of my js into a single script?
 How can I inejct this script into my webpages?
 
