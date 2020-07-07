@@ -1,5 +1,13 @@
-# How will I enhance the capabilities of the code?
+# Non-Functional Enhancements
 
+# Integrating React
+	- [ ] Make it a react app ...
+		- [ ] Use tsx + babel
+
+# Turn into Script
+	- [ ] Add a script with phantomjs
+	- [ ] Extract SVG from D3 ...
+		- [ ] https://github.com/andyreagan/phantom-crowbar
 
 # Improve Performance …
 - [ ] Improve the Recursion …
@@ -21,33 +29,9 @@
 * [ ] For the tessellation, I eventually need to show that it is programatic knowledge - vary size or something
   * [ ] d3 simple circle example … https://bl.ocks.org/ocarneiro/41a7c039d95ccdf2c7d2b2d2474d52f9
 
-# Determining Intersection
-* [ ] How can I identify intersection with d3 …?
-- [ ] Can we determine hexagon intersection / get the intersected polygons … based on iterating on their lines and determining line intersection?
-- [ ] Can I so semicircles and determine semicircle intersection programmatically??
-- [ ] Show how tips of star can be colored !
-- [ ] Show how whitespace / intersections can be selected and colored!
-* [ ] Have an iteration where I break down some of the patterns ... i.e drawings that teach people the patterns!
-  * [ ] I.e This Pattern Plus this Other Pattern Rotated … Equals this!
-
 # Debugging
 - When I hover over a shape ... show how many shapes this intersects with ...
 	- (How can I tell if a point is inside ... our outside a shape ...
 
-# Determining bounding boxes / fitting ..
-- Sacred patterns ... draw a shape ... if it fits ...
-	- Log when its not drawn ...
-	- is the bounding box of the shape within the bonding canvas ?
-
-# Rotate Stuff ...
-* [ ] Implement Rotating a circle …
-  * [ ] Anything inside the circle … like a hexing … should also rotate …
-
-# Grid Lines
-- [ ] Draw grid lines with the recursive circles ...
-
-# Spiritual ...
-* [ ] Have deep pattern … that says … even though you can not see the center … does it exist?!
-
-# Maybe
-* [ ] Make command like: center on edges of octagon vertical hexagon …?
+# Marketing Site
+- [ ] Add gifs of the drawings / site to readme!
