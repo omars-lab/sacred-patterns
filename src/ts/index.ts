@@ -11,13 +11,48 @@ import {IO} from "./types"
 import {Decagon} from "./polygons"
 
 
+// https://stackoverflow.com/questions/35969656/how-can-i-generate-the-opposite-color-according-to-current-color
+export function invertHex(hex: string): string {
+    let invertedHex = (Number(`0x1${hex}`) ^ 0xFFFFFF).toString(16).substr(1).toUpperCase();
+    console.log(invertHex);
+    return invertedHex
+}
+
+export function appendLinearGradientDef(svgDefs: any, id: string, color1: string, color2: string) {
+    const gradient = svgDefs.append("linearGradient")
+        .attr("id", id)
+        .attr("x1", "0%")
+        .attr("x2", "100%")
+        .attr("y1", "0%")
+        .attr("y2", "100%");
+
+    gradient.append("stop")
+        .attr('class', 'start')
+        .attr("offset", "0%")
+        .attr("stop-color", color1)
+        .attr("stop-opacity", 1);
+
+    gradient.append("stop")
+        .attr('class', 'end')
+        .attr("offset", "100%")
+        .attr("stop-color", color2)
+        .attr("stop-opacity", 1);
+}
+
 export function appendSVGToDOM(id: string, width:number, height:number): d3SVG {
-    return <d3SVG>(
-        d3.select("body").append("svg")
+    // https://www.freshconsulting.com/d3-js-gradients-the-easy-way/
+    
+    const svg = d3.select("body").append("svg")
         .attr("width", width)
         .attr("height", height)
-        .attr("id", id)
-    );
+        .attr("title", id)
+        .attr("id", id);
+
+    const defs = svg.append("defs");
+    appendLinearGradientDef(defs, "svgGradient", "#28313B", "#485461");
+    appendLinearGradientDef(defs, "invertedSvgGradient", `#${invertHex("28313B")}`, `#${invertHex("485461")}`);
+    // appendLinearGradientDef(defs, "svgGradient", "#F2A65A", "#772F1A");
+    return <d3SVG>(svg);
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -167,7 +202,7 @@ export function drawRotatingCircles(drawingId:string, radius:number, size:number
 
 
 // eslint-disable-next-line no-unused-vars
-export function drawHexagonWithSurroundingNonagons(drawingId:string, radius:number, size:number, background_theme:unknown, lines_theme:unknown): IO {
+export function drawHexagonWithSurroundingNonagons(drawingId: string, radius: number, size: number, background_theme: unknown, lines_theme: unknown): d3SVG {
     const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
 
     _.forOwn(background_theme, (v, k) => {
@@ -192,6 +227,7 @@ export function drawHexagonWithSurroundingNonagons(drawingId:string, radius:numb
             appendPolygon(svg, p.lines, lines_theme);
         }
     );
+    return <d3SVG>(svg);
 }
 
 // eslint-disable-next-line no-unused-vars

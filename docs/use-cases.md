@@ -19,4 +19,3 @@
 # Script Idea
 - [ ] Make a script out of the js node circle lib to create svgs ...
       - [ ] CLI flags to configure the generation of different svgs!
-

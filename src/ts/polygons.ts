@@ -40,6 +40,17 @@ export class Polygon {
 
 }
 
+// https://byjus.com/maths/chord-of-circle/
+export function determine_chord_length(r: number, rad1: number, rad2: number): number {
+    return 2 * r * Math.sin((Math.max(rad1, rad2) - Math.min(rad1, rad2))/2);
+}
+
+export function determine_sagitta_length(r: number, rad1: number, rad2: number): number {
+    // https://www.mathopenref.com/sagitta.html
+    const l = determine_chord_length(r, rad1, rad2) / 2;
+    return r - Math.sqrt(Math.pow(r, 2)-Math.pow(l, 2))
+}
+
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
 export class Triangle extends Polygon {
     get number_of_points(): number {
@@ -61,6 +72,7 @@ export class Pentagon extends Polygon {
     }
 }
 
+
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
 export class Hexagon extends Polygon {
 
@@ -71,13 +83,15 @@ export class Hexagon extends Polygon {
     // Figure out why these numbers are right ... and not sin / cos based ...
     above(): Hexagon {
         const refCircle = this.outerCircle;
-        const circleAbove = refCircle.adjacent(0, -(refCircle.r * 1.725));
+        // const circleAbove = refCircle.adjacent(0, -1 * determine_sagitta_length(refCircle.r, 2 * Math.PI * 4 / 6, 2 * Math.PI * 5 / 6));
+        const circleAbove = refCircle.adjacent(0, -(refCircle.r * 1.729));
         return (<typeof Hexagon>this.constructor).withinCircle(circleAbove);
     }
 
     below(): Hexagon {
         const refCircle = this.outerCircle;
-        const circleBelow = refCircle.adjacent(0, (refCircle.r * 1.725));
+        // const circleBelow = refCircle.adjacent(0, determine_sagitta_length(refCircle.r, 2 * Math.PI * 4 / 6, 2 * Math.PI * 5 / 6));
+        const circleBelow = refCircle.adjacent(0, (refCircle.r * 1.729));
         return (<typeof Hexagon>this.constructor).withinCircle(circleBelow);
     }
 

@@ -102,6 +102,7 @@ export function appendPolygon(onto:d3SVG, lines:Line[], metadata:unknown={}): IO
         .style('stroke-width', _.get(metadata, "stroke-width", "1"))
         .style('fill', _.get(metadata, "fill", 'none'))
         .attr("points", poly_points);
+        
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
