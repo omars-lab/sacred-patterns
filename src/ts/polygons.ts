@@ -177,6 +177,19 @@ export class Decagon extends Polygon {
 }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
+// export type CommonPolygon = ValueOf<typeof PolygonWithSides>;
+export type CommonPolygon = (
+    typeof Triangle 
+    | typeof Square 
+    | typeof Pentagon 
+    | typeof Hexagon 
+    | typeof Heptagon 
+    | typeof Octagon 
+    | typeof Nonagon 
+    | typeof Decagon
+);
+
+/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export const PolygonWithSides = {
     3: Triangle,
     4: Square,

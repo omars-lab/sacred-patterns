@@ -6,30 +6,44 @@
   "main": "app/runner.js",
   "scripts": {
     "site": "node app/runner.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx webpack --config webpack.config.js"
+    "clean": "rm -rf node_modules; rm package-lock.json",
+    "install": "echo \"Post Install Script Here\"",
+    "compile": "npx tsc; npx eslint . --ext .ts,.tsx",
+    "test": "echo \"Update me with tests script.\"",
+    "build": "npx webpack --config webpack.config.js",
+    "update": "ncu --doctor -u",
+    "update-majors": "ncu --doctor -u"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/d3": "^5.7.2",
-    "@types/lodash": "^4.14.149",
-    "@typescript-eslint/eslint-plugin": "^3.5.0",
-    "@typescript-eslint/parser": "^3.5.0",
-    "babel-eslint": "^10.1.0",
-    "eslint": "^6.8.0",
-    "git-revision-webpack-plugin": "^3.0.6",
-    "html-webpack-plugin": "^3.2.0",
-    "nodemon": "^2.0.4",
-    "ts-loader": "^6.2.1",
-    "typescript": "^3.9.6",
-    "webpack": "^4.41.5",
-    "webpack-cli": "^3.3.10"
+    "@babel/eslint-parser": "^7.24.5",
+    "@types/d3": "^7.4.3",
+    "@types/lodash": "^4.17.1",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^7.8.0",
+    "@typescript-eslint/parser": "^7.8.0",
+    "css-loader": "^7.1.1",
+    "eslint": "^8.56.0",
+    "git-revision-webpack-plugin": "^5.0.0",
+    "html-webpack-plugin": "^5.6.0",
+    "nodemon": "^3.1.0",
+    "npm-check-updates": "16.14.20",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.4.5",
+    "webpack": "^5.91.0",
+    "webpack-cli": "5.1.4"
   },
   "eslintConfig": "./.eslintrc.js",
   "dependencies": {
-    "d3": "^5.15.0",
-    "express": "^4.17.1",
-    "lodash": "^4.17.15"
+    "bootstrap": "^5.3.3",
+    "d3": "^7.9.0",
+    "express": "^4.19.2",
+    "lodash": "^4.17.21",
+    "react": "^18.3.1",
+    "react-bootstrap": "^2.10.2",
+    "react-dom": "^18.3.1"
   }
 }

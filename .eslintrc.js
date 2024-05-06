@@ -36,6 +36,8 @@ module.exports = {
         }
     },
     "rules": {
-        "no-prototype-builtins": "off"
+        "no-prototype-builtins": "off",
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": ["error", { 'argsIgnorePattern': '^_' } ]
     }
 }

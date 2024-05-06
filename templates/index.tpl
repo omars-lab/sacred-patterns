@@ -7,6 +7,7 @@
         <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lodash@4.17.15/lodash.min.js"></script>
         <!-- https://lodash.com/docs/4.17.15#template -->
         <!-- ======= This was auto generated: ======= -->
+        <!-- This block effectively injects our ts/js as sacredPatterns through the webpack.config.js -->
         <% _.each(htmlWebpackPlugin.files.js, function(f) { %>
         <script type="text/javascript" src="<%= f %>"></script>
         <% }); %>
@@ -18,6 +19,8 @@
             <%= COMMITHASH %>
             <%= BRANCH %>
         </div>
+
+        <div id="root"></div>
 
         <pre id="config" contenteditable="true">
         {
@@ -61,49 +64,53 @@
         </pre>
 
         <ul>
-            <li><a id="regenerate" href="#">Regenerate SVG</a></li>
             <li><a id="download" href="#">Download SVG</a></li>
-            <li><a id="download-inverted" href="#">Download Inverted SVG</a></li>
+            <!--
+                <li><a id="regenerate" href="#">Regenerate SVG</a></li>
+                <li><a id="download-inverted" href="#">Download Inverted SVG</a></li>
+            -->
         </ul>
         
         <script type="text/javascript">
-            const radius = 100;
-            const maxLevels = 2;
-            const size = maxLevels * 3;
-            
-            let background_theme = JSON.parse(document.getElementById("config").innerText).background_theme[0];
-            let line_theme = JSON.parse(document.getElementById("config").innerText).line_theme[0]; ;
+            /* 
+                const radius = 100;
+                const maxLevels = 2;
+                const size = maxLevels * 3;
+                
+                let background_theme = JSON.parse(document.getElementById("config").innerText).background_theme[0];
+                let line_theme = JSON.parse(document.getElementById("config").innerText).line_theme[0]; ;
+                let svg = sacredPatterns.drawHexagonWithSurroundingNonagons("d6", radius, size, background_theme, line_theme);
 
-            // sacredPatterns.drawChainedStars("d0", radius*7.5, 2);
-            // sacredPatterns.drawDifferentPolygons("d1", radius,  size);
-            // sacredPatterns.drawStarGrid("d2", radius, size);
-            // sacredPatterns.drawRotatedStar("d3", radius, size);
-            // sacredPatterns.drawDifferentStars("d4", radius, size);
-            // sacredPatterns.drawRotatingCircles("d5", radius, size);
-            let svg = sacredPatterns.drawHexagonWithSurroundingNonagons("d6", radius, size, background_theme, line_theme);
-            // sacredPatterns.drawCirclesRecursively("d7", radius, size, maxLevels);
+                // let svg = sacredPatterns.drawChainedStars("d0", radius*7.5, 2);
+                // let svg = sacredPatterns.drawDifferentPolygons("d1", radius,  size);
+                // let svg = sacredPatterns.drawStarGrid("d2", radius, size);
+                // let svg = sacredPatterns.drawRotatedStar("d3", radius, size);
+                // let svg = sacredPatterns.drawDifferentStars("d4", radius, size);
+                // let svg = sacredPatterns.drawRotatingCircles("d5", radius, size);
+                // let svg = sacredPatterns.drawCirclesRecursively("d7", radius, size, maxLevels);
 
-            // http://bl.ocks.org/methodofaction/3831266
-            // https://stackoverflow.com/questions/24079566/d3-js-download-graph-as-svg-image
+                // http://bl.ocks.org/methodofaction/3831266
+                // https://stackoverflow.com/questions/24079566/d3-js-download-graph-as-svg-image
 
-            d3.select("#download").on("click", function(){
-                let htmldata = svg
-                    .attr("version", 1.1)
-                    .attr("xmlns", "http://www.w3.org/2000/svg")
-                    .node().outerHTML;  
-                d3.select(this)
-                    .attr("href-lang", "image/svg+xml")
-                    .attr("href", "data:image/svg+xml;base64,\n" + window.btoa(htmldata))
-                    .attr("download", "viz.svg") 
-            });
-
-            d3.select("#regenerate").on("click", function(){
-                document.getElementById('d6').remove();
-                background_theme = JSON.parse(document.getElementById("config").innerText).background_theme[0];
-                line_theme = JSON.parse(document.getElementById("config").innerText).line_theme[0];
-                svg = sacredPatterns.drawHexagonWithSurroundingNonagons("d6", radius, size, background_theme, line_theme);
-            });
-            
+                // Adding click handlers ...
+                d3.select("#download").on("click", function(){
+                    let htmldata = svg
+                        .attr("version", 1.1)
+                        .attr("xmlns", "http://www.w3.org/2000/svg")
+                        .node().outerHTML;  
+                    d3.select(this)
+                        .attr("href-lang", "image/svg+xml")
+                        .attr("href", "data:image/svg+xml;base64,\n" + window.btoa(htmldata))
+                        .attr("download", "viz.svg") 
+                });
+                d3.select("#regenerate").on("click", function(){
+                    document.getElementById('d6').remove();
+                    background_theme = JSON.parse(document.getElementById("config").innerText).background_theme[0];
+                    line_theme = JSON.parse(document.getElementById("config").innerText).line_theme[0];
+                    svg = sacredPatterns.drawHexagonWithSurroundingNonagons("d6", radius, size, background_theme, line_theme);
+                });
+            */ 
+            sacredPatterns.main()
         </script>
   </body>
 </html>

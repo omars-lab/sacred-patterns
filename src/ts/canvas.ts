@@ -1,25 +1,11 @@
-import * as _ from "lodash";
 import {Circle} from "./circles"
 import {Line} from "./lines"
 import {Point} from "./points"
-import {IO} from "./types"
+import {IO, d3SVG, d3CIRCLE, d3LINE, d3POLYLINE, d3TEXT} from "./types"
 import {all} from "./helpers"
 
-// https://www.typescriptlang.org/docs/handbook/advanced-types.html
-// https://www.logicbig.com/tutorials/misc/typescript/ts-config-json.html
-
-// type d3SvgElement<T extends d3.BaseType> = d3.Selection<T, {}, HTMLElement, any> | d3.Selection<T, unknown, HTMLElement, any>;
-export type d3SvgElement<T extends d3.BaseType> = d3.Selection<T, unknown, HTMLElement, unknown>;
-export type d3SVG = d3SvgElement<SVGSVGElement>;
-export type d3CIRCLE = d3SvgElement<SVGCircleElement>;
-export type d3LINE = d3SvgElement<SVGLineElement>;
-export type d3POLYLINE = d3SvgElement<SVGPolylineElement>;
-export type d3TEXT = d3SvgElement<SVGTextElement>;
-
-// Introspecting types ...
-// let x = d3.select("body");
-// let x = d3.select("body").append("line");
-// let x = d3.select("body").append("circle");
+/* eslint-disable-next-line no-unused-vars, no-redeclare */
+import * as _ from "lodash";
 
 export function colorForLevel(level?:number, maxLevels?:number): string {
     console.log(level, maxLevels);
@@ -53,11 +39,6 @@ export function appendCircleWithMidpoint(onto:d3SVG, c:Circle, maxLevels?:number
       // .attr('stroke', 'black');
       .attr('fill', colorForLevel(c.metadata.level, maxLevels));
 }
-
-
-// function applyStylesTo(to, styleParams, defaultStyleParams) {
-//
-// }
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
 export function appendCircle(onto:d3SVG, c:Circle, maxLevels?:number): d3CIRCLE {

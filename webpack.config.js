@@ -1,9 +1,9 @@
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const GitRevisionPlugin = require('git-revision-webpack-plugin');
-const path = require('path');
+const { GitRevisionPlugin } = require('git-revision-webpack-plugin')
+const gitRevisionPlugin = new GitRevisionPlugin()
 
-const gitRevisionPlugin = new GitRevisionPlugin();
+const path = require('path');
 
 // Web pack is useful ... since I can add more type script files and not have to modify the HTML ...
 // https://webpack.js.org/guides/getting-started/
@@ -11,7 +11,7 @@ const gitRevisionPlugin = new GitRevisionPlugin();
 // https://webpack.js.org/guides/typescript/
 
 module.exports = {
-  entry: './src/ts/index.ts',  // Start at this type script file ... and recursively go through the imports
+  entry: './src/ts/index.tsx',  // Start at this type script file ... and recursively go through the imports
   module: {
     rules: [
       {
@@ -19,10 +19,14 @@ module.exports = {
         use: 'ts-loader',
         exclude: /node_modules/,
       },
+      { 
+        test: /\.css$/, 
+        use: ["style-loader", "css-loader"],
+      },
     ],
   },
   resolve: {
-    extensions: [ '.tsx', '.ts'],
+    extensions: [ '.tsx', '.ts', '.js'],
   },
   // https://webpack.js.org/configuration/output/
   output: {
@@ -35,18 +39,20 @@ module.exports = {
   plugins: [
     // Inject the bundle into this html file ...
     new HtmlWebpackPlugin({
-        filename: 'index.html',
-        template: './templates/index.tpl',
-        hash: true,
-        inject: false,
-        minify: false,
+      filename: 'index.html',
+      template: './templates/index.tpl',
+      hash: true,
+      inject: false,
+      minify: false,
     }),
     // https://stackoverflow.com/questions/38400314/including-git-commit-hash-and-date-in-webpack-build
     // https://webpack.js.org/plugins/define-plugin/
+    gitRevisionPlugin,
     new webpack.DefinePlugin({
-      'VERSION': JSON.stringify(gitRevisionPlugin.version()),
-      'COMMITHASH': JSON.stringify(gitRevisionPlugin.commithash()),
-      'BRANCH': JSON.stringify(gitRevisionPlugin.branch()),
+      VERSION: JSON.stringify(gitRevisionPlugin.version()),
+      COMMITHASH: JSON.stringify(gitRevisionPlugin.commithash()),
+      BRANCH: JSON.stringify(gitRevisionPlugin.branch()),
+      LASTCOMMITDATETIME: JSON.stringify(gitRevisionPlugin.lastcommitdatetime()),
     }),
   ],
   // Dont pack these into the bundle ... https://webpack.js.org/configuration/externals/

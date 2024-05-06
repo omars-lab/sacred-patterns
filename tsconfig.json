@@ -4,6 +4,7 @@
         "module": "commonjs",
         "rootDir": "./src/ts",
         "outDir": "./src/js",
+        "jsx": "react-jsx",
         "lib": ["es5", "dom", "es2015.core"],  // This is so it can find Math.hypot ... https://github.com/Microsoft/TypeScript/issues/9555
         "strict": true,
         "noImplicitAny": true,
@@ -11,12 +12,14 @@
         "strictFunctionTypes": true,
         "noImplicitThis": true,
         "alwaysStrict": true,
-        "noUnusedLocals": true,
+        "noUnusedLocals": false,
         "noUnusedParameters": true,
         "noImplicitReturns": true,
         "noFallthroughCasesInSwitch": true,
+        // "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
         "removeComments": false, // Needed for eslint comments ...
     },
     "include": ["**/*"],
-    "exclude": []
+    "exclude": ["src/js/*"]
 }

@@ -1,7 +1,9 @@
-import * as _ from "lodash";
 import {Line} from "./lines";
 import {Point} from "./points";
 import {Optional} from "./types"
+
+/* eslint-disable-next-line no-unused-vars, no-redeclare */
+import * as _ from "lodash";
 
 export interface CircleMetadata {
     level: number;
@@ -121,7 +123,6 @@ export class Circle {
     }
 
 }
-
 
 // Intersection of Circles ...
 // http://jsfiddle.net/g0r9n090/
