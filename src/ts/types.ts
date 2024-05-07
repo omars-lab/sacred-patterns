@@ -21,3 +21,10 @@ export type d3TEXT = d3SvgElement<SVGTextElement>;
 
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
 export type ValueOf<T> = T[keyof T];
+
+export interface DrawingProps {
+    index: string,
+    radius: number,
+    maxLevels: number,
+    size: number,
+}
