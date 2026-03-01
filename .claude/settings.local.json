@@ -3,7 +3,11 @@
     "allow": [
       "Bash(git ls-tree:*)",
       "Bash(git remote:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(unzip:*)",
+      "Bash(make:*)"
     ]
   },
   "plansDirectory": ".claude/plans"

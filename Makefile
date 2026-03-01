@@ -39,14 +39,43 @@ run: _run
 stop:
 	docker ps -f ancestor=sacred-patterns -f status=running -n 1 -q | xargs -n 1 docker stop
 
-deploy: _build
+SESSIONS_DIR := /Users/omareid/Dropbox/Data/sacred-patterns
+GALLERY_DIR := ${ROOT_DIR}/site/gallery
+
+gallery:
+	@echo "Building gallery from sessions..."
+	@mkdir -p ${GALLERY_DIR}
+	@for session_dir in ${SESSIONS_DIR}/session-*/; do \
+		session_name=$$(basename "$$session_dir") ; \
+		if [ -f "$$session_dir/dashboard.html" ]; then \
+			mkdir -p "${GALLERY_DIR}/$$session_name" ; \
+			cp "$$session_dir/dashboard.html" "${GALLERY_DIR}/$$session_name/index.html" ; \
+			echo "  Copied $$session_name dashboard" ; \
+		fi ; \
+	done
+	@for drawing_dir in ${SESSIONS_DIR}/drawings/*/; do \
+		if [ -d "$$drawing_dir" ]; then \
+			drawing_name=$$(basename "$$drawing_dir") ; \
+			if [ -f "$$drawing_dir/output.html" ]; then \
+				mkdir -p "${GALLERY_DIR}/drawings/$$drawing_name" ; \
+				cp "$$drawing_dir/output.html" "${GALLERY_DIR}/drawings/$$drawing_name/index.html" ; \
+				echo "  Copied drawing $$drawing_name" ; \
+			fi ; \
+		fi ; \
+	done
+	@echo "Gallery build complete."
+
+deploy: _build gallery
 	@echo "Deploying site to gh-pages..."
 	@DEPLOY_DIR=$$(mktemp -d) && \
 	git worktree add "$$DEPLOY_DIR" gh-pages && \
 	cp ${ROOT_DIR}/site/bundle.js "$$DEPLOY_DIR/bundle.js" && \
 	cp ${ROOT_DIR}/site/index.html "$$DEPLOY_DIR/index.html" && \
+	if [ -d "${GALLERY_DIR}" ]; then \
+		cp -r ${GALLERY_DIR} "$$DEPLOY_DIR/gallery" ; \
+	fi && \
 	cd "$$DEPLOY_DIR" && \
-	git add bundle.js index.html && \
+	git add -A && \
 	git diff --cached --quiet || (git commit -m "Deploy site update" && git push origin gh-pages) && \
 	cd ${ROOT_DIR} && \
 	git worktree remove "$$DEPLOY_DIR" && \

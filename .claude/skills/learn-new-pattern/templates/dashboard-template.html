@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{SESSION_NAME}} — Sacred Patterns</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a1929;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid #1e3a5f;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: #7dd6e0;
+            margin-bottom: 0.5rem;
+        }
+
+        .header .meta {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .badge-symmetry { background: #2d4a7c; color: #7dd6e0; }
+        .badge-status { background: #1a6b4a; color: #90eeb0; }
+        .badge-status-paused { background: #6b5a1a; color: #eee090; }
+        .badge-confidence { background: #4a2d7c; color: #c07de0; }
+        .badge-type { background: #7c2d4a; color: #e07da0; }
+
+        /* Comparison */
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .comparison-panel {
+            text-align: center;
+        }
+
+        .comparison-panel h3 {
+            color: #7dd6e0;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .comparison-panel img {
+            max-width: 100%;
+            border: 2px solid #1e3a5f;
+            border-radius: 8px;
+        }
+
+        /* Sections */
+        .section {
+            margin-bottom: 3rem;
+        }
+
+        .section h2 {
+            color: #7dd6e0;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #1e3a5f;
+        }
+
+        .section-content {
+            background: #0f2744;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #1e3a5f;
+        }
+
+        /* Color Palette Swatches */
+        .palette {
+            display: flex;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .swatch {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            border: 2px solid #1e3a5f;
+            position: relative;
+        }
+
+        .swatch-label {
+            font-size: 0.65rem;
+            text-align: center;
+            margin-top: 0.25rem;
+            color: #a0a0a0;
+        }
+
+        /* Iteration Timeline */
+        .timeline {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .iteration-card {
+            background: #0f2744;
+            border: 1px solid #1e3a5f;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            transition: border-color 0.2s;
+        }
+
+        .iteration-card:hover {
+            border-color: #7dd6e0;
+        }
+
+        .iteration-card.best {
+            border-color: #d4a843;
+            box-shadow: 0 0 10px rgba(212, 168, 67, 0.2);
+        }
+
+        .iteration-card img {
+            max-width: 100%;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+
+        .iteration-card .iter-num {
+            font-size: 0.85rem;
+            color: #a0a0a0;
+        }
+
+        .iteration-card .confidence {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #7dd6e0;
+        }
+
+        .iteration-card .insight {
+            font-size: 0.8rem;
+            color: #c0c0c0;
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+
+        /* Markdown rendered content */
+        .md-content h3 { color: #5fb5c4; margin: 1rem 0 0.5rem; }
+        .md-content h4 { color: #4a6ba5; margin: 0.75rem 0 0.25rem; }
+        .md-content p { margin-bottom: 0.75rem; }
+        .md-content ul { padding-left: 1.5rem; margin-bottom: 0.75rem; }
+        .md-content code {
+            background: #1a2c4d;
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        .md-content pre {
+            background: #1a2c4d;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin-bottom: 1rem;
+        }
+        .md-content pre code { padding: 0; background: none; }
+
+        /* Library Extensions */
+        .extension-list {
+            list-style: none;
+        }
+
+        .extension-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #1e3a5f;
+        }
+
+        .extension-list li:last-child {
+            border-bottom: none;
+        }
+
+        .extension-file {
+            color: #d4a843;
+            font-family: monospace;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: #5a5a5a;
+            font-size: 0.85rem;
+            border-top: 1px solid #1e3a5f;
+            margin-top: 2rem;
+        }
+
+        .footer a { color: #4a6ba5; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            .container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>{{SESSION_NAME}}</h1>
+            <div class="meta">
+                <span class="badge badge-type">{{PATTERN_TYPE}}</span>
+                <span class="badge badge-symmetry">{{SYMMETRY_GROUP}}</span>
+                <span class="badge badge-status">{{STATUS}}</span>
+                <span class="badge badge-confidence">Confidence: {{CONFIDENCE}}%</span>
+            </div>
+        </div>
+
+        <!-- Side-by-Side Comparison -->
+        <div class="comparison">
+            <div class="comparison-panel">
+                <h3>Reference</h3>
+                <img src="{{REFERENCE_IMAGE_BASE64}}" alt="Reference pattern">
+            </div>
+            <div class="comparison-panel">
+                <h3>Final Output</h3>
+                <img src="{{FINAL_OUTPUT_BASE64}}" alt="Generated pattern">
+            </div>
+        </div>
+
+        <!-- Analysis Summary -->
+        <div class="section">
+            <h2>Analysis</h2>
+            <div class="section-content">
+                <div class="md-content" id="analysis-content">
+                    <!-- Rendered from analysis.md -->
+                </div>
+                <h3 style="color: #5fb5c4; margin-top: 1rem;">Color Palette</h3>
+                <div class="palette" id="palette-swatches">
+                    <!-- Generated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Iteration Timeline -->
+        <div class="section">
+            <h2>Iteration Journey</h2>
+            <div class="timeline" id="iteration-timeline">
+                <!-- Generated dynamically -->
+            </div>
+        </div>
+
+        <!-- Retrospective Insights -->
+        <div class="section">
+            <h2>Retrospective Insights</h2>
+            <div class="section-content">
+                <div class="md-content" id="retrospective-content">
+                    <!-- Rendered from retrospective.md files -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Library Extensions -->
+        <div class="section" id="library-section" style="display: none;">
+            <h2>Library Extensions</h2>
+            <div class="section-content">
+                <ul class="extension-list" id="extension-list">
+                    <!-- Generated dynamically -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- Learnings -->
+        <div class="section">
+            <h2>Learnings</h2>
+            <div class="section-content">
+                <div class="md-content" id="learnings-content">
+                    <!-- Rendered from learnings.md -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            Generated by <a href="https://art.bytesofpurpose.com/">Sacred Patterns</a>
+            &mdash; {{GENERATED_DATE}}
+        </div>
+    </div>
+
+    <script>
+        // === Session Data (injected during generation) ===
+        var sessionData = {{SESSION_DATA_JSON}};
+
+        // Render markdown sections
+        if (sessionData.analysis) {
+            document.getElementById('analysis-content').innerHTML =
+                marked.parse(sessionData.analysis);
+        }
+        if (sessionData.retrospectives) {
+            document.getElementById('retrospective-content').innerHTML =
+                marked.parse(sessionData.retrospectives);
+        }
+        if (sessionData.learnings) {
+            document.getElementById('learnings-content').innerHTML =
+                marked.parse(sessionData.learnings);
+        }
+
+        // Render color palette swatches
+        if (sessionData.palette) {
+            var paletteEl = document.getElementById('palette-swatches');
+            Object.keys(sessionData.palette).forEach(function(name) {
+                var color = sessionData.palette[name];
+                var div = document.createElement('div');
+                div.style.textAlign = 'center';
+                div.innerHTML = '<div class="swatch" style="background:' + color + '"></div>' +
+                    '<div class="swatch-label">' + name + '<br>' + color + '</div>';
+                paletteEl.appendChild(div);
+            });
+        }
+
+        // Render iteration timeline
+        if (sessionData.iterations) {
+            var timelineEl = document.getElementById('iteration-timeline');
+            sessionData.iterations.forEach(function(iter) {
+                var card = document.createElement('div');
+                card.className = 'iteration-card' + (iter.isBest ? ' best' : '');
+                card.innerHTML =
+                    (iter.screenshot ? '<img src="' + iter.screenshot + '" alt="Iteration ' + iter.number + '">' : '') +
+                    '<div class="iter-num">Iteration ' + iter.number + (iter.isBest ? ' (Best)' : '') + '</div>' +
+                    '<div class="confidence">' + Math.round(iter.confidence * 100) + '%</div>' +
+                    '<div class="insight">' + (iter.insight || '') + '</div>';
+                timelineEl.appendChild(card);
+            });
+        }
+
+        // Render library extensions
+        if (sessionData.libraryExtensions && sessionData.libraryExtensions.length > 0) {
+            document.getElementById('library-section').style.display = 'block';
+            var listEl = document.getElementById('extension-list');
+            sessionData.libraryExtensions.forEach(function(ext) {
+                var li = document.createElement('li');
+                li.innerHTML = '<span class="extension-file">' + ext.file + '</span> &mdash; ' + ext.description;
+                listEl.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>
