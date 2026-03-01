@@ -39,6 +39,19 @@ run: _run
 stop:
 	docker ps -f ancestor=sacred-patterns -f status=running -n 1 -q | xargs -n 1 docker stop
 
+deploy: _build
+	@echo "Deploying site to gh-pages..."
+	@DEPLOY_DIR=$$(mktemp -d) && \
+	git worktree add "$$DEPLOY_DIR" gh-pages && \
+	cp ${ROOT_DIR}/site/bundle.js "$$DEPLOY_DIR/bundle.js" && \
+	cp ${ROOT_DIR}/site/index.html "$$DEPLOY_DIR/index.html" && \
+	cd "$$DEPLOY_DIR" && \
+	git add bundle.js index.html && \
+	git diff --cached --quiet || (git commit -m "Deploy site update" && git push origin gh-pages) && \
+	cd ${ROOT_DIR} && \
+	git worktree remove "$$DEPLOY_DIR" && \
+	echo "Deployed to https://art.bytesofpurpose.com/"
+
  # typescript
  # @types/lodash
  # @types/d3
