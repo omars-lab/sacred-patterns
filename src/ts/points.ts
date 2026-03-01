@@ -1,4 +1,3 @@
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export class Point {
 
     constructor(public x:number, public y:number) {}

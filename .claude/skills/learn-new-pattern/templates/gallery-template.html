@@ -228,8 +228,16 @@
                 badges += '<span class="badge badge-drawing">Drawing</span>';
             }
 
+            var imgAttrs = 'class="card-image" src="' + (item.thumbnail || '') + '" alt="' + item.name + '"';
+            if (item.timelapse_gif) {
+                imgAttrs += ' data-gif="' + item.timelapse_gif + '"'
+                    + ' data-static="' + (item.thumbnail || '') + '"'
+                    + ' onmouseenter="if(this.dataset.gif) this.src=this.dataset.gif"'
+                    + ' onmouseleave="if(this.dataset.static) this.src=this.dataset.static"';
+            }
+
             card.innerHTML =
-                '<img class="card-image" src="' + (item.thumbnail || '') + '" alt="' + item.name + '">' +
+                '<img ' + imgAttrs + '>' +
                 '<div class="card-body">' +
                     '<div class="card-title">' + item.name + '</div>' +
                     '<div class="card-badges">' + badges + '</div>' +

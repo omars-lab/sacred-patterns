@@ -5,7 +5,6 @@ import {Line, Lines} from "./lines"
 // https://codepen.io/Elf/details/rOrRaw
 // https://www.d3indepth.com/shapes/
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export class Polygon {
     constructor(public center:Point, public size:number, public radial_shift:number=0) {}
 
@@ -51,21 +50,18 @@ export function determine_sagitta_length(r: number, rad1: number, rad2: number):
     return r - Math.sqrt(Math.pow(r, 2)-Math.pow(l, 2))
 }
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export class Triangle extends Polygon {
     get number_of_points(): number {
         return 3;
     }
 }
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export class Square extends Polygon {
     get number_of_points(): number {
         return 4;
     }
 }
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export class Pentagon extends Polygon {
     get number_of_points(): number {
         return 5;
@@ -73,7 +69,6 @@ export class Pentagon extends Polygon {
 }
 
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export class Hexagon extends Polygon {
 
     get number_of_points(): number {
@@ -148,35 +143,30 @@ export class Hexagon extends Polygon {
     }
 }
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export class Heptagon extends Polygon {
     get number_of_points(): number {
         return 7;
     }
 }
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export class Octagon extends Polygon {
     get number_of_points(): number {
         return 8;
     }
 }
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export class Nonagon extends Polygon {
     get number_of_points(): number {
         return 9;
     }
 }
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export class Decagon extends Polygon {
     get number_of_points(): number {
         return 10;
     }
 }
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export const PolygonWithSides = {
     3: Triangle,
     4: Square,

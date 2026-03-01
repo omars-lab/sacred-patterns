@@ -33,7 +33,6 @@ export function colorForLevel(level?:number, maxLevels?:number): string {
     }
 }
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export function appendCircleWithMidpoint(onto:d3SVG, c:Circle, maxLevels?:number): IO {
     console.log("HIIIII", c, c.metadata, maxLevels);
     // Append Circle
@@ -59,7 +58,6 @@ export function appendCircleWithMidpoint(onto:d3SVG, c:Circle, maxLevels?:number
 //
 // }
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export function appendCircle(onto:d3SVG, c:Circle, maxLevels?:number): d3CIRCLE {
     console.log("HIIIII", c, c.metadata, maxLevels);
     // Append Circle
@@ -73,7 +71,6 @@ export function appendCircle(onto:d3SVG, c:Circle, maxLevels?:number): d3CIRCLE 
     );
 }
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export function appendLine(onto:d3SVG, l:Line, color="black"): IO {
     console.log("Drawing Line From", l.p1, " to ", l.p2);
     (<d3LINE>onto.append("line"))
@@ -85,7 +82,6 @@ export function appendLine(onto:d3SVG, l:Line, color="black"): IO {
        .style("stroke", color);
 }
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export function appendPolygon(onto:d3SVG, lines:Line[], metadata:unknown={}): IO {
     // Assumes lines are in connected order ...
     if (_.isEmpty(lines) || all(lines, _.isEmpty) ) {
@@ -105,7 +101,6 @@ export function appendPolygon(onto:d3SVG, lines:Line[], metadata:unknown={}): IO
         
 }
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export function appendText(onto:d3SVG, text:string, point:Point, metadata:unknown={}): IO {
     const x = (<d3TEXT>onto.append("text"))
         .attr("x", point.x)
@@ -113,7 +108,7 @@ export function appendText(onto:d3SVG, text:string, point:Point, metadata:unknow
         .style('stroke', _.get(metadata, "stroke", "black"))
         .style('stroke-width', _.get(metadata, "stroke-width", "1"))
         .style('fill', _.get(metadata, "fill", 'none'))
-        .text((_) => <string>text);
+        .text(() => <string>text);
     _.forOwn(
         metadata,
         (value,  key) => {

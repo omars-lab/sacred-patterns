@@ -114,6 +114,12 @@ For each iteration (max 5 before asking user):
 3. Generate `dashboard.html` following `dashboard-guide.md`
 4. Update `session.json` with final status, confidence, etc.
 5. Update `learnings.md` with session-specific insights
+6. Auto-generate marketing content:
+   a) Assemble timelapse GIF from iteration screenshots (`magick convert`)
+   b) Assemble timelapse MP4 for social media (`ffmpeg`)
+   c) Generate social media post copy from session metadata
+   d) Include timelapse and social copy in `dashboard.html`
+   See `.claude/skills/creative-generation/` for details.
 
 ### Step 6: Deploy
 
@@ -215,3 +221,4 @@ All guide files are in this skill directory:
 
 - `/analyze-geometric-patterns` — Standalone image analysis (no iteration)
 - `/generate-drawing` — Creative pattern composition from learned primitives
+- `/creative-generation` — Auto-generate timelapse GIF, MP4, and social media copy

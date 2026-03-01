@@ -9,7 +9,6 @@ export interface CircleMetadata {
     stroke?: string;
 }
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export class Circle {
 
     constructor(public x:number, public y:number, public r:number, private _metadata?:Optional<CircleMetadata>) {}

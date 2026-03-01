@@ -1,23 +1,16 @@
 SHELL := /bin/bash
 ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-# https://stackoverflow.com/questions/8941110/how-i-could-add-dir-to-path-in-makefile
 export PATH := ${ROOT_DIR}/node_modules/.bin:$(PATH)
-tsc := ${ROOT_DIR}/node_modules/.bin/tsc
 
 edit:
 	atom ${ROOT_DIR}
 
-_build:
+build:
 	npm run build
-
-build: _build
-	docker build -t sacred-patterns .
 
 compile:
 	npx tsc
-	# https://www.cyberciti.biz/faq/find-command-exclude-ignore-files/
-	# find . -type f \( -iname "*.ts" ! -iname ".*" ! -path "./node_modules*" ! -path "./site*" \) -exec eslint {} \;
-	npx eslint . --ext .ts,.tsx
+	npx eslint .
 
 open: compile
 	open -na "Google Chrome" --args --new-tab "file://${ROOT_DIR}/templates/s3-${ITERATION}.htm"
@@ -26,21 +19,15 @@ open: compile
 	npx tsc -w
 
 ~run:
-	npx nodemon -w templates -w src/ts --ext 'ts tpl' --exec 'make compile; make _build; node app/runner.js'
+	npx webpack serve --config webpack.config.js --open
 
-_run:
-	# Ensure container is  running ... or run it ...
-	(docker ps -f ancestor=sacred-patterns -f status=running -n 1 -q | grep -v '^$$') || \
-		docker logs $$( docker run -d -v ${ROOT_DIR}/site:/site/site -p 3001:3000 sacred-patterns:latest ; sleep 1 )
-
-run: _run
-	open -a "Google Chrome" http://localhost:3001
-
-stop:
-	docker ps -f ancestor=sacred-patterns -f status=running -n 1 -q | xargs -n 1 docker stop
+serve:
+	npm run serve
 
 SESSIONS_DIR := /Users/omareid/Dropbox/Data/sacred-patterns
 GALLERY_DIR := ${ROOT_DIR}/site/gallery
+GALLERY_TEMPLATE := ${ROOT_DIR}/.claude/skills/learn-new-pattern/templates/gallery-template.html
+GALLERY_BUILDER := ${ROOT_DIR}/.claude/skills/learn-new-pattern/build-gallery-index.sh
 
 gallery:
 	@echo "Building gallery from sessions..."
@@ -51,6 +38,14 @@ gallery:
 			mkdir -p "${GALLERY_DIR}/$$session_name" ; \
 			cp "$$session_dir/dashboard.html" "${GALLERY_DIR}/$$session_name/index.html" ; \
 			echo "  Copied $$session_name dashboard" ; \
+		fi ; \
+		if [ -f "$$session_dir/final/timelapse.gif" ]; then \
+			cp "$$session_dir/final/timelapse.gif" "${GALLERY_DIR}/$$session_name/timelapse.gif" ; \
+			echo "  Copied $$session_name timelapse.gif" ; \
+		fi ; \
+		if [ -f "$$session_dir/final/timelapse.mp4" ]; then \
+			cp "$$session_dir/final/timelapse.mp4" "${GALLERY_DIR}/$$session_name/timelapse.mp4" ; \
+			echo "  Copied $$session_name timelapse.mp4" ; \
 		fi ; \
 	done
 	@for drawing_dir in ${SESSIONS_DIR}/drawings/*/; do \
@@ -63,9 +58,11 @@ gallery:
 			fi ; \
 		fi ; \
 	done
+	@echo "Generating gallery index..."
+	@bash ${GALLERY_BUILDER} ${SESSIONS_DIR} ${GALLERY_TEMPLATE} ${GALLERY_DIR}/index.html ${GALLERY_DIR}
 	@echo "Gallery build complete."
 
-deploy: _build gallery
+deploy: build gallery
 	@echo "Deploying site to gh-pages..."
 	@DEPLOY_DIR=$$(mktemp -d) && \
 	git worktree add "$$DEPLOY_DIR" gh-pages && \
@@ -80,16 +77,3 @@ deploy: _build gallery
 	cd ${ROOT_DIR} && \
 	git worktree remove "$$DEPLOY_DIR" && \
 	echo "Deployed to https://art.bytesofpurpose.com/"
-
- # typescript
- # @types/lodash
- # @types/d3
- # express
- # webpack
- # webpack-cli
- # lodash
- # typescript
- # ts-loader
- # html-webpack-plugin
- # webpack
- # webpack-cli

@@ -13,7 +13,7 @@ import {Decagon} from "./polygons"
 
 // https://stackoverflow.com/questions/35969656/how-can-i-generate-the-opposite-color-according-to-current-color
 export function invertHex(hex: string): string {
-    let invertedHex = (Number(`0x1${hex}`) ^ 0xFFFFFF).toString(16).substr(1).toUpperCase();
+    const invertedHex = (Number(`0x1${hex}`) ^ 0xFFFFFF).toString(16).substring(1).toUpperCase();
     console.log(invertHex);
     return invertedHex
 }
@@ -55,7 +55,6 @@ export function appendSVGToDOM(id: string, width:number, height:number): d3SVG {
     return <d3SVG>(svg);
 }
 
-// eslint-disable-next-line no-unused-vars
 export function rotateOuterCircles(centralCircle:Circle, currentShift:number, outerCirclesSVGS:d3CIRCLE[]): [number, Circle[]] {
     const newShift = currentShift + 1;
     console.log("Current shfit", newShift);
@@ -119,7 +118,6 @@ export function nonagonsThatFormA6PointStarCenteredAt(centralHexagon:Hexagon): P
 // -----------------------------------------------------------------------------
 
 
-// eslint-disable-next-line no-unused-vars
 export function drawDifferentPolygons(drawingId:string, radius:number, size:number) : IO {
     let svg:d3SVG;
     _.forOwn(
@@ -133,7 +131,6 @@ export function drawDifferentPolygons(drawingId:string, radius:number, size:numb
     )
 }
 
-// eslint-disable-next-line no-unused-vars
 export function drawStarGrid(drawingId:string, radius:number, size:number) : IO {
     const star = new Star(new Point(radius * size / 2, radius * size / 2), 6, radius);
     const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
@@ -151,7 +148,6 @@ export function drawStarGrid(drawingId:string, radius:number, size:number) : IO 
     appendPolygon(svg, Hexagon.withinCircle(star.above().right().outerCircle).lines);
 }
 
-// eslint-disable-next-line no-unused-vars
 export function drawRotatedStar(drawingId:string, radius:number, size:number): IO {
     const star = new Star(new Point(radius * size / 2, radius * size / 2), 6, radius);
     const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
@@ -160,12 +156,10 @@ export function drawRotatedStar(drawingId:string, radius:number, size:number): I
         star.rotate(Math.PI/4).circles,
         c => {
             appendCircleWithMidpoint(svg, c);
-            true;
         }
     );
 }
 
-// eslint-disable-next-line no-unused-vars
 export function drawDifferentStars(drawingId:string, radius:number, size:number): IO {
     let star:Star;
     let svg:d3SVG;
@@ -180,7 +174,6 @@ export function drawDifferentStars(drawingId:string, radius:number, size:number)
     )
 }
 
-// eslint-disable-next-line no-unused-vars
 export function drawRotatingCircles(drawingId:string, radius:number, size:number): IO {
     const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
     const centralCircle = new Circle(radius * size / 2, radius * size / 2, radius);
@@ -201,7 +194,6 @@ export function drawRotatingCircles(drawingId:string, radius:number, size:number
 }
 
 
-// eslint-disable-next-line no-unused-vars
 export function drawHexagonWithSurroundingNonagons(drawingId: string, radius: number, size: number, background_theme: unknown, lines_theme: unknown): d3SVG {
     const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
 
@@ -230,7 +222,6 @@ export function drawHexagonWithSurroundingNonagons(drawingId: string, radius: nu
     return <d3SVG>(svg);
 }
 
-// eslint-disable-next-line no-unused-vars
 export function drawCirclesRecursively(drawingId:string, radius:number, size:number, maxLevels:number): IO {
     const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
     // Recursively Add circles around middle circle ...
@@ -247,7 +238,6 @@ export function drawCirclesRecursively(drawingId:string, radius:number, size:num
     // appendCircleWithMidpoint(<d3SVG>svg, circle);
 }
 
-// eslint-disable-next-line no-unused-vars
 export function drawChainedStars(drawingId:string, radius:number, size:number): IO {
     const numbereOfStars = 10;
     const svg = appendSVGToDOM(drawingId, radius * size, radius * size);

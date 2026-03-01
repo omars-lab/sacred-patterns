@@ -11,7 +11,6 @@ function _rotate_list_right<T>(arr:T[]): T[] {
     return arr_copy;
 }
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export class Line {
 
     constructor(public p1:Point, public p2:Point) {}

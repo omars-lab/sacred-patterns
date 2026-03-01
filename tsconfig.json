@@ -1,22 +1,24 @@
 {
   "compilerOptions": {
-        "target": "es5",
-        "module": "commonjs",
-        "rootDir": "./src/ts",
-        "outDir": "./src/js",
-        "lib": ["es5", "dom", "es2015.core"],  // This is so it can find Math.hypot ... https://github.com/Microsoft/TypeScript/issues/9555
-        "strict": true,
-        "noImplicitAny": true,
-        "strictNullChecks": true,
-        "strictFunctionTypes": true,
-        "noImplicitThis": true,
-        "alwaysStrict": true,
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "noImplicitReturns": true,
-        "noFallthroughCasesInSwitch": true,
-        "removeComments": false, // Needed for eslint comments ...
-    },
-    "include": ["**/*"],
-    "exclude": []
+    "target": "ES2020",
+    "module": "commonjs",
+    "rootDir": "./src/ts",
+    "outDir": "./src/js",
+    "lib": ["ES2020", "DOM"],
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "removeComments": false
+  },
+  "include": ["src/ts/**/*"],
+  "exclude": ["node_modules", "src/js"]
 }

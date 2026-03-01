@@ -3,7 +3,6 @@ import {Point} from "./points"
 import {Circle} from "./circles"
 import {Line, Lines} from "./lines"
 
-/* eslint-disable-next-line no-unused-vars, no-redeclare */
 export class Star {
 
     constructor(public center:Point, public numberOfPoints:number, public size:number, public radial_shift:number=0) {}
