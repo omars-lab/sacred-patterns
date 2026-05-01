@@ -293,14 +293,16 @@ Generate TWO screenshots per iteration — **blueprint** (structural edges only)
     ```
     Pass `--skip-qiyas` if Docker is unavailable. Drop `--baseline` if interpret-pattern hasn't run yet (A6 falls through cleanly).
 
-    The orchestrator runs every signal — `validate-svg.sh`, `qiyas pixel-diff` × 2 (vs traced SVG and vs reference image, via Docker), `arch-audit.py`, and `qiyas-diff.py` — and writes a single `validation.json`. Schema split: `qiyas/docs/validation-envelope.md` (shared envelope) + `docs/validation-overall.md` (sacred-patterns `overall.*` rollup).
+    The orchestrator runs every signal — `validate-svg.sh`, `qiyas pixel-diff` × 2 (vs traced SVG and vs reference image, via Docker), `arch-audit.py`, `qiyas-diff.py`, and `qiyas score` (rollup) — and writes a single `validation.json`. Schema split: `qiyas/docs/validation-envelope.md` (shared envelope) + `docs/validation-overall.md` (sacred-patterns `overall.*` rollup).
 
     **Read `validation.json` for go/no-go**, drill into `tools/*/` subdirectories for diagnosis:
     - `overall.go_no_go` — `converged` / `iterate` / `broken`
     - `overall.topology_complete` — boolean (validate-svg + A2/A4/A5 all green)
     - `overall.structural_score` — A6 PASS count (e.g. `"5/7"`) or `"n/a"` if no baseline
     - `overall.pixel_similarity` — median of pixel-diff scores (regression detection only, NOT the convergence target)
-    - `overall.blocking_issues` — ranked human-readable list
+    - `overall.composite_score` — `qiyas score`'s weighted geometric-mean composite (null when qiyas score didn't run)
+    - `overall.warnings[0]` — **the next-action directive**. Ranked by counterfactual score delta — fixing it is expected to deliver the largest score lift. `overall.warnings[*].context.counterfactual_rationale` explains *why* this fix raises the score.
+    - `overall.blocking_issues` — ranked human-readable list (deterministic gates: validate-svg + A2/A4/A5/A6)
 
     Per-tool subdirectories under `validation/`:
     - `validate-svg.log` — XML preflight checks
@@ -308,11 +310,13 @@ Generate TWO screenshots per iteration — **blueprint** (structural edges only)
     - `arch-audit/arch-audit.{md,json}` — A2-A6 details
     - `qiyas/report.html` — interactive Tier-3 shape-pairing workbench
     - `qiyas/diff.json` — Hungarian shape pairs and unmatched shapes
+    - `score/score.json` — composite + ranked warnings (when `qiyas score` runs)
 
     Include in `evaluation.md`:
     ```
     ## Validation Rollup (validation.json)
-    go_no_go: iterate  |  topology: incomplete  |  structural: 5/7  |  pixel: 74.9%
+    go_no_go: iterate  |  topology: incomplete  |  structural: 5/7  |  pixel: 74.9%  |  composite: 0.74
+    Next action (overall.warnings[0]): missing-shapes — 2 shape(s) in reference have no match in recon (Δ +0.18)
     Blockers: A6 satellite-inner-stars MISSING; A6 band-segments PARTIAL
     ```
 

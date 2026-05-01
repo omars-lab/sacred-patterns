@@ -129,6 +129,16 @@ def load_qiyas(qiyas_dir: Path | None, ran: bool) -> dict:
     }
 
 
+def load_qiyas_score(json_path: Path | None) -> dict:
+    """qiyas score emits the §D5b composite + ranked warnings JSON."""
+    if json_path is None or not json_path.exists():
+        return {"available": False}
+    try:
+        return {"available": True, **json.loads(json_path.read_text(encoding="utf-8"))}
+    except json.JSONDecodeError as e:
+        return {"available": False, "error": f"JSON decode error: {e}"}
+
+
 def compute_overall(
     *,
     validate_exit: int,
@@ -136,6 +146,7 @@ def compute_overall(
     diff_traced: dict,
     diff_jpg: dict,
     qiyas: dict,
+    qiyas_score: dict,
     has_baseline: bool,
 ) -> dict:
     """Apply the decision rules from docs/validation-overall.md."""
@@ -182,6 +193,16 @@ def compute_overall(
         and a5_status == "COMPLETE"
     )
 
+    # qiyas score outputs (slice 7 of #39): composite + top-N ranked
+    # warnings. `available=False` when the older Docker image without
+    # `qiyas score` was used or the command exited non-zero.
+    composite_score = qiyas_score.get("score") if qiyas_score.get("available") else None
+    score_warnings = (qiyas_score.get("warnings") or []) if qiyas_score.get("available") else []
+    topology_pillar = None
+    if qiyas_score.get("available"):
+        pillars = qiyas_score.get("pillars") or {}
+        topology_pillar = pillars.get("topology")
+
     # go/no/go decision
     if validate_exit != 0 or arch.get("error"):
         go_no_go = "broken"
@@ -191,6 +212,15 @@ def compute_overall(
         and a6.get("pass_count") == a6.get("total_count")
         and pixel_similarity is not None
         and pixel_similarity >= 80
+        and (
+            # When composite is available, additionally require the
+            # convergence thresholds from validation-overall.md.
+            composite_score is None
+            or (
+                composite_score >= 0.85
+                and (topology_pillar is None or topology_pillar >= 0.95)
+            )
+        )
     ):
         go_no_go = "converged"
     else:
@@ -200,8 +230,10 @@ def compute_overall(
         "topology_complete": topology_complete,
         "structural_score": structural_score,
         "pixel_similarity": pixel_similarity,
+        "composite_score": composite_score,
         "go_no_go": go_no_go,
         "blocking_issues": blocking,
+        "warnings": score_warnings,
     }
 
 
@@ -218,6 +250,7 @@ def main() -> int:
     p.add_argument("--arch-audit-json", required=True)
     p.add_argument("--qiyas-ran", type=int, default=0)
     p.add_argument("--qiyas-dir")
+    p.add_argument("--qiyas-score-json", help="Path to qiyas score output JSON.")
     p.add_argument("--out", required=True)
     args = p.parse_args()
 
@@ -237,6 +270,9 @@ def main() -> int:
         Path(args.qiyas_dir) if args.qiyas_dir else None,
         bool(args.qiyas_ran),
     )
+    qiyas_score = load_qiyas_score(
+        Path(args.qiyas_score_json) if args.qiyas_score_json else None
+    )
 
     overall = compute_overall(
         validate_exit=args.validate_svg_exit,
@@ -244,6 +280,7 @@ def main() -> int:
         diff_traced=diff_traced,
         diff_jpg=diff_jpg,
         qiyas=qiyas,
+        qiyas_score=qiyas_score,
         has_baseline=bool(args.baseline),
     )
 
@@ -263,6 +300,7 @@ def main() -> int:
             "svg_diff_vs_jpg": diff_jpg,
             "arch_audit": arch,
             **({"qiyas": qiyas} if qiyas.get("available") or args.qiyas_ran else {}),
+            **({"qiyas_score": qiyas_score} if qiyas_score.get("available") else {}),
         },
     }
 
@@ -273,9 +311,15 @@ def main() -> int:
     # Print one-line summary
     o = overall
     bi = f" — {len(o['blocking_issues'])} blocker(s)" if o["blocking_issues"] else ""
+    composite = f"  composite={o['composite_score']}" if o.get("composite_score") is not None else ""
+    top_warning = ""
+    if o.get("warnings"):
+        first = o["warnings"][0]
+        top_warning = f"  top_warning={first.get('id')}"
     print(
         f"  go_no_go={o['go_no_go']}  topology={'OK' if o['topology_complete'] else 'incomplete'}  "
-        f"structural={o['structural_score']}  pixel={o['pixel_similarity']}%{bi}"
+        f"structural={o['structural_score']}  pixel={o['pixel_similarity']}%"
+        f"{composite}{top_warning}{bi}"
     )
     return 0
 

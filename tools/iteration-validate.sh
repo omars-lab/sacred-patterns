@@ -10,6 +10,7 @@
 #   3. qiyas pixel-diff recon vs reference image  — pixel similarity (SVG-vs-photo)
 #   4. arch-audit.py [--baseline ...]            — A2-A6 architectural audit
 #   5. qiyas-diff.py recon vs reference image    — Hungarian shape matching
+#   6. qiyas score (rollup of 2/3/5)             — composite + ranked warnings (best-effort)
 #
 # Usage:
 #   ./tools/iteration-validate.sh \
@@ -131,7 +132,7 @@ echo ""
 # ============================================================
 # 1. validate-svg.sh
 # ============================================================
-echo -e "${YELLOW}[1/5] validate-svg${NC}"
+echo -e "${YELLOW}[1/6] validate-svg${NC}"
 VALIDATE_LOG="$OUT/validate-svg.log"
 VALIDATE_EXIT=0
 "$SCRIPT_DIR/validate-svg.sh" "$SVG" >"$VALIDATE_LOG" 2>&1 || VALIDATE_EXIT=$?
@@ -142,19 +143,19 @@ echo "  exit $VALIDATE_EXIT (log: $VALIDATE_LOG)"
 # ============================================================
 DIFF_TRACED_DIR=""
 if [[ -n "$REFERENCE_TRACED" ]]; then
-    echo -e "${YELLOW}[2/5] qiyas pixel-diff vs traced reference${NC}"
+    echo -e "${YELLOW}[2/6] qiyas pixel-diff vs traced reference${NC}"
     DIFF_TRACED_DIR="$OUT/diff-vs-traced"
     mkdir -p "$DIFF_TRACED_DIR"
     qiyas_docker pixel-diff "$SVG" "$REFERENCE_TRACED" "$DIFF_TRACED_DIR" --rasterizer magick \
         >"$DIFF_TRACED_DIR.log" 2>&1 || echo "  (qiyas pixel-diff exited non-zero, continuing)"
 else
-    echo -e "${YELLOW}[2/5] qiyas pixel-diff vs traced reference — skipped (no --reference-traced)${NC}"
+    echo -e "${YELLOW}[2/6] qiyas pixel-diff vs traced reference — skipped (no --reference-traced)${NC}"
 fi
 
 # ============================================================
 # 3. qiyas pixel-diff vs reference image
 # ============================================================
-echo -e "${YELLOW}[3/5] qiyas pixel-diff vs reference image${NC}"
+echo -e "${YELLOW}[3/6] qiyas pixel-diff vs reference image${NC}"
 DIFF_JPG_DIR="$OUT/diff-vs-jpg"
 mkdir -p "$DIFF_JPG_DIR"
 qiyas_docker pixel-diff "$SVG" "$REFERENCE" "$DIFF_JPG_DIR" --rasterizer magick \
@@ -163,7 +164,7 @@ qiyas_docker pixel-diff "$SVG" "$REFERENCE" "$DIFF_JPG_DIR" --rasterizer magick 
 # ============================================================
 # 4. arch-audit
 # ============================================================
-echo -e "${YELLOW}[4/5] arch-audit${NC}"
+echo -e "${YELLOW}[4/6] arch-audit${NC}"
 ARCH_DIR="$OUT/arch-audit"
 mkdir -p "$ARCH_DIR"
 ARCH_ARGS=("$SVG" "$ARCH_DIR")
@@ -177,7 +178,7 @@ python3 "$SCRIPT_DIR/arch-audit.py" "${ARCH_ARGS[@]}" >"$ARCH_DIR/stdout.log" 2>
 QIYAS_DIR=""
 QIYAS_RAN=0
 if [[ "$SKIP_QIYAS" -eq 0 ]]; then
-    echo -e "${YELLOW}[5/5] qiyas-diff${NC}"
+    echo -e "${YELLOW}[5/6] qiyas-diff${NC}"
     QIYAS_DIR="$OUT/qiyas"
     if "$SCRIPT_DIR/qiyas-diff.py" "$SVG" "$REFERENCE" "$QIYAS_DIR" \
             >"$QIYAS_DIR.log" 2>&1; then
@@ -186,7 +187,39 @@ if [[ "$SKIP_QIYAS" -eq 0 ]]; then
         echo "  (qiyas-diff failed — see $QIYAS_DIR.log)"
     fi
 else
-    echo -e "${YELLOW}[5/5] qiyas-diff — skipped (--skip-qiyas)${NC}"
+    echo -e "${YELLOW}[5/6] qiyas-diff — skipped (--skip-qiyas)${NC}"
+fi
+
+# ============================================================
+# 6. qiyas score (rollup of detector outputs into composite + ranked warnings)
+# ============================================================
+SCORE_DIR="$OUT/score"
+SCORE_RAN=0
+if [[ "$SKIP_QIYAS" -eq 0 ]]; then
+    echo -e "${YELLOW}[6/6] qiyas score${NC}"
+    mkdir -p "$SCORE_DIR"
+
+    # Mount $OUT at /work and let qiyas score read each detector's output
+    # by relative path. Best-effort: older qiyas images without `score`
+    # exit non-zero, in which case the rollup proceeds without composite.
+    SCORE_ARGS=(--output /work/score/score.json)
+    [[ "$QIYAS_RAN" -eq 1 && -d "$QIYAS_DIR" ]] && \
+        SCORE_ARGS+=(--validate-out "/work/$(basename "$QIYAS_DIR")")
+    [[ -d "$DIFF_JPG_DIR" ]] && \
+        SCORE_ARGS+=(--pixel-diff-out "/work/$(basename "$DIFF_JPG_DIR")")
+
+    out_abs="$(cd "$OUT" && pwd)"
+    if docker run --rm \
+            -v "$out_abs:/work" \
+            "$QIYAS_IMAGE" \
+            score "${SCORE_ARGS[@]}" \
+            >"$SCORE_DIR.log" 2>&1; then
+        SCORE_RAN=1
+    else
+        echo "  (qiyas score unavailable — older image or non-zero exit; see $SCORE_DIR.log)"
+    fi
+else
+    echo -e "${YELLOW}[6/6] qiyas score — skipped (--skip-qiyas)${NC}"
 fi
 
 # ============================================================
@@ -207,6 +240,7 @@ python3 "$SCRIPT_DIR/iteration-validate-rollup.py" \
     --arch-audit-json "$ARCH_DIR/arch-audit.json" \
     ${QIYAS_RAN:+--qiyas-ran $QIYAS_RAN} \
     ${QIYAS_DIR:+--qiyas-dir "$QIYAS_DIR"} \
+    ${SCORE_RAN:+--qiyas-score-json "$SCORE_DIR/score.json"} \
     --out "$OUT/validation.json"
 
 echo ""
