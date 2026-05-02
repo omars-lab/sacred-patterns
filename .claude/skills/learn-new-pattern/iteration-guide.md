@@ -337,9 +337,58 @@ Generate TWO screenshots per iteration — **blueprint** (structural edges only)
 
 ### C. Evaluate
 
-Evaluation has TWO phases, in strict order. **Phase 1 (Structural Audit) must pass before Phase 2 (Visual/Pixel) is meaningful.** See Core Tenet T5.
+Evaluation has THREE phases, in strict order. C0 is the structured-data primary signal; C1 is reference-grounded human verification of structural elements; C2 is visual-quality scoring. **C0 + C1 must agree before C2 is meaningful.** See Core Tenet T5.
 
-#### C1. Structural Audit (PRIMARY — gates all other evaluation)
+#### C0. Read validation.json warnings (PRIMARY — structured signal)
+
+**Before any human evaluation**, read the orchestrator's structured output. The warnings array carries qiyas's measured assessment of what's wrong and a counterfactual rationale for each issue. C1's reference-grounded comparison verifies and contextualizes C0 — it does not replace it.
+
+```bash
+jq '{
+  go_no_go: .overall.go_no_go,
+  topology: .overall.topology_complete,
+  structural: .overall.structural_score,
+  pixel: .overall.pixel_similarity,
+  composite: .overall.composite_score,
+  blockers: .overall.blocking_issues,
+  top_warnings: (.overall.warnings // [] | .[0:3])
+}' iterations/{nn}/validation/validation.json
+```
+
+For each warning, record in `evaluation.md`:
+
+| Field | What it means |
+|-------|---------------|
+| `id` | Warning kind (`missing-shapes`, `low-geometric-score`, `asymmetric-channel-drift`, `high-param-drift`, `high-position-drift`, etc.) |
+| `source` | Which qiyas tool emitted it (`diff`, `pixel-diff`, `zone-audit`, `svg-audit`) |
+| `severity` | `error` (gates convergence) / `warn` (degrades score) |
+| `message` | Human-readable summary qiyas computed |
+| `context.counterfactual_rationale` | "If X were Y, score would improve by Z" — the proposed mechanical fix |
+| `counterfactual_score_delta` | Predicted score lift from fixing this warning. **The largest delta is the next iteration's target.** |
+
+**Why C0 first:** qiyas already did the comparison. Free-form Claude analysis re-derives observations that qiyas measured and ranked. Ground the evaluation in `validation.json` first; use C1 to cross-check that qiyas's top-ranked warning matches what you see in the reference, not to invent a parallel evaluation.
+
+**When C0 and C1 disagree:** if qiyas reports `missing-shapes` but C1 says all elements PRESENT, the disagreement itself is the finding — qiyas is matching against `baseline.json` (user-verified) while C1 is matching against your visual impression. Trust qiyas; revisit `baseline.json` only if you have evidence the user-verified expectations are wrong.
+
+**Record in `evaluation.md`:**
+
+```markdown
+## C0. Validation Rollup (validation.json)
+go_no_go: iterate  |  topology: incomplete  |  structural: 5/7  |  pixel: 74.2%  |  composite: 0.74
+
+### Top warnings (ranked by counterfactual_score_delta)
+1. **missing-shapes** [error, source=diff, Δ +0.172]
+   "51 of 139 ref shapes have no match in recon"
+   Counterfactual: if recon had the 51 missing ref shape(s), they would match perfectly (param_drift=0)
+2. **asymmetric-channel-drift** [warn, source=pixel-diff, Δ +0.052]
+   "Channel drift uneven across rotational sectors"
+3. **high-param-drift** [warn, source=diff, Δ +0.015]
+   "6 pairs with drift >= 0.50"
+
+Blockers: A6 satellite-inner-stars MISSING; A6 band-segments PARTIAL
+```
+
+#### C1. Structural Audit (verifies C0 against the reference image)
 
 Open the reference image and the output screenshot side by side. For each architectural element, check: does it EXIST in the output? This is a binary pass/fail, not a quality score.
 
@@ -604,6 +653,16 @@ satellites:    PARTIAL  (8 found, 10 expected)
 
 **This is the most critical step in the entire process.** The goal is not just to fix what's broken — it's to fundamentally understand what geometric/structural principle you're missing.
 
+#### D0. Walk the validation.json warnings (start here)
+
+Before any open-ended inspection, walk every warning in `overall.warnings` (not just `[0]`) and answer:
+
+1. **Was this warning present in the previous iteration?** Compare `iterations/{nn}/validation/validation.json` to `iterations/{nn-1}/validation/validation.json`. If a warning's `counterfactual_score_delta` shrank, the iteration moved in the right direction. If it grew, the change made things worse.
+2. **Did this iteration's edit address `warnings[0]`?** Read the previous iteration's `guidance.md`. If the planned edit was for warning X but warning X's delta did not shrink, the edit failed to land — that's the root cause to investigate, not a new structural theory.
+3. **Did a new warning appear?** A regression. The change introduced a problem that was not present before. Identify which edit added it.
+
+This grounds the retrospective in measured deltas before any visual hypothesis-building.
+
 #### The Deep Inspection Protocol
 
 For EVERY difference between your output and the reference (not just MISSING/PARTIAL scores):
@@ -703,8 +762,18 @@ For EVERY difference between your output and the reference (not just MISSING/PAR
 ```markdown
 # Iteration {nn} Retrospective
 
+## Warning deltas vs previous iteration (from validation.json)
+| Warning id | Prev Δ | This Δ | Direction | Notes |
+|---|---|---|---|---|
+| missing-shapes | +0.18 | +0.17 | ↓ improved | Added 2 of expected 51 shapes |
+| asymmetric-channel-drift | +0.05 | +0.05 | = unchanged | Edit did not target this |
+| (new) high-position-drift | — | +0.03 | regression | Likely from satellite repositioning |
+
+**Did this iteration's edit address the previous `warnings[0]`?** YES / NO / PARTIAL — explain.
+**Composite score:** {prev} → {this} (Δ {±0.0X})
+
 ## What went wrong
-[Describe what was incorrect in the output]
+[Describe what was incorrect in the output, anchored to the warnings above]
 
 ## Root cause
 [What did the analysis say that led to this? Why was it wrong?]
@@ -775,32 +844,73 @@ For EACH difference found, classify the error source:
 
 ### E. Decide
 
-The goal is a **near-identical derivative** — not "good enough." The confidence score tracks progress but is NOT a stopping condition.
+The goal is a **near-identical derivative** — not "good enough." The decision is mechanical: read `overall.go_no_go` and the top-ranked warning from `validation.json`.
 
-| Condition | Action |
-|-----------|--------|
-| Output is near-identical to reference | **Complete** — proceed to finalization |
-| Meaningful structural differences remain | **Iterate** — apply deep retrospective corrections |
-| Convergence stalled (3+ iterations with <0.03 improvement) | **Ask user** — show what's left, ask what to prioritize |
-| Deep retrospective reveals a fundamental approach change needed | **Pivot** — propose the new approach to the user before implementing |
+#### E1. Stop / continue / pivot — driven by validation.json
+
+| `overall.go_no_go` | Other condition | Action |
+|---|---|---|
+| `converged` | — | **Complete** — proceed to finalization |
+| `broken` | — | **Fix render first** (G1: only fix-broken-render edits permitted) |
+| `iterate` | `overall.warnings[0].counterfactual_score_delta >= 0.05` | **Iterate** — next iteration MUST target `overall.warnings[0]` |
+| `iterate` | `overall.warnings[0].counterfactual_score_delta < 0.05` AND last 3 iterations' `composite_score` deltas all `< 0.03` | **Ask user** — convergence stalled; show top-3 warnings and ask what to prioritize |
+| `iterate` | Deep retrospect reveals a fundamental approach change needed | **Pivot** — propose the new approach to the user before implementing |
+
+#### E2. Mechanically derive next-iteration target from warnings
+
+The next iteration's priority is **`overall.warnings[0]`** (highest counterfactual delta). Translate the warning into a concrete edit using its `id` and `context.counterfactual_rationale`:
+
+| Warning `id` | Mechanical edit derivation |
+|---|---|
+| `missing-shapes` | Add the missing reference shapes. `context.sample_ref_ids` lists representative ref-shape IDs to start from. Inspect them in `validation/qiyas/report.html` (Tier-3 workbench). Architectural change — never a color/proportion tweak. |
+| `low-geometric-score` | Geometric score < 0.8 means matched shapes have wrong vertex/edge structure. Look at the lowest-scoring pairs in `validation/qiyas/diff.json` and fix per-shape geometry. |
+| `high-param-drift` | `context.sample_pair_ids` lists pairs with the worst parameter drift. Compare side-by-side in the Tier-3 workbench; correct the construction parameters (radii, angles) for that shape class. |
+| `high-position-drift` | Shapes are roughly correct but mislocated. Recompute positions from first principles (polar coords from center, `360/n` divisions) — likely a magic number leaked into placement. |
+| `asymmetric-channel-drift` | Color or fill differs unevenly across rotational sectors. A symmetry violation in coloring — check that color assignment is a function of `(sector_index, ring_index)`, not absolute coordinates. |
+| `A2_symmetry: UNEVEN` (svg-audit) | N-fold symmetry broken. Verify `0..n-1` sector-index loop is producing identical sectors. |
+| `A5_bands: BROKEN` (svg-audit) | Strapwork band network is incomplete. Check band continuity and crossing count against expected `n*(n-1)/2`. |
+| Unknown `id` | Read `context.counterfactual_rationale` verbatim — qiyas already wrote the proposed fix. |
+
+**G2 gate (Architecture Before Pixels) is now mechanical:** if `overall.structural_score` numerator < denominator OR `topology_complete == false`, the next iteration's edit MUST address one of the structural warnings (`missing-shapes`, `A2_symmetry`, `A4_coverage`, `A5_bands`, A6 shape MISSING/PARTIAL). Pixel/proportion edits are permitted only when both topology is complete AND structural is full.
 
 When iterating, write `guidance.md`:
+
 ```markdown
 # Guidance for Iteration {nn+1}
 
-## Structural audit status
-[Which elements are MISSING/MALFORMED from C1 audit — these are the top priority]
+## Validation rollup (from validation.json)
+- go_no_go: iterate
+- topology_complete: false
+- structural_score: 5/7
+- composite_score: 0.74 (Δ vs prev: +0.02)
 
-## Changes needed
-1. [Specific structural fix — add missing element, fix malformed element]
-2. [Only list color/parametric changes if structural audit passes]
+## Top 3 warnings (verbatim from overall.warnings)
+
+### #1 — missing-shapes [error, source=diff, Δ +0.172]
+**Message:** 51 of 139 ref shapes have no match in recon.
+**Counterfactual:** if recon had the 51 missing ref shape(s), they would match perfectly (param_drift=0).
+**Sample ref IDs:** [from context.sample_ref_ids]
+
+### #2 — asymmetric-channel-drift [warn, source=pixel-diff, Δ +0.052]
+**Message:** Channel drift uneven across rotational sectors.
+**Counterfactual:** [from context.counterfactual_rationale]
+
+### #3 — high-param-drift [warn, source=diff, Δ +0.015]
+**Message:** 6 pairs with drift >= 0.50.
+**Counterfactual:** [from context.counterfactual_rationale]
+
+## Priority (mechanically derived from warnings[0])
+Target: **missing-shapes** — add the 51 missing reference shapes, starting from `context.sample_ref_ids`. Architectural change; no color tweaks until structural_score == denominator.
+
+## Specific edits planned
+1. [Concrete edit to construction.md / pattern.json that addresses warning #1]
+2. [Optional: secondary edit if it does not conflict with #1]
 
 ## Analysis corrections applied
-- [What was corrected in analysis.md]
-
-## Priority
-[First MISSING/MALFORMED structural element — per Tenet T5, structural gaps override all other work]
+- [What was corrected in analysis.md, if any]
 ```
+
+**Why this is mechanical:** qiyas score has already ranked the warnings by predicted score lift. The iteration agent's job is to translate `warnings[0]` into a code change, not to re-derive priorities from screenshots. Free-form re-derivation is what made the 80+ iteration runs possible — it lets Claude wander. The warning ranking eliminates the wandering.
 
 ### F. Library Extension Check
 

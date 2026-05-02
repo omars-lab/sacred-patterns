@@ -197,10 +197,14 @@ These audits measure shape convergence directly, unlike pixel metrics which conf
 
 ### Pixel Metrics as Regression Detection
 
-- **svg-diff.sh** scores are useful for detecting regressions (did this change make things worse?) but NOT for guiding structural work
+- **`qiyas pixel-diff`** scores are useful for detecting regressions (did this change make things worse?) but NOT for guiding structural work
 - A change that adds correct structure may temporarily decrease the similarity score
 - Never optimize for the metric — optimize for visual/structural match against the reference
-- The structural audit score (x/7) is the primary progress indicator, not the percentage
+- The primary progress indicators are: `validation.json` → `overall.warnings[0].counterfactual_score_delta` (predicted next-step score lift, ranked) and `overall.structural_score` (A6 PASS count). Pixel similarity is diagnostic-only.
+
+### Iterations Are Driven by `overall.warnings[0]`
+
+Every iteration's priority comes from `validation.json`'s `overall.warnings[0]` — qiyas has already ranked the warnings by predicted score lift (`counterfactual_score_delta`). The iteration agent translates `warnings[0]` into a code change; it does not re-derive priorities from screenshots. Each warning carries `context.counterfactual_rationale` ("if X were Y, score would improve by Z") — that rationale IS the proposed fix. See `iteration-guide.md` sections C0 (Read warnings) and E2 (Mechanical edit derivation).
 
 ## Self-Healing Principles
 
