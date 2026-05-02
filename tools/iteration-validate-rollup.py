@@ -69,14 +69,49 @@ def parse_diff_stats(diff_dir: Path) -> dict:
     return out
 
 
-def load_arch_audit(json_path: Path) -> dict:
-    """arch-audit.py emits clean JSON with stable keys; surface as-is."""
+def load_svg_audit(json_path: Path) -> dict:
+    """qiyas svg-audit emits {audits: {A1, A2, A4, A5, A6?}, ...}.
+
+    Translate to the flat A2_symmetry/A4_coverage/A5_bands/A6_baseline shape
+    that compute_overall() consumes. The translation is deliberate and not
+    a passthrough: svg-audit's per-audit envelope (status/score/etc.) is
+    surfaced under stable keys so the rollup logic stays stable across the
+    arch-audit → svg-audit swap.
+    """
     if not json_path.exists():
         return {"available": False}
     try:
-        return {"available": True, **json.loads(json_path.read_text(encoding="utf-8"))}
+        raw = json.loads(json_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
         return {"available": False, "error": f"JSON decode error: {e}"}
+
+    audits = raw.get("audits", {})
+    out: dict = {
+        "available": True,
+        "schema_version": raw.get("schema_version"),
+        "qiyas_version": raw.get("qiyas_version"),
+        "n_fold": raw.get("n_fold"),
+        "audits_run": raw.get("audits_run", []),
+        "audits_skipped": raw.get("audits_skipped", []),
+        "score": raw.get("score"),
+        "warnings": raw.get("warnings", []),
+    }
+
+    if "A1" in audits:
+        out["A1_census"] = audits["A1"]
+    if "A2" in audits:
+        out["A2_symmetry"] = audits["A2"]
+    if "A4" in audits:
+        a4 = dict(audits["A4"])
+        # Mirror arch-audit's "medallion_pct" alias for back-compat readers.
+        if "coverage_pct" in a4 and "medallion_pct" not in a4:
+            a4["medallion_pct"] = a4["coverage_pct"]
+        out["A4_coverage"] = a4
+    if "A5" in audits:
+        out["A5_bands"] = audits["A5"]
+    if "A6" in audits:
+        out["A6_baseline"] = audits["A6"]
+    return out
 
 
 def load_qiyas(qiyas_dir: Path | None, ran: bool) -> dict:
@@ -142,7 +177,7 @@ def load_qiyas_score(json_path: Path | None) -> dict:
 def compute_overall(
     *,
     validate_exit: int,
-    arch: dict,
+    svg_audit: dict,
     diff_traced: dict,
     diff_jpg: dict,
     qiyas: dict,
@@ -155,10 +190,10 @@ def compute_overall(
     if validate_exit != 0:
         blocking.append(f"validate-svg failed (exit {validate_exit})")
 
-    a2 = arch.get("A2_symmetry", {}) if arch.get("available") else {}
-    a4 = arch.get("A4_coverage", {}) if arch.get("available") else {}
-    a5 = arch.get("A5_bands", {}) if arch.get("available") else {}
-    a6 = arch.get("A6_baseline") if arch.get("available") else None
+    a2 = svg_audit.get("A2_symmetry", {}) if svg_audit.get("available") else {}
+    a4 = svg_audit.get("A4_coverage", {}) if svg_audit.get("available") else {}
+    a5 = svg_audit.get("A5_bands", {}) if svg_audit.get("available") else {}
+    a6 = svg_audit.get("A6_baseline") if svg_audit.get("available") else None
 
     a2_status = a2.get("status")
     a4_status = a4.get("status")
@@ -204,7 +239,7 @@ def compute_overall(
         topology_pillar = pillars.get("topology")
 
     # go/no/go decision
-    if validate_exit != 0 or arch.get("error"):
+    if validate_exit != 0 or svg_audit.get("error"):
         go_no_go = "broken"
     elif (
         topology_complete
@@ -247,7 +282,7 @@ def main() -> int:
     p.add_argument("--validate-svg-log", required=True)
     p.add_argument("--diff-traced-dir")
     p.add_argument("--diff-jpg-dir", required=True)
-    p.add_argument("--arch-audit-json", required=True)
+    p.add_argument("--svg-audit-json", required=True)
     p.add_argument("--qiyas-ran", type=int, default=0)
     p.add_argument("--qiyas-dir")
     p.add_argument("--qiyas-score-json", help="Path to qiyas score output JSON.")
@@ -265,7 +300,7 @@ def main() -> int:
         else {"available": False}
     )
     diff_jpg = parse_diff_stats(Path(args.diff_jpg_dir))
-    arch = load_arch_audit(Path(args.arch_audit_json))
+    svg_audit = load_svg_audit(Path(args.svg_audit_json))
     qiyas = load_qiyas(
         Path(args.qiyas_dir) if args.qiyas_dir else None,
         bool(args.qiyas_ran),
@@ -276,7 +311,7 @@ def main() -> int:
 
     overall = compute_overall(
         validate_exit=args.validate_svg_exit,
-        arch=arch,
+        svg_audit=svg_audit,
         diff_traced=diff_traced,
         diff_jpg=diff_jpg,
         qiyas=qiyas,
@@ -298,7 +333,7 @@ def main() -> int:
             "validate_svg": validate_svg,
             **({"svg_diff_vs_traced": diff_traced} if args.diff_traced_dir else {}),
             "svg_diff_vs_jpg": diff_jpg,
-            "arch_audit": arch,
+            "svg_audit": svg_audit,
             **({"qiyas": qiyas} if qiyas.get("available") or args.qiyas_ran else {}),
             **({"qiyas_score": qiyas_score} if qiyas_score.get("available") else {}),
         },

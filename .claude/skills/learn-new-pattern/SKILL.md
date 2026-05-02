@@ -72,7 +72,7 @@ Collaborative shape review step. Claude's visual analysis becomes editable; the 
 
 **Gate:** Step 2 cannot begin until `input/baseline.json` exists. This ensures the user has reviewed and corrected Claude's interpretation before iteration work starts.
 
-The baseline is used by `arch-audit.py --baseline input/baseline.json` (A6 audit) to validate SVG output against expected shapes every iteration.
+The baseline is used by `qiyas svg-audit --baseline input/baseline.json` (A6 audit, run via `tools/iteration-validate.sh`) to validate SVG output against expected shapes every iteration.
 
 See `.claude/skills/interpret-pattern/SKILL.md` for the full skill definition.
 

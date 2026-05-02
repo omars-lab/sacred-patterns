@@ -8,7 +8,7 @@
 #   1. validate-svg.sh on the recon SVG          — XML preflight
 #   2. qiyas pixel-diff recon vs reference-traced — pixel similarity (SVG-vs-SVG)
 #   3. qiyas pixel-diff recon vs reference image  — pixel similarity (SVG-vs-photo)
-#   4. arch-audit.py [--baseline ...]            — A2-A6 architectural audit
+#   4. qiyas svg-audit [--baseline ...]          — A1/A2/A4/A5/A6 architectural audit
 #   5. qiyas-diff.py recon vs reference image    — Hungarian shape matching
 #   6. qiyas score (rollup of 2/3/5)             — composite + ranked warnings (best-effort)
 #
@@ -28,7 +28,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-QIYAS_IMAGE="${QIYAS_IMAGE:-ghcr.io/naqshcoffee/qiyas:dev}"
+QIYAS_IMAGE="${QIYAS_IMAGE:-ghcr.io/naqshcoffee/qiyas:v0.1.0}"
 
 SVG=""
 REFERENCE=""
@@ -162,15 +162,31 @@ qiyas_docker pixel-diff "$SVG" "$REFERENCE" "$DIFF_JPG_DIR" --rasterizer magick 
     >"$DIFF_JPG_DIR.log" 2>&1 || echo "  (qiyas pixel-diff exited non-zero, continuing)"
 
 # ============================================================
-# 4. arch-audit
+# 4. qiyas svg-audit (A1/A2/A4/A5/A6)
 # ============================================================
-echo -e "${YELLOW}[4/6] arch-audit${NC}"
-ARCH_DIR="$OUT/arch-audit"
-mkdir -p "$ARCH_DIR"
-ARCH_ARGS=("$SVG" "$ARCH_DIR")
-[[ -n "$BASELINE" ]] && ARCH_ARGS+=(--baseline "$BASELINE")
-python3 "$SCRIPT_DIR/arch-audit.py" "${ARCH_ARGS[@]}" >"$ARCH_DIR/stdout.log" 2>&1 || \
-    echo "  (arch-audit exited non-zero, continuing)"
+# Two-step: (a) qiyas encode SVG → encoding.json (forced raster path because
+# our SVGs use clipPath, which qiyas's SVG fast-path rejects); (b) qiyas
+# svg-audit encoding.json → svg-audit.json. Baseline is passed through to
+# enable A6 when present.
+echo -e "${YELLOW}[4/6] qiyas svg-audit${NC}"
+SVG_AUDIT_DIR="$OUT/svg-audit"
+mkdir -p "$SVG_AUDIT_DIR"
+svg_audit_abs="$(cd "$SVG_AUDIT_DIR" && pwd)"
+svg_ext="${SVG##*.}"
+cp "$SVG" "$svg_audit_abs/in.$svg_ext"
+SVG_AUDIT_BASELINE_ARGS=()
+if [[ -n "$BASELINE" ]]; then
+    cp "$BASELINE" "$svg_audit_abs/baseline.json"
+    SVG_AUDIT_BASELINE_ARGS=(--baseline /work/baseline.json)
+fi
+{
+    docker run --rm -v "$svg_audit_abs:/work" "$QIYAS_IMAGE" \
+        encode "/work/in.$svg_ext" --primitives-source raster -o /work/encoding.json &&
+    docker run --rm -v "$svg_audit_abs:/work" "$QIYAS_IMAGE" \
+        svg-audit /work/encoding.json --out /work ${SVG_AUDIT_BASELINE_ARGS[@]+"${SVG_AUDIT_BASELINE_ARGS[@]}"}
+} >"$SVG_AUDIT_DIR/stdout.log" 2>&1 || \
+    echo "  (qiyas svg-audit exited non-zero, continuing)"
+rm -f "$svg_audit_abs/in.$svg_ext" "$svg_audit_abs/baseline.json"
 
 # ============================================================
 # 5. qiyas-diff
@@ -237,7 +253,7 @@ python3 "$SCRIPT_DIR/iteration-validate-rollup.py" \
     --validate-svg-log "$VALIDATE_LOG" \
     ${DIFF_TRACED_DIR:+--diff-traced-dir "$DIFF_TRACED_DIR"} \
     --diff-jpg-dir "$DIFF_JPG_DIR" \
-    --arch-audit-json "$ARCH_DIR/arch-audit.json" \
+    --svg-audit-json "$SVG_AUDIT_DIR/svg-audit.json" \
     ${QIYAS_RAN:+--qiyas-ran $QIYAS_RAN} \
     ${QIYAS_DIR:+--qiyas-dir "$QIYAS_DIR"} \
     ${SCORE_RAN:+--qiyas-score-json "$SCORE_DIR/score.json"} \
