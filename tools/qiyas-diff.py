@@ -35,7 +35,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-QIYAS_IMAGE_DEFAULT = "ghcr.io/naqshcoffee/qiyas:v0.1.0"
+QIYAS_IMAGE_DEFAULT = "ghcr.io/naqshcoffee/qiyas:v0.1.1"
 RENDER_SIZE_DEFAULT = 1200
 TIER_DEFAULT = 3
 

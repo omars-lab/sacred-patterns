@@ -28,7 +28,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-QIYAS_IMAGE="${QIYAS_IMAGE:-ghcr.io/naqshcoffee/qiyas:v0.1.0}"
+QIYAS_IMAGE="${QIYAS_IMAGE:-ghcr.io/naqshcoffee/qiyas:v0.1.1}"
 
 SVG=""
 REFERENCE=""
