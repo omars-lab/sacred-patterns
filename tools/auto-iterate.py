@@ -43,6 +43,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from auto_iterate_capture import (  # noqa: E402
+    CaptureError, IterContext, assert_destinations_writable, run_checklist,
+)
+
 REPO_SACRED = Path(__file__).resolve().parent.parent
 REPO_BIKAR = Path("/Users/omareid/Workspace/git/bikar")
 COMPILE_DSL_JS = REPO_BIKAR / "packages/core/dist/index.js"
@@ -237,6 +242,8 @@ def main() -> int:
     p.add_argument("--max-iterations", type=int, default=30)
     p.add_argument("--stagnation-window", type=int, default=3)
     p.add_argument("--stagnation-epsilon", type=float, default=0.005)
+    p.add_argument("--skip-capture", action="store_true",
+                   help="skip Phase 1.5 post-iteration capture checklist")
     args = p.parse_args()
 
     session_dir = Path(args.session_dir).resolve()
@@ -264,6 +271,18 @@ def main() -> int:
         print("        D3-authored sessions need a different edit skill (not yet built).",
               file=sys.stderr)
         return 3
+
+    # Tenet 3: verify Phase 1.5 capture destinations upfront so a missing
+    # sibling repo fails the loop BEFORE the first iteration runs (not
+    # after one surfaces a gap with nowhere to put it).
+    if not args.skip_capture:
+        try:
+            assert_destinations_writable()
+        except CaptureError as e:
+            print(f"[error] capture preflight: {e}", file=sys.stderr)
+            print("        pass --skip-capture to bypass (not recommended).",
+                  file=sys.stderr)
+            return 3
 
     it = load_iteration(session_dir, n)
     print(f"[start] session={session_dir.name} latest_iter={n} "
@@ -329,6 +348,23 @@ def main() -> int:
         append_run_log(session_dir, row)
         print(f"[iter {k}] composite={new_it.composite} "
               f"structural={new_it.structural} go_no_go={new_it.go_no_go}")
+
+        # === Phase 1.5 capture checklist ===
+        if not args.skip_capture:
+            ctx = IterContext(
+                session_name=session_dir.name,
+                iter_n=k,
+                bkr_path=next_bkr,
+                validation_path=new_it.validation_path,
+                top_warning_id=(new_it.top_warning or {}).get("id"),
+            )
+            try:
+                run_checklist(ctx)
+            except CaptureError as e:
+                print(f"[error] capture failed for iter {k}: {e}", file=sys.stderr)
+                print("[stop] meta-loop integrity broken; fix routing and resume",
+                      file=sys.stderr)
+                return 3
 
         # === Stagnation check ===
         if new_it.composite is not None:
