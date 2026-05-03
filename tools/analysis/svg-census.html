@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>SVG Census — Tile Analysis</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; }
+        h1 { font-size: 1.4em; margin-bottom: 10px; color: #7fdbca; }
+        h2 { font-size: 1.1em; margin: 15px 0 8px; color: #c792ea; }
+        .layout { display: flex; gap: 20px; flex-wrap: wrap; }
+        .panel { background: #16213e; border-radius: 8px; padding: 15px; flex: 1; min-width: 320px; }
+        .panel-wide { flex: 2; min-width: 500px; }
+        .controls { margin-bottom: 15px; }
+        .controls label { display: block; margin-bottom: 5px; font-size: 0.85em; color: #82aaff; }
+        .controls input[type="file"] { margin-bottom: 10px; }
+        .controls input[type="text"] { width: 100%; padding: 6px 10px; background: #0d1b3e; border: 1px solid #2a4a7f; color: #e0e0e0; border-radius: 4px; font-size: 0.85em; }
+        button { padding: 6px 16px; background: #3b7dd8; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85em; margin: 5px 5px 5px 0; }
+        button:hover { background: #5b9de8; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.82em; margin-top: 8px; }
+        th, td { padding: 5px 8px; text-align: left; border-bottom: 1px solid #2a4a7f; }
+        th { color: #82aaff; font-weight: 600; }
+        .color-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 2px; vertical-align: middle; margin-right: 5px; border: 1px solid #555; }
+        .stat { font-size: 1.3em; color: #7fdbca; font-weight: 700; }
+        .stat-label { font-size: 0.75em; color: #82aaff; }
+        .stats-row { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .stat-box { text-align: center; min-width: 80px; }
+        #svgPreview { background: #0d1b3e; border-radius: 6px; overflow: hidden; max-height: 500px; display: flex; justify-content: center; align-items: center; }
+        #svgPreview svg { max-width: 100%; max-height: 500px; }
+        .census-json { font-family: monospace; font-size: 0.75em; background: #0d1b3e; padding: 10px; border-radius: 4px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; margin-top: 10px; }
+        .info { font-size: 0.8em; color: #888; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <h1>SVG Census — Tile Analysis</h1>
+    <p class="info">Extract a quantitative tile census from any iteration's SVG output. Load an HTML file or paste SVG markup.</p>
+
+    <div class="layout">
+        <div class="panel">
+            <h2>Load SVG</h2>
+            <div class="controls">
+                <label>Load from HTML/SVG file:</label>
+                <input type="file" id="fileInput" accept=".html,.svg,.htm">
+                <label>Or paste SVG/HTML markup:</label>
+                <textarea id="pasteInput" rows="4" style="width:100%;background:#0d1b3e;border:1px solid #2a4a7f;color:#e0e0e0;border-radius:4px;font-size:0.8em;padding:6px;font-family:monospace;"></textarea>
+                <button onclick="loadFromPaste()">Analyze Pasted Markup</button>
+                <button onclick="exportCensus()">Export Census JSON</button>
+            </div>
+
+            <h2>Summary</h2>
+            <div class="stats-row" id="statsRow">
+                <div class="stat-box"><div class="stat" id="totalPolygons">—</div><div class="stat-label">Polygons</div></div>
+                <div class="stat-box"><div class="stat" id="totalLines">—</div><div class="stat-label">Lines</div></div>
+                <div class="stat-box"><div class="stat" id="totalCircles">—</div><div class="stat-label">Circles</div></div>
+                <div class="stat-box"><div class="stat" id="uniqueColors">—</div><div class="stat-label">Colors</div></div>
+                <div class="stat-box"><div class="stat" id="coveragePct">—</div><div class="stat-label">Coverage %</div></div>
+            </div>
+
+            <h2>By Vertex Count</h2>
+            <table id="vertexTable"><thead><tr><th>Vertices</th><th>Count</th><th>Avg Area</th></tr></thead><tbody></tbody></table>
+
+            <h2>By Fill Color</h2>
+            <table id="colorTable"><thead><tr><th>Color</th><th>Count</th><th>Total Area</th></tr></thead><tbody></tbody></table>
+
+            <h2>Census JSON</h2>
+            <div class="census-json" id="censusJson"></div>
+        </div>
+
+        <div class="panel panel-wide">
+            <h2>SVG Preview</h2>
+            <div id="svgPreview"><p class="info">Load a file to see preview</p></div>
+
+            <h2>Tile Map (colored by vertex count)</h2>
+            <div id="tileMap"></div>
+        </div>
+    </div>
+
+    <script>
+    // ========================================
+    // SVG CENSUS ENGINE
+    // ========================================
+
+    var currentCensus = null;
+
+    function polygonArea(points) {
+        // Shoelace formula
+        var n = points.length;
+        var area = 0;
+        for (var i = 0; i < n; i++) {
+            var j = (i + 1) % n;
+            area += points[i][0] * points[j][1];
+            area -= points[j][0] * points[i][1];
+        }
+        return Math.abs(area) / 2;
+    }
+
+    function polygonCentroid(points) {
+        var cx = 0, cy = 0;
+        for (var i = 0; i < points.length; i++) {
+            cx += points[i][0];
+            cy += points[i][1];
+        }
+        return [cx / points.length, cy / points.length];
+    }
+
+    function parsePoints(pointsStr) {
+        return pointsStr.trim().split(/\s+/).map(function(p) {
+            var parts = p.split(',');
+            return [parseFloat(parts[0]), parseFloat(parts[1])];
+        });
+    }
+
+    function normalizeColor(color) {
+        if (!color) return 'none';
+        color = color.trim().toLowerCase();
+        // Normalize common formats
+        if (color === 'none' || color === 'transparent') return 'none';
+        return color;
+    }
+
+    function extractCensus(svgElement) {
+        var polygons = svgElement.querySelectorAll('polygon');
+        var lines = svgElement.querySelectorAll('line');
+        var circles = svgElement.querySelectorAll('circle');
+
+        var tiles = [];
+        var totalArea = 0;
+        var byVertexCount = {};
+        var byColor = {};
+
+        // Get SVG bounds for coverage calculation
+        var svgWidth = parseFloat(svgElement.getAttribute('width')) || 800;
+        var svgHeight = parseFloat(svgElement.getAttribute('height')) || 800;
+        var canvasArea = svgWidth * svgHeight;
+
+        polygons.forEach(function(poly) {
+            var pointsStr = poly.getAttribute('points');
+            if (!pointsStr) return;
+
+            var points = parsePoints(pointsStr);
+            var area = polygonArea(points);
+            var centroid = polygonCentroid(points);
+            var fill = normalizeColor(poly.getAttribute('fill'));
+            var stroke = normalizeColor(poly.getAttribute('stroke'));
+            var vertexCount = points.length;
+            var tileType = poly.getAttribute('data-tile-type') || 'unknown';
+
+            var tile = {
+                vertexCount: vertexCount,
+                area: area,
+                centroid: centroid,
+                fill: fill,
+                stroke: stroke,
+                tileType: tileType,
+                points: points
+            };
+            tiles.push(tile);
+            totalArea += area;
+
+            // Group by vertex count
+            if (!byVertexCount[vertexCount]) byVertexCount[vertexCount] = { count: 0, totalArea: 0 };
+            byVertexCount[vertexCount].count++;
+            byVertexCount[vertexCount].totalArea += area;
+
+            // Group by color
+            if (!byColor[fill]) byColor[fill] = { count: 0, totalArea: 0 };
+            byColor[fill].count++;
+            byColor[fill].totalArea += area;
+        });
+
+        var census = {
+            totalPolygons: tiles.length,
+            totalLines: lines.length,
+            totalCircles: circles.length,
+            uniqueColors: Object.keys(byColor).length,
+            canvasArea: canvasArea,
+            totalTileArea: totalArea,
+            coveragePercent: (totalArea / canvasArea * 100).toFixed(1),
+            byVertexCount: byVertexCount,
+            byColor: byColor,
+            tiles: tiles
+        };
+
+        return census;
+    }
+
+    // ========================================
+    // UI RENDERING
+    // ========================================
+
+    function displayCensus(census) {
+        currentCensus = census;
+
+        // Summary stats
+        document.getElementById('totalPolygons').textContent = census.totalPolygons;
+        document.getElementById('totalLines').textContent = census.totalLines;
+        document.getElementById('totalCircles').textContent = census.totalCircles;
+        document.getElementById('uniqueColors').textContent = census.uniqueColors;
+        document.getElementById('coveragePct').textContent = census.coveragePercent + '%';
+
+        // Vertex count table
+        var vtBody = document.getElementById('vertexTable').querySelector('tbody');
+        vtBody.innerHTML = '';
+        var vKeys = Object.keys(census.byVertexCount).sort(function(a,b){return a-b;});
+        vKeys.forEach(function(v) {
+            var data = census.byVertexCount[v];
+            var avgArea = (data.totalArea / data.count).toFixed(1);
+            var row = document.createElement('tr');
+            row.innerHTML = '<td>' + v + '-gon</td><td>' + data.count + '</td><td>' + avgArea + ' px\u00B2</td>';
+            vtBody.appendChild(row);
+        });
+
+        // Color table
+        var ctBody = document.getElementById('colorTable').querySelector('tbody');
+        ctBody.innerHTML = '';
+        var colorEntries = Object.entries(census.byColor).sort(function(a,b){ return b[1].count - a[1].count; });
+        colorEntries.forEach(function(entry) {
+            var color = entry[0], data = entry[1];
+            var row = document.createElement('tr');
+            row.innerHTML = '<td><span class="color-swatch" style="background:' + color + '"></span>' + color +
+                '</td><td>' + data.count + '</td><td>' + data.totalArea.toFixed(0) + ' px\u00B2</td>';
+            ctBody.appendChild(row);
+        });
+
+        // Census JSON (without full tile list for readability)
+        var jsonSummary = {
+            totalPolygons: census.totalPolygons,
+            totalLines: census.totalLines,
+            totalCircles: census.totalCircles,
+            uniqueColors: census.uniqueColors,
+            coveragePercent: parseFloat(census.coveragePercent),
+            byVertexCount: census.byVertexCount,
+            byColor: {}
+        };
+        // Simplify color entries
+        colorEntries.forEach(function(entry) {
+            jsonSummary.byColor[entry[0]] = { count: entry[1].count, area: Math.round(entry[1].totalArea) };
+        });
+        document.getElementById('censusJson').textContent = JSON.stringify(jsonSummary, null, 2);
+    }
+
+    function renderTileMap(census, svgElement) {
+        var container = document.getElementById('tileMap');
+        container.innerHTML = '';
+
+        // Clone the SVG and recolor polygons by vertex count
+        var svgClone = svgElement.cloneNode(true);
+        svgClone.style.maxWidth = '100%';
+        svgClone.style.maxHeight = '400px';
+
+        var vertexColors = {
+            3: '#ff6b6b',  // triangles = red
+            4: '#ffd93d',  // quads = yellow
+            5: '#6bcb77',  // pentagons = green
+            6: '#4d96ff',  // hexagons = blue
+            7: '#9b59b6',  // heptagons = purple
+            8: '#e67e22',  // octagons = orange
+            10: '#1abc9c', // decagons = teal
+            20: '#e74c3c'  // 20-gons = dark red
+        };
+
+        var polys = svgClone.querySelectorAll('polygon');
+        polys.forEach(function(poly) {
+            var pointsStr = poly.getAttribute('points');
+            if (!pointsStr) return;
+            var vCount = pointsStr.trim().split(/\s+/).length;
+            var mapColor = vertexColors[vCount] || '#888888';
+            poly.setAttribute('fill', mapColor);
+            poly.setAttribute('stroke', '#333');
+            poly.setAttribute('stroke-width', '0.5');
+        });
+
+        container.appendChild(svgClone);
+
+        // Legend
+        var legend = document.createElement('div');
+        legend.style.cssText = 'margin-top:8px;font-size:0.75em;';
+        Object.keys(vertexColors).sort(function(a,b){return a-b;}).forEach(function(v) {
+            if (census.byVertexCount[v]) {
+                legend.innerHTML += '<span class="color-swatch" style="background:' + vertexColors[v] + '"></span>' +
+                    v + '-gon (' + census.byVertexCount[v].count + ') &nbsp;&nbsp;';
+            }
+        });
+        container.appendChild(legend);
+    }
+
+    // ========================================
+    // FILE LOADING
+    // ========================================
+
+    function extractSvgFromHtml(htmlString) {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(htmlString, 'text/html');
+        var svg = doc.querySelector('svg');
+        if (svg) return svg;
+
+        // Try as XML/SVG
+        var xmlDoc = parser.parseFromString(htmlString, 'image/svg+xml');
+        var xmlSvg = xmlDoc.querySelector('svg');
+        return xmlSvg;
+    }
+
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(evt) {
+            processMarkup(evt.target.result);
+        };
+        reader.readAsText(file);
+    });
+
+    function loadFromPaste() {
+        var markup = document.getElementById('pasteInput').value;
+        if (!markup.trim()) return;
+        processMarkup(markup);
+    }
+
+    function processMarkup(markup) {
+        var svg = extractSvgFromHtml(markup);
+        if (!svg) {
+            alert('No SVG element found in the provided markup.');
+            return;
+        }
+
+        // Show preview
+        var preview = document.getElementById('svgPreview');
+        preview.innerHTML = '';
+        var previewSvg = svg.cloneNode(true);
+        previewSvg.style.maxWidth = '100%';
+        previewSvg.style.maxHeight = '500px';
+        preview.appendChild(previewSvg);
+
+        // Extract census
+        var census = extractCensus(svg);
+        displayCensus(census);
+        renderTileMap(census, svg);
+    }
+
+    function exportCensus() {
+        if (!currentCensus) { alert('Load an SVG first.'); return; }
+        var jsonSummary = {
+            totalPolygons: currentCensus.totalPolygons,
+            totalLines: currentCensus.totalLines,
+            totalCircles: currentCensus.totalCircles,
+            uniqueColors: currentCensus.uniqueColors,
+            coveragePercent: parseFloat(currentCensus.coveragePercent),
+            byVertexCount: currentCensus.byVertexCount,
+            byColor: {}
+        };
+        Object.entries(currentCensus.byColor).forEach(function(entry) {
+            jsonSummary.byColor[entry[0]] = { count: entry[1].count, area: Math.round(entry[1].totalArea) };
+        });
+        var blob = new Blob([JSON.stringify(jsonSummary, null, 2)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = 'census.json'; a.click();
+        URL.revokeObjectURL(url);
+    }
+    </script>
+</body>
+</html>

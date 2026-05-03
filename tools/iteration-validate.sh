@@ -228,7 +228,7 @@ if [[ "$SKIP_QIYAS" -eq 0 ]]; then
     if docker run --rm \
             -v "$out_abs:/work" \
             "$QIYAS_IMAGE" \
-            score "${SCORE_ARGS[@]}" \
+            score run "${SCORE_ARGS[@]}" \
             >"$SCORE_DIR.log" 2>&1; then
         SCORE_RAN=1
     else

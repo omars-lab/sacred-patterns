@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Construction Overlay — Full Pattern Analysis</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a14; color: #ccc; display: flex; min-height: 100vh; }
+        #sidebar { width: 320px; padding: 16px; background: #12121f; overflow-y: auto; border-right: 1px solid #333; }
+        #main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; }
+        h1 { font-size: 18px; color: #7af; margin-bottom: 4px; }
+        h2 { font-size: 13px; color: #8cf; margin: 10px 0 4px; }
+        .subtitle { font-size: 11px; color: #888; margin-bottom: 8px; }
+        .param-row { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+        .param-row label { width: 80px; font-size: 12px; color: #aaa; }
+        .param-row input[type=number] { width: 55px; background: #1a1a2a; border: 1px solid #444; color: #fff; padding: 3px 5px; border-radius: 3px; font-size: 12px; }
+        .param-row input[type=range] { width: 90px; }
+        .param-row .val { width: 35px; font-size: 11px; color: #8cf; text-align: right; }
+        button { background: #2a4a8a; color: #fff; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin: 3px 2px; }
+        button:hover { background: #3a6aba; }
+        .layers { display: flex; flex-direction: column; gap: 2px; }
+        .layers label { font-size: 11px; display: flex; align-items: center; gap: 4px; cursor: pointer; padding: 2px 0; }
+        .layers label:hover { color: #fff; }
+        .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+        #stats { margin-top: 10px; font-size: 11px; line-height: 1.5; }
+        .stat { color: #8cf; font-weight: bold; }
+        svg text { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h1>Construction Overlay</h1>
+        <div class="subtitle">Master analysis — all layers combined</div>
+
+        <h2>Parameters</h2>
+        <div class="param-row"><label>n:</label><input type="number" id="pN" value="10" min="3" max="24"></div>
+        <div class="param-row"><label>k:</label><input type="number" id="pK" value="4" min="1" max="11"></div>
+        <div class="param-row"><label>R:</label><input type="range" id="pR" value="0.55" min="0.2" max="0.9" step="0.01"><span class="val" id="pRval">0.55</span></div>
+        <div class="param-row"><label>Band W:</label><input type="range" id="pBW" value="0.025" min="0.005" max="0.06" step="0.001"><span class="val" id="pBWval">0.025</span></div>
+        <div class="param-row"><label>Sat dist:</label><input type="range" id="pSD" value="0.64" min="0.4" max="0.9" step="0.01"><span class="val" id="pSDval">0.64</span></div>
+        <div class="param-row"><label>Sat R:</label><input type="range" id="pSR" value="0.22" min="0.05" max="0.35" step="0.01"><span class="val" id="pSRval">0.22</span></div>
+
+        <h2>Layers</h2>
+        <div class="layers">
+            <label><input type="checkbox" id="lDiags" checked> <span class="swatch" style="background:#5588cc"></span> Diagonals (center-lines)</label>
+            <label><input type="checkbox" id="lBandEdges"> <span class="swatch" style="background:#cc8855"></span> Band edges (L/R)</label>
+            <label><input type="checkbox" id="lIntersections" checked> <span class="swatch" style="background:#ff5555"></span> Intersection points</label>
+            <label><input type="checkbox" id="lRadii" checked> <span class="swatch" style="background:#335544"></span> Radius circles</label>
+            <label><input type="checkbox" id="lSectors"> <span class="swatch" style="background:#223355"></span> Sector boundaries</label>
+            <label><input type="checkbox" id="lStarTiles" checked> <span class="swatch" style="background:#40d9d9"></span> Star tiles (filled)</label>
+            <label><input type="checkbox" id="lInterstitial" checked> <span class="swatch" style="background:#2a5caa"></span> Interstitial tiles</label>
+            <label><input type="checkbox" id="lSatellites" checked> <span class="swatch" style="background:#0d1b3e"></span> Satellites</label>
+            <label><input type="checkbox" id="lStrapwork" checked> <span class="swatch" style="background:#ffffff"></span> Strapwork bands</label>
+            <label><input type="checkbox" id="lTipLabels" checked> <span class="swatch" style="background:#ffffff"></span> Tip vertex labels</label>
+        </div>
+
+        <button onclick="render()">Update</button>
+        <button onclick="toggleAll(true)">All On</button>
+        <button onclick="toggleAll(false)">All Off</button>
+
+        <div id="stats"></div>
+    </div>
+    <div id="main"><div id="canvas"></div></div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+    // ================================================================
+    // GEOMETRY LIBRARY (standardized)
+    // ================================================================
+    function lineIntersect(p1,p2,p3,p4){
+        var x1=p1[0],y1=p1[1],x2=p2[0],y2=p2[1],x3=p3[0],y3=p3[1],x4=p4[0],y4=p4[1];
+        var d=(x1-x2)*(y3-y4)-(y1-y2)*(x3-x4);
+        if(Math.abs(d)<1e-10) return null;
+        var t=((x1-x3)*(y3-y4)-(y1-y3)*(x3-x4))/d;
+        return [x1+t*(x2-x1),y1+t*(y2-y1)];
+    }
+    function lineCircle(line,r,cx,cy,nearAngle){
+        var dx=line.to[0]-line.from[0],dy=line.to[1]-line.from[1];
+        var len=Math.sqrt(dx*dx+dy*dy),ux=dx/len,uy=dy/len;
+        var ax=line.from[0]-cx,ay=line.from[1]-cy;
+        var a2=ux*ux+uy*uy,b2=2*(ax*ux+ay*uy),c2=ax*ax+ay*ay-r*r;
+        var disc=b2*b2-4*a2*c2;
+        if(disc<0) return null;
+        var t1=(-b2+Math.sqrt(disc))/(2*a2),t2=(-b2-Math.sqrt(disc))/(2*a2);
+        var p1=[line.from[0]+t1*ux,line.from[1]+t1*uy],p2=[line.from[0]+t2*ux,line.from[1]+t2*uy];
+        var a1f=Math.atan2(p1[0]-cx,-(p1[1]-cy));if(a1f<0)a1f+=2*Math.PI;
+        var a2f=Math.atan2(p2[0]-cx,-(p2[1]-cy));if(a2f<0)a2f+=2*Math.PI;
+        var d1=Math.abs(a1f-nearAngle);if(d1>Math.PI)d1=2*Math.PI-d1;
+        var d2=Math.abs(a2f-nearAngle);if(d2>Math.PI)d2=2*Math.PI-d2;
+        return d1<d2?p1:p2;
+    }
+    function distToLine(pt,line){
+        var dx=line.to[0]-line.from[0],dy=line.to[1]-line.from[1],len=Math.sqrt(dx*dx+dy*dy);
+        return Math.abs((pt[0]-line.from[0])*(-dy/len)+(pt[1]-line.from[1])*(dx/len));
+    }
+    function poly(g,pts,fill,stroke,sw){
+        if(!pts||pts.length<3) return;
+        for(var i=0;i<pts.length;i++) if(!pts[i]) return;
+        g.append('polygon').attr('points',pts.map(function(p){return p[0]+','+p[1];}).join(' '))
+            .attr('fill',fill).attr('stroke',stroke||fill).attr('stroke-width',sw||0.5);
+    }
+
+    var W=750, H=750;
+
+    function render(){
+        var n=+document.getElementById('pN').value;
+        var k=+document.getElementById('pK').value;
+        var R=+document.getElementById('pR').value;
+        var halfBandW=+document.getElementById('pBW').value;
+        var satDist=+document.getElementById('pSD').value;
+        var satR=+document.getElementById('pSR').value;
+
+        ['pR','pBW','pSD','pSR'].forEach(function(id){document.getElementById(id+'val').textContent=document.getElementById(id).value;});
+
+        var sector=2*Math.PI/n, halfSector=Math.PI/n;
+        var scale=Math.min(W,H)/2, cx=W/2, cy=H/2;
+        var clipR=satDist+satR, satInnerR=satDist-satR*0.45;
+
+        function pr(r){return r*scale;}
+        function pp(r,a){return [cx+pr(r)*Math.sin(a),cy-pr(r)*Math.cos(a)];}
+        function distFC(p){return Math.sqrt((p[0]-cx)*(p[0]-cx)+(p[1]-cy)*(p[1]-cy))/scale;}
+
+        var palette={darkNavy:'#0D1B3E',mediumBlue:'#2A5CAA',royalBlue:'#3B7DD8',cornflower:'#6B9FD4',
+            cyan:'#40D9D9',white:'#FFFFFF',deepBlue:'#1A3A6E',lightBlue:'#5BAED4',paleCyan:'#7DE0E0',turquoise:'#30C0C0'};
+        function col(c){return palette[c]||c;}
+
+        // Build geometry
+        var tips=[];
+        for(var i=0;i<n;i++) tips.push(pp(R,i*sector));
+        var diags=[];
+        for(var i=0;i<n;i++){
+            var j=(i+k)%n;
+            var dx=tips[j][0]-tips[i][0],dy=tips[j][1]-tips[i][1],len=Math.sqrt(dx*dx+dy*dy);
+            var ux=dx/len,uy=dy/len,far=pr(clipR*1.3);
+            var mid=[(tips[i][0]+tips[j][0])/2,(tips[i][1]+tips[j][1])/2];
+            diags.push({from:[mid[0]-ux*far,mid[1]-uy*far],to:[mid[0]+ux*far,mid[1]+uy*far],ux:ux,uy:uy,px:-uy,py:ux});
+        }
+        function edgeLine(di,side){var d=diags[di],o=pr(halfBandW)*(side==='L'?1:-1);
+            return {from:[d.from[0]+d.px*o,d.from[1]+d.py*o],to:[d.to[0]+d.px*o,d.to[1]+d.py*o]};}
+
+        var allInt=[];
+        for(var i=0;i<n;i++) for(var j=i+1;j<n;j++){
+            if((i+Math.floor(n/2))%n===j){var cr=diags[i].ux*diags[j].uy-diags[i].uy*diags[j].ux;if(Math.abs(cr)<1e-8)continue;}
+            var pt=lineIntersect(diags[i].from,diags[i].to,diags[j].from,diags[j].to);
+            if(pt && distFC(pt)<=clipR) allInt.push({p:pt,l:[i,j],r:distFC(pt)});
+        }
+
+        // Radius groups
+        var radii=[];
+        allInt.forEach(function(int){
+            var found=false;
+            for(var g=0;g<radii.length;g++){if(Math.abs(radii[g]-int.r)<0.001){found=true;break;}}
+            if(!found) radii.push(int.r);
+        });
+        radii.sort();
+
+        // Per-diagonal sorted
+        function diagSorted(di){
+            var pts=[],dx2=diags[di].to[0]-diags[di].from[0],dy2=diags[di].to[1]-diags[di].from[1];
+            for(var p=0;p<allInt.length;p++){
+                if(allInt[p].l[0]===di||allInt[p].l[1]===di){
+                    var t=Math.abs(dx2)>Math.abs(dy2)?(allInt[p].p[0]-diags[di].from[0])/dx2:(allInt[p].p[1]-diags[di].from[1])/dy2;
+                    var other=allInt[p].l[0]===di?allInt[p].l[1]:allInt[p].l[0];
+                    pts.push({p:allInt[p].p,t:t,r:allInt[p].r,other:other});
+                }
+            }
+            pts.sort(function(a,b){return a.t-b.t;});
+            return pts;
+        }
+        var diagPts=[];for(var i=0;i<n;i++) diagPts.push(diagSorted(i));
+        function tipData(s){
+            var diagA=s,diagB=(s+n-k)%n,tipPx=tips[s];
+            function sortFromTip(pts){return pts.slice().sort(function(a,b){
+                var da=(a.p[0]-tipPx[0])*(a.p[0]-tipPx[0])+(a.p[1]-tipPx[1])*(a.p[1]-tipPx[1]);
+                var db=(b.p[0]-tipPx[0])*(b.p[0]-tipPx[0])+(b.p[1]-tipPx[1])*(b.p[1]-tipPx[1]);
+                return da-db;});}
+            return {diagA:diagA,diagB:diagB,ptsA:sortFromTip(diagPts[diagA]),ptsB:sortFromTip(diagPts[diagB])};
+        }
+
+        // Satellites
+        var sats=[];
+        for(var i=0;i<n;i++){
+            var sa=i*sector+halfSector;
+            var scx=cx+pr(satDist)*Math.sin(sa),scy=cy-pr(satDist)*Math.cos(sa);
+            var verts=[];for(var v=0;v<n;v++) verts.push([scx+pr(satR)*Math.sin(v*sector),scy-pr(satR)*Math.cos(v*sector)]);
+            sats.push({cx:scx,cy:scy,angle:sa,verts:verts});
+        }
+
+        // Layer flags
+        var L={diags:document.getElementById('lDiags').checked,
+            bandEdges:document.getElementById('lBandEdges').checked,
+            intersections:document.getElementById('lIntersections').checked,
+            radii:document.getElementById('lRadii').checked,
+            sectors:document.getElementById('lSectors').checked,
+            starTiles:document.getElementById('lStarTiles').checked,
+            interstitial:document.getElementById('lInterstitial').checked,
+            satellites:document.getElementById('lSatellites').checked,
+            strapwork:document.getElementById('lStrapwork').checked,
+            tipLabels:document.getElementById('lTipLabels').checked};
+
+        // ================================================================
+        // RENDER
+        // ================================================================
+        d3.select('#canvas').selectAll('*').remove();
+        var svg=d3.select('#canvas').append('svg').attr('width',W).attr('height',H);
+        svg.append('rect').attr('width',W).attr('height',H).attr('fill','#fff');
+
+        // Clip path
+        var defs=svg.append('defs');
+        var sc=defs.append('clipPath').attr('id','sc');
+        sc.append('circle').attr('cx',cx).attr('cy',cy).attr('r',pr(satDist));
+        for(var i=0;i<n;i++){var sa=i*sector+halfSector;
+            sc.append('circle').attr('cx',cx+pr(satDist)*Math.sin(sa)).attr('cy',cy-pr(satDist)*Math.cos(sa)).attr('r',pr(satR));}
+        var mg=svg.append('g').attr('clip-path','url(#sc)');
+
+        // Background
+        mg.append('circle').attr('cx',cx).attr('cy',cy).attr('r',pr(clipR+0.05)).attr('fill',col('darkNavy'));
+
+        // Radius circles
+        if(L.radii){
+            radii.forEach(function(r,gi){
+                var colors=['#556','#565','#655','#566'];
+                mg.append('circle').attr('cx',cx).attr('cy',cy).attr('r',pr(r))
+                    .attr('fill','none').attr('stroke',colors[gi%colors.length]).attr('stroke-width',0.8).attr('stroke-dasharray','3,3');
+            });
+            mg.append('circle').attr('cx',cx).attr('cy',cy).attr('r',pr(R))
+                .attr('fill','none').attr('stroke','#668').attr('stroke-width',1.2).attr('stroke-dasharray','5,4');
+        }
+
+        // Sector boundaries
+        if(L.sectors){
+            for(var i=0;i<n;i++){
+                var sp=pp(clipR,i*sector);
+                mg.append('line').attr('x1',cx).attr('y1',cy).attr('x2',sp[0]).attr('y2',sp[1])
+                    .attr('stroke','#334').attr('stroke-width',0.5).attr('stroke-dasharray','2,4');
+            }
+        }
+
+        // Star tiles
+        var starCount=0, intCount=0;
+        if(L.starTiles){
+            var kc=['cyan','paleCyan','cornflower','lightBlue','cyan','turquoise','cornflower','royalBlue','turquoise','paleCyan'];
+            var rc=['royalBlue','mediumBlue','turquoise','cornflower','royalBlue','mediumBlue','cyan','cornflower','mediumBlue','turquoise'];
+            var rc2=['mediumBlue','cornflower','royalBlue','cyan','mediumBlue','cornflower','turquoise','royalBlue','cornflower','cyan'];
+            for(var s=0;s<n;s++){
+                var td=tipData(s);
+                var inA=td.ptsA.filter(function(p){return p.r<R*0.99;});
+                var inB=td.ptsB.filter(function(p){return p.r<R*0.99;});
+                if(inA.length<1||inB.length<1) continue;
+                var vA=inA[0].p,otA=inA[0].other,vB=inB[0].p,otB=inB[0].other;
+                var inner=lineIntersect(diags[otA].from,diags[otA].to,diags[otB].from,diags[otB].to);
+                if(!inner) continue;
+                poly(mg,[tips[s],vA,inner,vB],col(kc[s%kc.length])); starCount++;
+                if(inA.length>=2){var vA2=inA[1].p,otA2=inA[1].other;
+                    var rhP=lineIntersect(diags[otA2].from,diags[otA2].to,diags[otA].from,diags[otA].to);
+                    if(rhP){poly(mg,[vA,vA2,rhP,inner],col(rc[s%rc.length])); starCount++;}}
+                if(inB.length>=2){var vB2=inB[1].p,otB2=inB[1].other;
+                    var rhP2=lineIntersect(diags[otB2].from,diags[otB2].to,diags[otB].from,diags[otB].to);
+                    if(rhP2){poly(mg,[vB,vB2,rhP2,inner],col(rc2[s%rc2.length])); starCount++;}}
+                if(inA.length>=3){var vA3=inA[2].p,otA3=inA[2].other;
+                    var pk3=lineIntersect(diags[otA3].from,diags[otA3].to,diags[inA[1].other].from,diags[inA[1].other].to);
+                    if(pk3){poly(mg,[inA[1].p,vA3,pk3],col(s%2===0?'cornflower':'mediumBlue')); starCount++;}}
+                if(inB.length>=3){var vB3=inB[2].p,otB3=inB[2].other;
+                    var pk3b=lineIntersect(diags[otB3].from,diags[otB3].to,diags[inB[1].other].from,diags[inB[1].other].to);
+                    if(pk3b){poly(mg,[inB[1].p,vB3,pk3b],col(s%2===0?'mediumBlue':'royalBlue')); starCount++;}}
+            }
+        }
+
+        // Interstitial tiles
+        if(L.interstitial){
+            var pcA=['royalBlue','deepBlue','mediumBlue','cornflower','royalBlue','deepBlue','cornflower','mediumBlue','royalBlue','deepBlue'];
+            var pcB=['mediumBlue','cornflower','royalBlue','deepBlue','mediumBlue','cornflower','deepBlue','royalBlue','mediumBlue','cornflower'];
+            var bbc2=['deepBlue','mediumBlue','deepBlue','mediumBlue','deepBlue','mediumBlue','deepBlue','mediumBlue','deepBlue','mediumBlue'];
+            var wc2=['cornflower','royalBlue','deepBlue','mediumBlue','cornflower','royalBlue','mediumBlue','deepBlue','cornflower','royalBlue'];
+            var wcN2=['deepBlue','mediumBlue','cornflower','royalBlue','deepBlue','mediumBlue','royalBlue','cornflower','deepBlue','mediumBlue'];
+
+            for(var s=0;s<n;s++){
+                var nextS=(s+1)%n, satAngle=s*sector+halfSector;
+                var diagFromS=(s+n-k)%n, diagFromN=nextS;
+                var bisectorPt=pp(clipR,satAngle);
+                var eLS=edgeLine(diagFromS,'L'),eRS=edgeLine(diagFromS,'R');
+                var innerSideS=distToLine(bisectorPt,eLS)<distToLine(bisectorPt,eRS)?'L':'R';
+                var outerSideS=innerSideS==='L'?'R':'L';
+                var eLN=edgeLine(diagFromN,'L'),eRN=edgeLine(diagFromN,'R');
+                var innerSideN=distToLine(bisectorPt,eLN)<distToLine(bisectorPt,eRN)?'L':'R';
+                var outerSideN=innerSideN==='L'?'R':'L';
+                var innerLineS=edgeLine(diagFromS,innerSideS),outerLineS=edgeLine(diagFromS,outerSideS);
+                var innerLineN=edgeLine(diagFromN,innerSideN),outerLineN=edgeLine(diagFromN,outerSideN);
+
+                var otherDiagS=s;
+                var p1S=lineIntersect(outerLineS.from,outerLineS.to,diags[otherDiagS].from,diags[otherDiagS].to);
+                var p4S=lineIntersect(innerLineS.from,innerLineS.to,diags[otherDiagS].from,diags[otherDiagS].to);
+                var p2S=lineCircle(outerLineS,pr(satInnerR),cx,cy,satAngle);
+                var p3S=lineCircle(innerLineS,pr(satInnerR),cx,cy,satAngle);
+                if(p1S&&p2S&&p3S&&p4S){poly(mg,[p1S,p2S,p3S,p4S],col(pcA[s%pcA.length]));intCount++;}
+
+                var otherDiagN=(nextS+n-k)%n;
+                var p1N=lineIntersect(outerLineN.from,outerLineN.to,diags[otherDiagN].from,diags[otherDiagN].to);
+                var p4N=lineIntersect(innerLineN.from,innerLineN.to,diags[otherDiagN].from,diags[otherDiagN].to);
+                var p2N=lineCircle(outerLineN,pr(satInnerR),cx,cy,satAngle);
+                var p3N=lineCircle(innerLineN,pr(satInnerR),cx,cy,satAngle);
+                if(p1N&&p2N&&p3N&&p4N){poly(mg,[p1N,p2N,p3N,p4N],col(pcB[s%pcB.length]));intCount++;}
+
+                if(p4S&&p3S&&p3N&&p4N){poly(mg,[p4S,p3S,p3N,p4N],col(bbc2[s%bbc2.length]));intCount++;}
+
+                var adjDiagS2=s;
+                var eL_adjS=edgeLine(adjDiagS2,'L'),eR_adjS=edgeLine(adjDiagS2,'R');
+                var adjSideS=distToLine(bisectorPt,eL_adjS)<distToLine(bisectorPt,eR_adjS)?'L':'R';
+                var adjLineS=edgeLine(adjDiagS2,adjSideS);
+                var adjStartS=lineIntersect(adjLineS.from,adjLineS.to,diags[diagFromS].from,diags[diagFromS].to);
+                var adjEndS=lineCircle(adjLineS,pr(satInnerR),cx,cy,satAngle);
+                if(p1S&&p2S&&adjEndS&&adjStartS&&distFC(adjStartS)<clipR){poly(mg,[p1S,p2S,adjEndS,adjStartS],col(wc2[s%wc2.length]));intCount++;}
+
+                var adjDiagN2=(nextS+n-k)%n;
+                var eL_adjN=edgeLine(adjDiagN2,'L'),eR_adjN=edgeLine(adjDiagN2,'R');
+                var adjSideN=distToLine(bisectorPt,eL_adjN)<distToLine(bisectorPt,eR_adjN)?'L':'R';
+                var adjLineN=edgeLine(adjDiagN2,adjSideN);
+                var adjStartN=lineIntersect(adjLineN.from,adjLineN.to,diags[diagFromN].from,diags[diagFromN].to);
+                var adjEndN=lineCircle(adjLineN,pr(satInnerR),cx,cy,satAngle);
+                if(p1N&&p2N&&adjEndN&&adjStartN&&distFC(adjStartN)<clipR){poly(mg,[p1N,p2N,adjEndN,adjStartN],col(wcN2[s%wcN2.length]));intCount++;}
+            }
+        }
+
+        // Inner void
+        var innerR2=0.055,innerStarR=0.033;
+        var dsPts=[];for(var i=0;i<n;i++){dsPts.push(pp(innerStarR,i*sector+halfSector));dsPts.push(pp(innerR2,i*sector));}
+        poly(mg,dsPts,col('darkNavy'));
+
+        // Satellites
+        if(L.satellites){
+            for(var si=0;si<n;si++){
+                poly(mg,sats[si].verts,col('darkNavy'));
+                for(var i=0;i<n;i++){
+                    var a1=i*sector+halfSector,a2=(i+1)*sector+halfSector,r1=satR*0.32,r2=satR*0.88;
+                    poly(mg,[[sats[si].cx+pr(r1)*Math.sin(a1),sats[si].cy-pr(r1)*Math.cos(a1)],
+                        [sats[si].cx+pr(r2)*Math.sin(a1),sats[si].cy-pr(r2)*Math.cos(a1)],
+                        [sats[si].cx+pr(r2)*Math.sin(a2),sats[si].cy-pr(r2)*Math.cos(a2)],
+                        [sats[si].cx+pr(r1)*Math.sin(a2),sats[si].cy-pr(r1)*Math.cos(a2)]],
+                        i%2===0?col('deepBlue'):col('mediumBlue'));
+                }
+                var coreR=satR*0.28,sPts=[];
+                for(var i=0;i<n;i++){sPts.push([sats[si].cx+pr(coreR)*Math.sin(i*sector),sats[si].cy-pr(coreR)*Math.cos(i*sector)]);
+                    sPts.push([sats[si].cx+pr(coreR*0.38)*Math.sin(i*sector+halfSector),sats[si].cy-pr(coreR*0.38)*Math.cos(i*sector+halfSector)]);}
+                poly(mg,sPts,col('royalBlue'));
+                var dPts=[];for(var i=0;i<n;i++) dPts.push([sats[si].cx+pr(coreR*0.32)*Math.sin(i*sector),sats[si].cy-pr(coreR*0.32)*Math.cos(i*sector)]);
+                poly(mg,dPts,col('darkNavy'));
+            }
+        }
+
+        // Strapwork
+        if(L.strapwork){
+            var sw=pr(halfBandW*2);
+            for(var i=0;i<n;i++){mg.append('line').attr('x1',diags[i].from[0]).attr('y1',diags[i].from[1])
+                .attr('x2',diags[i].to[0]).attr('y2',diags[i].to[1]).attr('stroke','#fff').attr('stroke-width',sw).attr('stroke-linecap','butt');}
+            var sw2=sw*0.75;
+            for(var si=0;si<n;si++){for(var li=0;li<n;li++){var la=li*sector+halfSector;
+                mg.append('line').attr('x1',sats[si].cx+pr(satR*0.24)*Math.sin(la)).attr('y1',sats[si].cy-pr(satR*0.24)*Math.cos(la))
+                    .attr('x2',sats[si].cx+pr(satR*0.92)*Math.sin(la)).attr('y2',sats[si].cy-pr(satR*0.92)*Math.cos(la))
+                    .attr('stroke','#fff').attr('stroke-width',sw2).attr('stroke-linecap','round');}}
+            for(var si=0;si<n;si++){mg.append('polygon').attr('points',sats[si].verts.map(function(p){return p[0]+','+p[1];}).join(' '))
+                .attr('fill','none').attr('stroke','#7788AA').attr('stroke-width',1.2);}
+        }
+
+        // Diagonals (overlay, semi-transparent)
+        if(L.diags){
+            var diagColors=d3.scaleOrdinal(d3.schemeCategory10);
+            for(var i=0;i<n;i++){mg.append('line').attr('x1',diags[i].from[0]).attr('y1',diags[i].from[1])
+                .attr('x2',diags[i].to[0]).attr('y2',diags[i].to[1]).attr('stroke',diagColors(i)).attr('stroke-width',1).attr('stroke-opacity',0.4);}
+        }
+
+        // Band edges
+        if(L.bandEdges){
+            for(var i=0;i<n;i++){['L','R'].forEach(function(side){
+                var el=edgeLine(i,side);
+                mg.append('line').attr('x1',el.from[0]).attr('y1',el.from[1]).attr('x2',el.to[0]).attr('y2',el.to[1])
+                    .attr('stroke','#cc8855').attr('stroke-width',0.6).attr('stroke-opacity',0.5).attr('stroke-dasharray','2,2');
+            });}
+        }
+
+        // Intersection points
+        if(L.intersections){
+            var intColors=['#f55','#5f5','#55f','#ff5','#f5f','#5ff'];
+            allInt.forEach(function(int){
+                var gi=0;for(var g=0;g<radii.length;g++){if(Math.abs(radii[g]-int.r)<0.001){gi=g;break;}}
+                mg.append('circle').attr('cx',int.p[0]).attr('cy',int.p[1]).attr('r',2.5)
+                    .attr('fill',intColors[gi%intColors.length]).attr('stroke','#000').attr('stroke-width',0.5);
+            });
+        }
+
+        // Tip labels
+        if(L.tipLabels){
+            tips.forEach(function(tp,i){
+                mg.append('circle').attr('cx',tp[0]).attr('cy',tp[1]).attr('r',4).attr('fill','#fff').attr('stroke','#333').attr('stroke-width',1);
+                var ang=i*sector;
+                mg.append('text').attr('x',tp[0]+16*Math.sin(ang)).attr('y',tp[1]-16*Math.cos(ang)+4)
+                    .attr('fill','#000').attr('font-size','11px').attr('font-weight','bold').attr('text-anchor','middle').text(i);
+            });
+        }
+
+        // Stats
+        var statsHtml='<h2>Statistics</h2>';
+        statsHtml+='<div>Star tiles: <span class="stat">'+starCount+'</span></div>';
+        statsHtml+='<div>Interstitial tiles: <span class="stat">'+intCount+'</span></div>';
+        statsHtml+='<div>Total polygons: <span class="stat">'+(starCount+intCount)+'</span></div>';
+        statsHtml+='<div>Intersections: <span class="stat">'+allInt.length+'</span></div>';
+        statsHtml+='<div>Radii: <span class="stat">'+radii.map(function(r){return r.toFixed(3);}).join(', ')+'</span></div>';
+        statsHtml+='<h2>Parameters</h2>';
+        statsHtml+='<div style="font-size:10px;color:#888">{'+n+'/'+k+'}, R='+R+', bw='+halfBandW+', satDist='+satDist+', satR='+satR+'</div>';
+        document.getElementById('stats').innerHTML=statsHtml;
+    }
+
+    function toggleAll(state){
+        ['lDiags','lBandEdges','lIntersections','lRadii','lSectors','lStarTiles','lInterstitial','lSatellites','lStrapwork','lTipLabels'].forEach(function(id){
+            document.getElementById(id).checked=state;});
+        render();
+    }
+
+    // URL params
+    var params=new URLSearchParams(window.location.search);
+    if(params.has('n'))document.getElementById('pN').value=params.get('n');
+    if(params.has('k'))document.getElementById('pK').value=params.get('k');
+    if(params.has('R')){document.getElementById('pR').value=params.get('R');document.getElementById('pRval').textContent=params.get('R');}
+    if(params.has('bandWidth')){document.getElementById('pBW').value=params.get('bandWidth');document.getElementById('pBWval').textContent=params.get('bandWidth');}
+    if(params.has('satDist')){document.getElementById('pSD').value=params.get('satDist');document.getElementById('pSDval').textContent=params.get('satDist');}
+    if(params.has('satR')){document.getElementById('pSR').value=params.get('satR');document.getElementById('pSRval').textContent=params.get('satR');}
+
+    ['pR','pBW','pSD','pSR'].forEach(function(id){document.getElementById(id).addEventListener('input',function(){document.getElementById(id+'val').textContent=this.value;});});
+    render();
+    </script>
+</body>
+</html>
