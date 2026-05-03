@@ -105,3 +105,10 @@ Consult this at the start of every new session to avoid repeating known errors.
 - **Category:** proportion
 - **What happens:** Focusing on tile shapes while star is too small relative to satellites, creating an unfillable interstitial zone.
 - **Correction:** Get proportions right FIRST (star radius, satellite distance, satellite size), then work on tile shapes.
+
+### Encoder-classification trap: post-`voids detect` faces, not your polylines
+- **Category:** bikar / qiyas / convergence
+- **What happens:** Plan reasoning treats a `connect every K on Cn` block as if it draws a `{N/K}` star polygon that the encoder will classify as a single N-vertex (or 2N-vertex) star face. Actually, the encoder sees the post-`voids detect` face graph — every intersection with other connect-blocks fragments the would-be star into many small faces, none of which match a baseline expectation.
+- **When seen:** bikar-medallion-10 iter-17 (2026-05-03). Added `connect every 2 on C1` to existing `connect every 4 on C1 + connect every 3 on C1`, hoping to produce `inner-star--star-v20`. Instead: 31 new extras, 0 new A6 PASS, composite −0.0954.
+- **Correction:** Before adding a connect-block to a saturated mesh, render an isolated minimal version (just the divide + the new connect + voids detect) and confirm the encoder produces the expected face label. If it does, the question is then: "does the addition to the saturated mesh preserve that classification?" — usually it does NOT.
+- **Related:** qiyas plan #109 (counterfactual fragmentation tax) is the systemic fix. Until it lands, every "add another connect-block" iteration is gambling against an unmodeled cost.
