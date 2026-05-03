@@ -309,6 +309,74 @@ iterations through the half-auto loop. Confirm:
 
 This proves the harness without depending on the Agent-call step.
 
+### Phase 1.5 — post-iteration capture checklist (meta-loop discipline)
+
+**Why it goes here, not later.** The per-iteration deliverables today
+(evaluation/retrospective/guidance/discoveries) capture what changed
+*inside* the iteration. They do not capture *cross-cutting issues*
+the iteration surfaced — qiyas misclassifications, BIKAR DSL gaps,
+translation-table holes, novel construction techniques. Those
+observations get caught ad hoc today; sometimes they make it into a
+retrospective, sometimes they're filed as `docs/issues/`, sometimes
+they're lost. The autonomous loop is an even bigger risk because
+there's no human to notice "we keep working around X."
+
+This is tenet 3 (surface, don't hide) applied to the *meta*-loop:
+the iteration loop already surfaces per-iteration warnings; the
+meta-loop should surface cross-iteration gaps with the same rigor.
+Phase 2 (autonomous) bakes the checklist into the Agent prompt as a
+hard step. Phase 1.5 wires the checklist into the harness while a
+human is still in the loop, so we can verify the questions are
+well-framed before the agent runs unattended.
+
+**Deliverable.** Extend `tools/auto-iterate.py` from Phase 1 with a
+post-iteration capture step. After validation lands and before the
+loop continues, the harness prompts (Phase 1.5: human; Phase 2: Agent)
+through five yes/no questions, each routing any "yes" to a concrete
+artifact:
+
+| Observation | Routes to | Format |
+|---|---|---|
+| qiyas misclassified shape X / detector Y produced wrong output / score weight feels off | `qiyas/docs/issues/YYYY-MM-DD-<slug>.md` | Issue doc per `qiyas/CLAUDE.md` "issue documentation" convention (Status / Discovered / Symptom / Root cause / Options / Decision / Follow-ups) |
+| Wanted to express construction Z in BIKAR DSL but couldn't / had to use workaround W | `bikar/docs/dsl-gaps.md` (running list, create on first append) | One line: `iter <session>/<N> — wanted: <ideal syntax> · workaround: <what shipped> · why: <reason>` |
+| The translation table in `iterate-pattern-from-qiyas-warnings` didn't cover warning id X / had to interpret freely | `bikar/.claude/skills/iterate-pattern-from-qiyas-warnings/SKILL.md` translation table | Add a new row with the resolution pattern + a worked-example bullet under "Worked examples" |
+| Predicted Δ vs actual Δ for `warnings[0]` (always — no judgment call) | `auto-iterate-run.md` calibration table in session root | Always recorded; this is the V2.B (#75) data |
+| Noticed a reusable construction technique not in the catalog | `sacred-patterns/.claude/skills/generate-drawing/learnings/construction-techniques.md` | Per existing convention in that file |
+
+**The checklist as a function.** Implement as
+`tools/auto_iterate/post_iter_capture.py` with one function per
+question. Each takes the iteration context (paths, validation.json,
+edit log) and either no-ops (answer was no) or appends the artifact
+in the format above. The harness invokes them in order at the end of
+each cycle.
+
+**Hard rule (tenet 3):** If a question answers "yes" but the routing
+artifact can't be written (e.g. qiyas repo not on disk), the harness
+**fails the iteration loudly** — does not silently skip. The agent
+should never be in a position to know about a gap and have nowhere
+to put it.
+
+**Validation.** Drive the same 3 iterations on bikar-medallion-10 used
+to validate Phase 1. Confirm:
+- All five questions get asked at the end of each iter.
+- For at least one iter, deliberately answer "yes" to questions 1
+  and 3 (we know iter 11/12/13 surfaced both qiyas and DSL issues).
+- Verify the artifacts land in the correct files in the correct
+  format — not just appended somewhere ambiguous.
+- Calibration row appears in `auto-iterate-run.md` for every iter.
+
+**What this phase deliberately doesn't do:**
+- Doesn't try to *classify* the issues (that's the human/agent's
+  job — the checklist just routes).
+- Doesn't try to deduplicate (if the same DSL gap is filed twice,
+  human review consolidates later).
+- Doesn't auto-create tasks; the artifact is a doc entry. Tasks are
+  created when someone reads the doc and decides to act.
+
+This Phase ends with the harness producing the same per-iteration
+artifacts AND the cross-iteration capture artifacts. Phase 2 then
+swaps the human-prompted checklist for an Agent-prompted one.
+
 ### Phase 2 — autonomous edit via Agent call
 
 **Deliverable:** Replace Phase 1's "wait for human edit" with the
