@@ -77,7 +77,18 @@ These rules encode the convergence philosophy in `CLAUDE.md` (topology > geometr
   - When `composite_score` is populated: `composite_score >= 0.85` AND topology pillar `>= 0.95` (per `qiyas/.claude/plans/unified-similarity-score.md`)
 - **`"iterate"`** — anything else. The G2 gate determines what the next iteration MUST target: structural improvement when `structural_score` numerator < denominator, otherwise pixel/proportion work.
 
-When `qiyas score` is unavailable (older Docker image, `--skip-qiyas`, or non-zero exit), the rollup falls back to the four pre-score conditions above. `composite_score` and `warnings` stay null/empty in that case, but `go_no_go` still computes from the deterministic A2/A4/A5/A6 + pixel signals.
+When `qiyas score` is unavailable (older Docker image, `--skip-qiyas`, or non-zero exit), the rollup falls back to the four pre-score conditions above. `composite_score` and `warnings` stay null/empty in that case, but `go_no_go` still computes from the deterministic A2/A4/A5/A6 + pixel signals. The unavailability is also added to `blocking_issues` so the orchestrator's one-line summary surfaces it loudly.
+
+## No synthesized warnings fallback (intentional)
+
+A previous iteration of the rollup tried to synthesize `overall.warnings` from per-audit `tools.svg_audit.A2/A5/A6.warnings[]` when `qiyas score` was unavailable. That fallback was **removed deliberately**. Reasons:
+
+- **It hides the real failure.** The whole reason we noticed the v0.1.0 image was stale is that empty `overall.warnings` was visible. With a fallback, the next time `qiyas score` regresses (a weight bug, a new pillar that throws), the orchestrator quietly serves synth warnings that look real and the agent acts on them. We lose the diagnostic signal.
+- **The synthesized deltas are uncalibrated.** Using `cv` for A2, `1 - crossing_count/expected` for A5, and `(expected-found)/expected/N` for A6 produces a ranking dominated by whichever audit happens to have the largest raw severity number — not by which fix would actually move the composite score most. That's wrong apportionment dressed up as a ranked priority list.
+- **Per-audit warnings are still accessible.** They live in `tools.svg_audit.A2/A5/A6.warnings[]`. Anyone debugging can read them directly. The orchestrator's `blocking_issues` already surfaces them in human form. The fallback wasn't surfacing new info; it was re-shaping existing info into a slot whose meaning should be specific (qiyas-score-ranked).
+- **"Fail loud" is the right policy here.** When `qiyas score` is unavailable, the right move is to fix the score tool — not paper over it. Putting a fallback in front removes the pressure to keep the real path healthy.
+
+If a future contributor is tempted to re-add this fallback: read `qiyas/docs/issues/2026-05-02-orchestrator-warnings-empty-when-score-unavailable.md` first, particularly the path from "Option D" (originally chosen) to the eventual revert.
 
 ## Why these thresholds
 

@@ -230,9 +230,17 @@ def compute_overall(
 
     # qiyas score outputs (slice 7 of #39): composite + top-N ranked
     # warnings. `available=False` when the older Docker image without
-    # `qiyas score` was used or the command exited non-zero.
+    # `qiyas score` was used or the command exited non-zero. We deliberately
+    # do NOT synthesize a fallback warnings array — see the
+    # "No synthesized fallback" note in docs/validation-overall.md. Instead,
+    # surface the missing tool as a blocker so it can't pass silently.
     composite_score = qiyas_score.get("score") if qiyas_score.get("available") else None
     score_warnings = (qiyas_score.get("warnings") or []) if qiyas_score.get("available") else []
+    if not qiyas_score.get("available"):
+        blocking.append(
+            "qiyas score unavailable — overall.warnings empty; "
+            "rebuild/upgrade the qiyas Docker image or fix the score invocation"
+        )
     topology_pillar = None
     if qiyas_score.get("available"):
         pillars = qiyas_score.get("pillars") or {}
