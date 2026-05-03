@@ -6,7 +6,7 @@ Where each iteration session stands, what tool path it's on, and what the next m
 
 | Session | Where | Iters | Last status | Tool path | Next move |
 |---|---|---|---|---|---|
-| `session-1` | `~/Dropbox/Data/sacred-patterns/session-1/` | 92 | Stuck at structural 5/7, A2 UNEVEN cv 10% | **Legacy** (arch-audit.py, no baseline) | Bring onto modern path: emit baseline, run orchestrator on iter 92 SVG, drive iter 93 from `overall.warnings[0]`. Tracked as #98. |
+| `session-1` | `~/Dropbox/Data/sacred-patterns/session-1/` | 92 | **Resurrected on modern path 2026-05-02.** structural=2/18, composite=0.7448, pixel=74.4%, top_warning=`missing-shapes` (delta 0.172). | **Modern** (qiyas svg-audit + baseline.json from `qiyas baseline emit`) | Drive iter 93 targeting the 51 missing inner-star shapes (band-segments, polygons, rhombi, two star types). See "session-1 iter 93 entry point" below. |
 | `session-8-fold` | `~/Dropbox/Data/sacred-patterns/session-8-fold/` | 0 | Pre-skill GeoGebra session, marked `completed` in session.json (confidence 0.6) | n/a — never used the iteration loop | Out of scope for the iteration loop. If you want to revisit 8-fold convergence, start a fresh session with the modern interpret-pattern → orchestrator path. |
 | `bikar-medallion-10` | `~/Dropbox/Data/sacred-patterns/bikar-medallion-10/` | 13 | Paused at iter 13, structural 1/18, "stop adding rings, pivot to wedge-and-rotate" | **Modern** (qiyas svg-audit + baseline.json) — but `qiyas score` was unavailable through iter 13, so `overall.warnings` was empty and the agent had to manually diff per-shape. Fixed in commits c6225ff (qiyas) + ee31307 (sacred-patterns) on 2026-05-02. | Restart from iter 12 base with wedge-and-rotate construction (see "bikar-medallion-10 restart entry point" below). Tracked as #85. |
 
@@ -18,13 +18,28 @@ Started before `interpret-pattern` skill existed. Ran 92 iterations on `arch-aud
 
 The fundamental issue: convergence stalled on geometry the legacy audit couldn't measure (per-shape vertex counts, zone-by-zone shape distribution). The same pattern on the modern path would have been driven by `qiyas svg-audit --baseline input/baseline.json`'s per-shape PASS/PARTIAL/MISSING verdicts — a much sharper signal.
 
-**To resurrect:** see `#98`. The mechanical steps are:
+**Resurrected 2026-05-02 (#98 done).** Steps performed:
 
-1. `qiyas baseline emit ~/Dropbox/Data/sacred-patterns/session-1/input/reference.jpg --out ~/Dropbox/Data/sacred-patterns/session-1/input/baseline.json`
-2. `tools/iteration-validate.sh --svg .../iterations/92/output.svg --reference .../input/reference.jpg --baseline .../input/baseline.json --out .../iterations/92/validation` (re-validates iter 92 with the modern stack)
-3. Read `validation.json → overall.warnings[0]` and use it to draft iter 93 — this is the first true qiyas-warnings-driven iteration on session-1.
+1. `docker run … qiyas baseline emit input/reference.jpg --output input/baseline.json --pattern-name session-1-10fold-rosette` → 18 expected_shapes across inner-star/rosette/transition zones (171 typed + 384 unknown encoded).
+2. `tools/iteration-validate.sh --svg iterations/92/output.svg --reference input/reference.jpg --baseline input/baseline.json --out iterations/92/validation` → `validation.json` written; `composite=0.7448`, `structural=2/18`, `pixel=74.4%`, `topology_complete=false`, `go_no_go=iterate`.
+3. `overall.warnings[0]` ranked **`missing-shapes`** (source: diff, severity: error, `counterfactual_score_delta=0.1719`): 51 reference shapes (37% of 139) have no match in the iter 92 recon. Counterfactual rationale: "if recon had the 51 missing ref shape(s), they would match perfectly."
+
+#### session-1 iter 93 entry point
+
+The blocking_issues localize the gap to the **inner-star zone**:
+- A6 reports 15/18 shapes MISSING/PARTIAL — the 5 named blockers are all inner-star (`band-segment-v2`, `polygon-v0`, `rhombus-v4`, `star-v6`, `star-v8`).
+- A5 bands BROKEN reinforces that strapwork construction in the inner zone is incomplete.
+
+So iter 93's directive: **construct the inner-star zone**. The 51 missing shapes are not spread across the medallion — they cluster where the legacy audit was blind (inner ring band-segments and the small polygon/rhombus/star tiles inside the rosette). Don't touch the rosette/transition rings until inner-star A6 PASS count rises.
+
+Process discipline:
+- Apply G1 (iteration immutability — iter 92 is frozen, work in iterations/93/).
+- Apply G2 (architecture before pixels — structural is 2/18, so the next iteration MUST target structural improvement, not coloring).
+- Read `iterations/92/validation/validation.json → overall.warnings[0].context.counterfactual_rationale` directly; do not re-derive priorities from screenshots.
 
 Don't try to recover the legacy `arch-audit.json` history. It used different scoring; comparing across the cutover is misleading.
+
+The auto-emitted baseline.json is **not user-verified** (per `qiyas baseline emit --help`). If iter 93's structural work seems to chase noise (e.g., the qiyas encoder hallucinated a shape that isn't really in the reference), refine via the interpret-pattern skill: regenerate `pattern-interpretation.html` from the existing `shapes.json` (345 raw extracts), let the user collapse them into ~18 zone-grouped expectations in the browser, then re-write baseline.json from the corrected DOM. The orchestrator picks up the new baseline on the next run.
 
 ### session-8-fold — never used the iteration loop
 
@@ -85,6 +100,6 @@ Anything you read in iter 11/12/13's retrospectives about empty `overall.warning
 ## Open follow-ups visible from this status
 
 - `#85` — bikar-medallion-10 wedge-and-rotate restart (now unblocked)
-- `#98` — session-1 resurrection on modern path (now unblocked)
+- `#98` — session-1 resurrection on modern path (**done 2026-05-02**; iter 93 directive captured above)
 - `#100` — push qiyas v0.1.1 to ghcr (cosmetic for local users; matters for distribution)
 - `#79` — qiyas score backfill against historical iterations missing validation/ subdirs
