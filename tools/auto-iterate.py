@@ -182,14 +182,18 @@ def fmt_run_row(it: IterationResult, predicted_delta: Optional[float],
     )
 
 
+REPO_BIKAR_SKILL = (
+    REPO_BIKAR / ".claude/skills/iterate-pattern-from-qiyas-warnings/SKILL.md"
+)
+
+
 # ============================================================
-# Manual edit prompt (Phase 1 — Phase 2 swaps for an Agent call)
+# Edit step — Phase 1 (manual) and Phase 2 (autonomous)
 # ============================================================
 
-def prompt_manual_edit(session_dir: Path, n: int, k: int,
-                       it: IterationResult) -> bool:
-    """Print the warning context and wait for the human. Returns True
-    when iter K's pattern.bkr exists and the human signals ready."""
+def _seed_next_bkr(session_dir: Path, n: int, k: int) -> Optional[Path]:
+    """Copy iter N's pattern.bkr to iter K (no-op if K already has one).
+    Returns the next bkr path or None if seeding failed."""
     next_dir = session_dir / "iterations" / str(k)
     next_dir.mkdir(parents=True, exist_ok=True)
     next_bkr = next_dir / "pattern.bkr"
@@ -197,9 +201,103 @@ def prompt_manual_edit(session_dir: Path, n: int, k: int,
     base_bkr = session_dir / "iterations" / str(n) / "pattern.bkr"
     if not base_bkr.is_file():
         print(f"[error] no pattern.bkr at iter {n}; can't seed iter {k}", file=sys.stderr)
-        return False
+        return None
     if not next_bkr.exists():
         shutil.copy(base_bkr, next_bkr)
+    return next_bkr
+
+
+def auto_edit(session_dir: Path, n: int, k: int,
+              it: IterationResult,
+              max_budget_usd: float = 2.0) -> bool:
+    """Phase 2: spawn `claude --print` to apply the BIKAR translation
+    skill and write iter K's pattern.bkr. Returns True on subprocess
+    success (the orchestrator separately verifies the edit compiles and
+    moves the score)."""
+    next_bkr = _seed_next_bkr(session_dir, n, k)
+    if next_bkr is None:
+        return False
+
+    if not REPO_BIKAR_SKILL.is_file():
+        print(f"[error] bikar skill missing: {REPO_BIKAR_SKILL}", file=sys.stderr)
+        return False
+
+    w = it.top_warning or {}
+    rationale = (w.get("context") or {}).get("counterfactual_rationale") or "-"
+
+    val_path = session_dir / "iterations" / str(n) / "validation" / "validation.json"
+    baseline = session_dir / "input" / "baseline.json"
+    reference = session_dir / "input" / "reference.jpg"
+
+    prompt = f"""You are running iteration K = {k} of the auto-iterate loop on
+session {session_dir.name}.
+
+Apply the BIKAR `iterate-pattern-from-qiyas-warnings` skill at
+{REPO_BIKAR_SKILL} to translate this iteration's top warning into a
+DSL edit.
+
+Inputs:
+- Current pattern (already copied to iter {k}): {next_bkr}
+- Validation: {val_path}
+  Read overall.warnings[0] for the directive. The top warning is:
+    id:        {w.get('id')}
+    source:    {w.get('source')}
+    delta:     {w.get('counterfactual_score_delta')}
+    message:   {w.get('message')}
+    rationale: {rationale}
+- Baseline: {baseline}
+- Reference image: {reference}
+
+Output:
+- Edit {next_bkr} in place to apply the warning's counterfactual.
+- After saving, print one paragraph to stdout with: which warning was
+  consumed, the verbatim counterfactual_rationale, and which DSL
+  statement(s) you changed.
+
+Constraints (CLAUDE.md G1-G5):
+- Do NOT modify any file under iterations/{n}/.
+- If structural < 1.0, the edit MUST target a structural warning, not coloring.
+- The new pattern.bkr must compile via `compileDSL` (the driver will
+  fail this iteration if it doesn't).
+
+Do NOT run the orchestrator, render, or validate — the driver handles
+those after you return. Only edit pattern.bkr and print the rationale.
+"""
+
+    print(f"\n=== iter {k} edit (Phase 2: claude --print, budget=${max_budget_usd}) ===")
+    print(f"  warning id: {w.get('id')} (delta={w.get('counterfactual_score_delta')})")
+
+    cmd = [
+        "claude", "--print",
+        "--add-dir", str(REPO_BIKAR),
+        "--add-dir", str(session_dir),
+        "--allowedTools", "Read,Write,Edit,Glob,Grep,Bash",
+        "--max-budget-usd", str(max_budget_usd),
+        prompt,
+    ]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode != 0:
+        print(f"[error] claude --print exited {proc.returncode}", file=sys.stderr)
+        print(proc.stderr[-2000:], file=sys.stderr)
+        return False
+
+    # Print the agent's rationale paragraph; the orchestrator log keeps
+    # the stdout for predicted-vs-actual analysis.
+    print("  agent output:")
+    for line in (proc.stdout or "").splitlines():
+        print(f"    {line}")
+    edit_log = session_dir / "iterations" / str(k) / "edit.log"
+    edit_log.write_text(proc.stdout or "")
+    return True
+
+
+def prompt_manual_edit(session_dir: Path, n: int, k: int,
+                       it: IterationResult) -> bool:
+    """Print the warning context and wait for the human. Returns True
+    when iter K's pattern.bkr exists and the human signals ready."""
+    next_bkr = _seed_next_bkr(session_dir, n, k)
+    if next_bkr is None:
+        return False
 
     w = it.top_warning or {}
     rationale = (w.get("context") or {}).get("counterfactual_rationale") or "-"
@@ -244,6 +342,11 @@ def main() -> int:
     p.add_argument("--stagnation-epsilon", type=float, default=0.005)
     p.add_argument("--skip-capture", action="store_true",
                    help="skip Phase 1.5 post-iteration capture checklist")
+    p.add_argument("--auto", action="store_true",
+                   help="Phase 2: edit step runs `claude --print` non-interactively "
+                        "(default: manual edit prompt)")
+    p.add_argument("--auto-budget-usd", type=float, default=2.0,
+                   help="per-iteration budget cap for --auto (default $2)")
     args = p.parse_args()
 
     session_dir = Path(args.session_dir).resolve()
@@ -318,10 +421,16 @@ def main() -> int:
         k = it.n + 1
         prev_composite = it.composite
 
-        # === Edit step (Phase 1: manual prompt; Phase 2: Agent call) ===
-        if not prompt_manual_edit(session_dir, it.n, k, it):
-            print("[stop] user quit during edit step")
-            return 3
+        # === Edit step (Phase 1: manual prompt; Phase 2: claude --print) ===
+        if args.auto:
+            ok_edit = auto_edit(session_dir, it.n, k, it, args.auto_budget_usd)
+            if not ok_edit:
+                print("[stop] auto-edit failed at iter", k, file=sys.stderr)
+                return 3
+        else:
+            if not prompt_manual_edit(session_dir, it.n, k, it):
+                print("[stop] user quit during edit step")
+                return 3
 
         # === Render ===
         next_bkr = session_dir / "iterations" / str(k) / "pattern.bkr"
