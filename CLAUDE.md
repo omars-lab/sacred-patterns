@@ -6,6 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Sacred Patterns is a TypeScript library that generates sacred geometric patterns as SVG using D3.js. It bundles into a UMD module (`sacredPatterns`) viewable in a browser.
 
+## Engineering Tenets
+
+These are the tenets the code you produce here will be reviewed against. The reviewer (Omar) reads diffs with these in mind — when you violate one, expect to be asked to revise. Each is named for the failure mode it prevents, not the platitude it sounds like.
+
+1. **Simplicity over complexity — simplify while amplifying.** Break problems into the smallest chunks that still ship value, build one chunk at a time, and prefer the smaller solution that does the job. Don't solve the whole problem in one move. "Simplifying while amplifying" means the chunk you ship should both reduce surface area AND increase what the system can do — not just one or the other. *Failure mode this prevents:* large speculative rewrites, premature abstractions, multi-PR designs delivered as one PR.
+2. **Fix the root cause, don't add a fallback.** When a tool/path is broken, root-cause it and fix it. Do not add a fallback that papers over the failure. Fallbacks remove the pressure to keep the real path healthy and hide the very signal that surfaced the bug. The synthesized-warnings revert in commit d5c7c23 is the canonical example. *Failure mode this prevents:* defensive code that masks regressions; "graceful degradation" that quietly rots into the primary path.
+3. **Surface, don't hide.** When something is broken, missing, or unavailable, make it loud — a blocker, an error, an explicit non-zero exit, an entry in the user-facing summary. Silent degradation (an empty array, a `None`, a no-op) is worse than a noisy failure because it looks identical to "everything is fine." *Failure mode this prevents:* the bikar-medallion-10 cascade — three iterations stranded because `overall.warnings = []` looked like "no warnings" instead of "the warnings tool is broken."
+4. **Verify before claiming done.** Run the tool, read the output, confirm the assertion before saying "shipped" or "fixed." Trust no summary — including your own — that wasn't checked against the actual artifact. *Failure mode this prevents:* describing "3 backlog adds" when the diff was a 154-line rewrite, marking a task complete when the code is partial, claiming a build works because it compiled (rather than because you ran it).
+5. **Read the existing shape before adding new shape.** Before introducing a new function, type, file, or data path, check whether the data, helper, or pattern already exists. Reach for what's there before building parallel structure. *Failure mode this prevents:* duplicating logic, inventing schemas the consumer can't read, building a "fallback path" when the data was already accessible (see tenet 2).
+
+When the right move is to violate a tenet, say so explicitly and explain why — don't violate quietly.
+
 ## Build & Development Commands
 
 ```bash
