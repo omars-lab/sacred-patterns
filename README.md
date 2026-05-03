@@ -81,11 +81,54 @@ The library is built on composable geometry classes in `src/ts/`:
 
 All geometric transforms are immutable — methods return new instances rather than mutating.
 
+## Dependencies
+
+### npm (managed via `package.json`)
+
+| Package | Purpose |
+|---------|---------|
+| `d3` (v7) | SVG rendering engine — all geometric patterns rendered as D3-generated SVG |
+| `lodash` | Functional utilities used throughout geometry primitives |
+| `typescript` (v5) | Source language (strict mode) |
+| `webpack` (v5) | UMD bundling — D3 and Lodash loaded as externals |
+| `ts-loader` | TypeScript compilation within webpack |
+| `eslint` + `typescript-eslint` | Code quality and linting |
+| `webpack-dev-server` | Local development server with hot reload |
+| `html-webpack-plugin` | Generates `site/index.html` from template |
+| `jsdom` | DOM environment for regression tests (`npm test`) |
+
+### System dependencies (brew / pip)
+
+| Tool | Install | Purpose |
+|------|---------|---------|
+| **Node.js** (18+) | `brew install node` | Runtime for npm, webpack, dev server |
+| **ImageMagick** | `brew install imagemagick` | Image conversion (JPG→PNG for tracing), timelapse GIF assembly (`magick convert`) |
+| **libxml2** (xmllint) | `brew install libxml2` (or pre-installed on macOS) | XML validation of SVG files — used by `tools/validate-svg.sh` |
+| **ffmpeg** | `brew install ffmpeg` | Timelapse MP4 assembly for social media (optional — skip if unavailable) |
+| **VTracer** | `pip install vtracer` | Reference image tracing — converts raster images (JPG/PNG) to colored SVGs for comparison |
+| **Python 3** | `brew install python` (or pre-installed on macOS) | Runs VTracer and SVG extraction scripts |
+
+### Quick setup
+
+```bash
+# System dependencies
+brew install node imagemagick ffmpeg
+
+# Python dependencies
+pip install vtracer
+
+# Project dependencies
+npm install
+```
+
+## References
+
+See [REFERENCES.md](REFERENCES.md) for a curated catalog of academic papers, open-source implementations, tutorials, and reference materials on Islamic geometric pattern construction and computational generation.
+
 ## Tech Stack
 
 - **TypeScript** (strict mode) — source language
-- **D3.js v5** — SVG rendering
+- **D3.js v7** — SVG rendering
 - **Lodash** — functional utilities
-- **Webpack 4** — UMD bundling (D3 and Lodash loaded as externals)
-- **Express** — static file server
+- **Webpack 5** — UMD bundling (D3 and Lodash loaded as externals)
 - **Docker** — multi-stage containerized deployment

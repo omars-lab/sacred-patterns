@@ -55,7 +55,7 @@ for session_dir in "$SESSIONS_DIR"/session-*/; do
     fi
     # Fall back to last iteration screenshot
     if [ -z "$thumbnail" ]; then
-        last_screenshot=$(ls -1 "$session_dir"/iterations/*/screenshot.png 2>/dev/null | tail -1)
+        last_screenshot=$(ls -1 "$session_dir"/iterations/*/screenshot.png 2>/dev/null | tail -1 || true)
         if [ -n "$last_screenshot" ]; then
             iter_num=$(basename "$(dirname "$last_screenshot")")
             thumbnail="$session_name/iterations/$iter_num/screenshot.png"

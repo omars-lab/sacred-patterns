@@ -150,7 +150,36 @@ After deploy completes:
    curl -s -o /dev/null -w "%{http_code}" https://art.bytesofpurpose.com/gallery/
    ```
 
-4. Report results to the user with the live URL.
+4. **Verify analysis tools respond:**
+   ```bash
+   curl -s -o /dev/null -w "%{http_code}" https://art.bytesofpurpose.com/tools/analysis/showcase.html
+   curl -s -o /dev/null -w "%{http_code}" https://art.bytesofpurpose.com/tools/analysis/star-intersection-map.html
+   curl -s -o /dev/null -w "%{http_code}" https://art.bytesofpurpose.com/tools/analysis/construction-overlay.html
+   ```
+
+5. **Verify components page responds (if exists):**
+   ```bash
+   curl -s -o /dev/null -w "%{http_code}" https://art.bytesofpurpose.com/components/
+   ```
+
+6. Report results to the user with all live URLs that returned 200.
+
+**If any endpoint returns 404 after waiting 2 minutes**, check that the file exists in the gh-pages branch:
+```bash
+git log --oneline -1 origin/gh-pages
+git show origin/gh-pages:<path/to/file> | head -1
+```
+
+### Updating Deployed Pages
+
+When new functionality is added to the project, update the corresponding deployed pages:
+
+1. **New analysis tool added** → Update `tools/analysis/showcase.html` with screenshots and description. Update `tools/analysis/README.md`. Re-deploy.
+2. **New session completed** → Gallery is auto-built from session data by `make gallery`. Re-deploy.
+3. **New component added** → Update `templates/components/index.html`. Re-deploy.
+4. **Site bundle changed** → `make build` rebuilds `site/bundle.js`. Re-deploy.
+
+After each deploy, run the full verification checklist (all curl checks above).
 
 ## Error Recovery
 

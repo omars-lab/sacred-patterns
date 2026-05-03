@@ -22,9 +22,13 @@ Creative skill that composes original Islamic geometric patterns from learned pr
 
 1. Read the declarative language guide: `.claude/skills/learn-new-pattern/declarative-language-guide.md`
 2. Read available palettes: `.claude/skills/learn-new-pattern/color-palettes.md`
-3. Read learned palettes: `/Users/omareid/Dropbox/Data/sacred-patterns/learnings/color-palettes-learned.md`
-4. Read construction techniques: `/Users/omareid/Dropbox/Data/sacred-patterns/learnings/construction-techniques.md`
-5. Read patterns catalog for inspiration: `/Users/omareid/Dropbox/Data/sacred-patterns/learnings/patterns-catalog.md`
+3. Read general construction learnings (git-tracked, in this skill directory):
+   - `learnings/rosette-construction.md` — Lee/Adams traditional construction method
+   - `learnings/construction-antipatterns.md` — common mistakes to avoid
+   - `learnings/rabbit-hole-checklist.md` — early warning signs for wasted iterations
+   - `learnings/construction-techniques.md` — reusable algorithms
+   - `learnings/color-palettes-learned.md` — palettes discovered from reference images
+   - `learnings/patterns-catalog.md` — catalog of studied patterns
 
 ### Step 2: Design
 

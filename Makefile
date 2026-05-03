@@ -24,6 +24,12 @@ open: compile
 serve:
 	npm run serve
 
+INTERPRET_TEMPLATE := ${ROOT_DIR}/.claude/skills/interpret-pattern/templates/pattern-interpretation.html
+
+interpret:
+	@if [ -z "$(SESSION)" ]; then echo "Usage: make interpret SESSION=<session-dir>"; exit 1; fi
+	python3 ${ROOT_DIR}/tools/generate-interpretation.py "$(SESSION)" --template "${INTERPRET_TEMPLATE}"
+
 SESSIONS_DIR := /Users/omareid/Dropbox/Data/sacred-patterns
 GALLERY_DIR := ${ROOT_DIR}/site/gallery
 GALLERY_TEMPLATE := ${ROOT_DIR}/.claude/skills/learn-new-pattern/templates/gallery-template.html
@@ -70,6 +76,16 @@ deploy: build gallery
 	cp ${ROOT_DIR}/site/index.html "$$DEPLOY_DIR/index.html" && \
 	if [ -d "${GALLERY_DIR}" ]; then \
 		cp -r ${GALLERY_DIR} "$$DEPLOY_DIR/gallery" ; \
+	fi && \
+	if [ -d "${ROOT_DIR}/templates/components" ]; then \
+		cp -r ${ROOT_DIR}/templates/components "$$DEPLOY_DIR/components" ; \
+	fi && \
+	if [ -d "${ROOT_DIR}/tools/analysis" ]; then \
+		mkdir -p "$$DEPLOY_DIR/tools/analysis" ; \
+		cp ${ROOT_DIR}/tools/analysis/*.html "$$DEPLOY_DIR/tools/analysis/" ; \
+		if [ -d "${ROOT_DIR}/tools/analysis/screenshots" ]; then \
+			cp -r ${ROOT_DIR}/tools/analysis/screenshots "$$DEPLOY_DIR/tools/analysis/screenshots" ; \
+		fi ; \
 	fi && \
 	cd "$$DEPLOY_DIR" && \
 	git add -A && \
