@@ -37,6 +37,67 @@ without new authoring — needs verification (are existing Star-14 /
 Rosette-12r close enough to "medallion-12" for the regression test, or
 do we need a true medallion-12 with satellites + interlace?).
 
+### Inventory verification (2026-05-05)
+
+Probed gt-emitter output on existing patterns to evaluate whether each
+slot can be filled without new authoring. The Phase 1.B regression test
+is "F1.v3 ARI=1.000 by construction across diverse N and arrangement,
+catching gt-emitter bugs" — **not** "produce visual medallion aesthetics."
+That distinction reframes "what counts as filling a slot."
+
+Each slot's bar: emit `pattern.gt.json` with multiple B-classes (so
+provenance multisets actually vary across shapes), to stress F1.v3's
+multiset-equality merge gate. Single-class outputs are degenerate.
+
+| Slot | Existing pattern | Shapes | B-classes | Verdict |
+|---|---|---|---|---|
+| Lower-N (medallion-6 slot) | `Hexagram.bkr` | 3 | 3 | OK — minimal but valid |
+| Higher-N (medallion-12 slot) | `Rosette-12.bkr` | 39 | 6 | OK — strong |
+| Translation-tile (girih slot) | `Stars/Darb-i-Imam.bkr` | 142 | 6 | OK — quasicrystalline subdivision, large |
+| Mirror-only (reflection slot) | `Showcase/Mirror-Star.bkr` | 20 | 5 | OK — bilateral kite via `mirror around` DSL |
+| Scaled-concentric (stress slot) | `Showcase/Nested-Rosette.bkr` | 51 | 7 | OK — multi-scale `nest` composition |
+
+**All five Phase 1.B slots are fillable from existing patterns** for the
+gt-emitter regression-test purpose. New authoring is unnecessary for
+Phase 1.B's stated goal.
+
+### Scope revision (2026-05-05)
+
+Given the inventory above, the original PR 1 (author 5 new `.bkr`
+templates) is over-scoped per tenet 1 (simplicity) and tenet 5 (read
+existing shape before adding new shape). The revised cascade is:
+
+- **PR 1 (revised, sacred-patterns):** Update `corpus.json` to point at
+  the five existing `.bkr` paths. No new bikar work needed for Phase 1.B
+  *for the regression-test purpose*.
+- **PR 2 (qiyas, can start now):** `corpus.json` index + driver — same
+  as before.
+- **PR 3 (bikar, after in-flight strapwork lands):** `polygon_outline_px`
+  schema extension — same as before. **Still needed** because B-AFF
+  consumption (per `bikar-as-training-data-generator.md` Rule 2) requires
+  per-shape pixel outlines, which today's gt-emitter doesn't provide.
+- **PR 4 (sacred-patterns, after PR 1+2):** wire `--corpus` flag — same.
+- **PR 5 (qiyas, after PRs 1-3):** F1.v3 ARI cross-check on Phase 1.B —
+  same.
+
+**Why this is OK:** the seam doc's Rule 3 (parametric variation) was
+about *future* B-AFF training-corpus density, not the *today* regression
+test. Today's regression needs 5 diverse constructions; B-AFF later needs
+hundreds. The two requirements compose: when B-AFF time comes, *then*
+author parametric templates. Today, ship the regression with what bikar
+already produces.
+
+**Owner decision needed before proceeding:** confirm that the 5 existing
+patterns (Hexagram, Rosette-12, Darb-i-Imam, Mirror-Star, Nested-Rosette)
+are an acceptable Phase 1.B regression corpus, OR identify a specific
+Phase 1.B goal that requires new authoring (e.g., "we need a literal
+medallion with satellites + interlace because the regression must catch
+medallion-specific gt-emitter bugs that Hexagram + Rosette-12 don't
+exercise").
+
+The revised default is "use existing." If accepted, PR 1 collapses into
+PR 2 (one PR creates corpus.json pointing at existing paths).
+
 ## In-flight bikar work — coordination
 
 Bikar working tree at 2026-05-05 has uncommitted changes (parser.ts,
