@@ -78,6 +78,19 @@ Build a 3-construction proof corpus. Validate report machinery on it. Expand to 
 7. Mirror-only-symmetry pattern — reflection-identity, not rotation-identity. Critical orthogonal case.
 8. Scaled-concentric stress case — three concentric rosettes at three sizes. Tests scale-invariance.
 
+**Phase 1.B authoring discipline (added 2026-05-05):** Phase 1.B is
+authored as a *parametric corpus*, not 5 hand-rolled one-offs. Each
+construction is a bikar `.bkr` template that takes parameters; a driver
+script emits one render+gt pair per parameter combination. This makes
+Phase 1.B serve two consumers with the same corpus: (a) today's
+`qiyas validate-detector` regression run, (b) tomorrow's B-AFF training
+run if/when detector-time per-pair identity becomes a real consumer
+need. The architectural seam is documented in
+`.claude/plans/bikar-as-training-data-generator.md` — five rules
+(deterministic renders, per-shape pixel outlines, parametric templates,
+authored splits, single `corpus.json` index). Owner sign-off gate on
+those rules before Phase 1.B starts.
+
 **Bikar deliverables:**
 - For Phase 1.A: render 3 patterns to PNG + `pattern.gt.json`. Constructions 2, 3 may already exist as test fixtures; verify and use.
 - For Phase 1.B: build 5 new constructions (4–8 above). Constructions 4, 5 are parameter variations on medallion-10, cheap. Constructions 6, 7, 8 are novel construction-design work.
