@@ -75,6 +75,20 @@ iter-8's existing HARD STOP record stands. Mark task #194 as blocked, mark tasks
 
 Per iter-8 next-step #2 (line 163-166), add a bikar primitive that lets a template author declare "this face belongs to class X" directly, bypassing the per-edge tag-union. Then Petal-2-Ring could be re-authored with 6 face declarations per class instead of 24 arc declarations. This is the most invasive option but the most general — it would fix the same problem for any future multi-class arc-bearing template.
 
+### Option I — Bikar refactor: per-face data with combiner callback (CGAL-canonical pattern)
+
+Web-search of the canonical literature (CGAL Arrangement_2 docs, May 2026) confirms this is *not* a "weird local choice" we made — it's a layer the bikar gt-emitter skipped. The canonical practice in computational-geometry libraries is:
+
+- **Labels live on faces, not on edges.** CGAL's `Arr_extended_dcel<Traits, VData, HData, FData, ...>` parameterizes face data directly via `FData`, separately from per-half-edge data via `HData`.
+- **Per-edge tags are convenience for the template author; the construction-time DSL must compute a per-face label from those tags.** CGAL's `Arr_face_overlay_traits<Arr_A, Arr_B, Arr_R, OvlFaceData>` takes an `OvlFaceData` *functor* that combines face data from two input arrangements (e.g., dominant class, weighted vote, geometric area). The same pattern applies to a single arrangement with multi-edge boundaries.
+- **Multi-edge-shared faces are normal, not a bug.** "Two arrangement faces may share more than a single edge on their boundary" — Petal-2-Ring's 6 faces with 4 boundary arcs each is geometrically correct; what's missing is the combiner that turns those 4 per-edge tags into 1 per-face label.
+
+What this looks like in bikar: extend `gt-emitter.ts` so that when a face's boundary half-edges carry conflicting `.className` tags, a user-supplied combiner (in the template's `style` block, e.g. `face_class_resolver dominant_arc | majority | first_match`) decides the per-face class — instead of defaulting to "paste all tags into source_primitives as a multiset." Default combiner could be "majority by arc-length" to preserve current behavior on single-class faces while making multi-class faces well-defined.
+
+This is strictly more general than Option H (`face .className`): Option H requires the template author to enumerate every face by name; Option I infers per-face class from per-arc tags using a combiner the author picks once per template. Option I also brings bikar into alignment with the canonical CGAL pattern, which makes future qiyas/bikar interop on planar-graph face attributes cheaper (CGAL's BGL bridge, overlay traits, etc., all assume per-face data).
+
+**Cost estimate:** 2-3 days (new bikar primitive + 3-5 combiner implementations + Petal-2-Ring re-author + corpus regen + iter-8 re-run).
+
 ## What changed between Q3 PASS and this discovery
 
 - Q3 smoke (recorded 2026-05-05 in decision doc §"Q3 smoke test results"): verified `source_primitives` contains the class tag per arc. PASS.
