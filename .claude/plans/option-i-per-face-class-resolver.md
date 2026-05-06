@@ -1,13 +1,34 @@
 ---
-status: APPROVED — implementation in progress (owner overrode wait-for-decision 2026-05-06)
+status: SLICE 0 LANDED · SLICE 0.5 BLOCKING (style-resolver wiring)
 discovered: 2026-05-06
 owner: omar (override of /loop hard-stop wait)
 parent-escalation: petal-2ring-q3-actual-face-count-divergence.md
+slice-2-divergence: option-i-slice-2-divergence-style-resolver.md
 related:
   - decision: qiyas/docs/decisions/2026-05-05-petal-n-2ring-class-partition.md
   - cascade-plan: sacred-patterns/.claude/plans/shape-identity-detection-cascade.md
   - cgal-references: see Option I body in parent escalation doc
+  - slice-0-commit: bikar f6525c9
 ---
+
+## Status footer (2026-05-06)
+
+- **Slice 0 — DONE.** bikar `f6525c9`. Resolver + 10 unit/integration tests
+  green; schema 1.13 → 1.15.
+- **Slice 0.5 — NEW, BLOCKING SLICE 2.** Surfaced post-slice-0 smoke:
+  `face_class` is correctly populated but the bikar style-resolver still
+  matches `.className` rules via per-edge multiset, so multi-class faces
+  paint with first-match-wins and the same-color union-find collapses
+  them. See `option-i-slice-2-divergence-style-resolver.md` for the full
+  write-up and Option I-A/B/C trade-offs. Recommended: I-A (extend
+  style-resolver to consult `face_class`). Cost: ~2 hours.
+- **Slice 1 — DEFERRED past slice 2.** DSL surface for combiner
+  selection adds no value to slice 2 (which uses default `dominant_arc`).
+  Pick up only if a new template author needs an alternate combiner.
+- **Slice 2 — BLOCKED on slice 0.5.** Cannot derive `face_class`-aware
+  B-partition while production renders disagree with `face_class`.
+- **Slice 3 — BLOCKED on slice 2.**
+
 
 # Option I implementation plan — per-face class resolver in bikar gt-emitter
 
