@@ -220,35 +220,79 @@ After each phase, run this loop to confirm the cascade is healthy:
   preserves fused_v3=1.000 on all three. SHIP holds; the "no
   arc-coverage" claim was incorrect from the beginning.
 
-- **iter-8 hard stop (surfaced 2026-05-05).** Multi-class arc-bearing
-  fusion-delta witness needed (petal-N-ring is single-class, so
-  pre-fusion=fused-fusion=1.000 — doesn't stress the lump-by-A /
-  split-by-B mechanism that medallion10's 0.083→1.000 demonstrates on
-  polygon geometry). Owner picked option 4 (web-search-informed):
-  parametric **petal-N-mixed-ring** with non-uniform inner/outer
-  radii. Investigation revealed:
-  - bikar's `repeat at C0 depth N` construct binds `$radius` as a
-    single variable per repeat block — non-uniform radii would require
-    a DSL extension (per-ring radius parameter), out of scope.
-  - The existing `bikar/patterns/Petal Tutorial/Petal-2-Ring.bkr`
-    template **already produces multi-class arc geometry** (X-inner
-    arcs on C0, X-outer arcs on ring-1, Y-region arcs between adjacent
-    ring-1 circles — three structurally distinct face classes from a
-    uniform-radius construction). This makes it the cleanest
-    fusion-delta witness available without DSL changes.
-  - **Second hard stop:** Petal-2-Ring.bkr has **explicit unrolled
-    enumeration** of intersections (`X0`..`X5`, `Y0`..`Y5`) and arc
-    connections (24 lines for N=6). Naive `str.replace("6", "{{N}}")`
-    won't expand the per-N enumeration. To parametrize requires either
-    (a) a bikar DSL `for i in 0..N` loop construct (out of scope), or
-    (b) a Python-side template macro engine (turns `.bkr.tmpl` into
-    `.bkr.j2`, requires templating dep + scope expansion).
-  - **Resolved 2026-05-05:** owner picked (a) wait for bikar DSL
-    extension. Filed as bikar-side ticket #195 (`for i in 0..N` loop
-    construct in pattern blocks). #194 (the iter-8 slice) blocks on
-    #195. Cascade pauses at iter-8 until the DSL extension ships;
-    iter-7 SHIP holds as the load-bearing arc-path coverage in the
-    interim.
+- **iter-8 HARD STOP (run 2026-05-05).** Multi-class arc-bearing
+  fusion-delta validation on `petal-6-full` (verbatim copy of
+  `bikar/patterns/Petal Tutorial/Petal-Full.bkr`). Result:
+  fused_v3 ARI = 0.709, pre-fusion ARI = 0.645, fusion delta = +0.064.
+  **Below the cascade-plan target of 1.000.** F1.v3 is not broken
+  (delta is positive) but the equivalence-by-construction guarantee
+  iter-5 SHIP'd on polygon corpora does not hold on arc geometry under
+  this corpus structure. Verdict at
+  `qiyas/calibration/i1/iter-8-multiclass-fusion-delta.md`.
+
+  **bikar gap surfaced (Tenet 6 falsification of iter-7).** bikar's
+  gt-emitter does NOT emit 2-vertex arc-lens faces as `gt_G` shapes —
+  the perimeter-detection logic keys edges by undirected vertex pairs
+  (`gt-emitter.ts` `edgeKey(v[j], v[(j+1) % v.length])`), and a
+  2-vertex face's two arc edges share the same vertex pair, so the
+  walk treats them as a single collapsed edge and skips the face.
+  Empirical confirmation: `Petal-1-Ring.bkr`, `Petal-2-Ring.bkr`,
+  any direct `face` statement with 2 arc sub-statements all emit
+  zero `gt_G` shapes despite producing colored 2-vertex faces in the
+  planar graph. This means **iter-7's "petal-N-ring is single-class
+  arc-bearing" framing was wrong**: petal-N-ring emits 0 face shapes;
+  the iter-7 `n_arc_bearing=N` count was construction CIRCLES (which
+  carry arc outlines via `approximateCircleOutline` 64-vertex
+  densification at `gt-emitter.ts:582-589`), not arc-bounded faces.
+  iter-7's SHIP holds at the level it actually tested (no regression
+  on circle distributions) but did not exercise arc-bounded face
+  geometry. Filed for the bikar repo as a follow-up: needs lens-face
+  emission fix.
+
+  **Why the for-loop work (bikar#195) didn't unblock iter-8.** The
+  for-loop DSL feature shipped (commits `21fd213` + `a4f34a8` on
+  bikar main), and iter-8 prototyped a `petal-N-2ring.bkr.tmpl` that
+  used it correctly (parser/evaluator paths verified end-to-end on
+  `/tmp/for-loop-smoke.bkr`). But the underlying bikar gap is
+  upstream of for-loops: even fully unrolled hand-written
+  `Petal-2-Ring.bkr` doesn't emit lens faces. The for-loop feature
+  is correct and useful for other patterns; it just can't paper over
+  the lens-emission gap.
+
+  **Why petal-6-full didn't reach 1.000.** Three structural reasons,
+  all in the corpus / upstream:
+  1. 9 of 10 B-classes are singletons (each layer-N outer-petal
+     carries a unique `:arc:#k` invocation tag from the per-block
+     connect counter). Singleton classes give no fusion signal.
+  2. 5 inner-triangle faces emitted via `face .inner_petal`
+     statement carry empty `source_primitives` (the `face` statement
+     bypasses the tag-collection machinery), pooling them into B0
+     along with all 43 construction circles.
+  3. No multi-instance arc-bearing class exists in this corpus —
+     the medallion10-style "40 instances of B7" geometry doesn't
+     have an analog on arc geometry yet.
+
+  **Cascade is paused at iter-8.** Recommended owner-decision paths
+  (Tenet 7: do not tune to make the test green):
+  1. Bikar fix: patch `gt-emitter.ts` to handle 2-vertex lens faces
+     (e.g., key edges by `(vertices, arcCenter, sweepCCW)` tuple).
+     Then `Petal-2-Ring.bkr` emits 6 X + 6 Y petal faces with
+     distinct arc-invocation tags — clean 2-class arc-bearing
+     corpus, 6 instances each, perfect fusion-delta witness.
+  2. Bikar feature: `face .className` statement that propagates
+     source_primitives from constituent arcs.
+  3. Spec accommodation: accept that F1.v3 has structurally weak
+     signal on singleton-heavy partitions and document it (no code
+     change). iter-8's +0.064 fusion lift is then "passing" even
+     though absolute ARI < 1.000.
+  4. Different multi-class arc template (avoid the `face`-statement
+     and per-layer-singleton issues; requires bikar lens-emission
+     fix to be testable at all).
+
+  iter-7 SHIP holds as the load-bearing arc-path coverage. iter-8
+  closes by surfacing the structural finding and the F1.v3
+  falsification on this corpus structure; it does NOT falsify F1.v3
+  in general.
 - **Owner decisions resolved 2026-05-04 (Omar) — went with all three recommendations:**
   1. Corpus size: 3 first (Phase 1.A) → expand to 8 (Phase 1.B). ✓
   2. qiyas#76 (construction hints) folded into this cascade as #151 (D4). ✓
