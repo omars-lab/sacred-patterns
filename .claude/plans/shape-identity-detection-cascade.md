@@ -308,3 +308,16 @@ After each phase, run this loop to confirm the cascade is healthy:
 - Supersedes scope of: qiyas#131 (validate-detector).
 - Folds in: qiyas#76 (construction hints sub-command).
 - Bikar work: corpus authoring for constructions 4–8.
+- **petal-N-2ring class-partition decision (ACCEPTED 2026-05-05, owner: omareid):**
+  `qiyas/docs/decisions/2026-05-05-petal-n-2ring-class-partition.md`.
+  **Picked: Option D (parametric K ∈ {2,3,4,6}).** Cascade tasks #194 / #202
+  unblocked but expanded in scope: now require 4 K-instance corpus entries
+  + per-K driver + per-K + roll-up SHIP verdict (all four must hit
+  fused_v3 = 1.000). Tasks #206-#210 cover the slices.
+- **Q3 smoke test (2026-05-06, task #206):** PASS with template-authoring
+  constraints. The gt-emitter union-find merge gate keys on `faceColors`
+  not `source_primitives` — so each Option D K-class needs a *distinct*
+  palette color, and the template must NOT use `classify` rules whose
+  selectors overlap the K classes (the classify path overwrites
+  source-tag-based class assignment). #207 (parametric template) is
+  unblocked with these constraints.
