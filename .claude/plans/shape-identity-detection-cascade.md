@@ -195,6 +195,60 @@ After each phase, run this loop to confirm the cascade is healthy:
 
 ## Open items (do not block Phase 0)
 
+- **Phase 1.B progress 2026-05-05 (resolved hard stops + iter-7/iter-8 findings):**
+  Both gates from the original HARD STOP block resolved:
+  1. **Scaffolding gate.** Owner ("b" / 2026-05-05) selected full Phase
+     1.B discipline. Slice 1 (#189) recorded sign-off on
+     `bikar-as-training-data-generator.md` 5 rules. Slices 2-4 shipped
+     scaffolding (`qiyas/calibration/phase-1b-corpus/`, `corpus.json`,
+     `splits.json`, `regenerate.py`, `petal-N-ring.bkr.tmpl`).
+  2. **#178 inherited claim falsified ✓ corrected.** Renamed to
+     "[Phase 1.A corpus addition] Author Star-10.bkr" (the only
+     template that actually shipped). Phase 1.B parametric authoring
+     rerouted under #187/#192.
+
+- **iter-7 SHIP (2026-05-05).** Phase 1.B petal-N-ring (N=6/8/10): all
+  three entries pass `fused_v3 ARI = 1.000` with arc-only edges
+  (448/576/704 arc primitives). Verdict at
+  `qiyas/calibration/i1/iter-7-arc-corpus-validation.md`.
+
+- **iter-7 falsified iter-6 inherited claim (Tenet 6).** iter-6 said
+  Phase 1.A was "polygon-only (verified `arc_bearing_shapes=0`)". The
+  schema-1.13 refresh (#188) revealed Phase 1.A actually has 896/64/64
+  arc edges across medallion10/star10/star7 — the proxy was wrong, not
+  the patterns. Re-running iter-5 against the refreshed fixtures
+  preserves fused_v3=1.000 on all three. SHIP holds; the "no
+  arc-coverage" claim was incorrect from the beginning.
+
+- **iter-8 hard stop (surfaced 2026-05-05).** Multi-class arc-bearing
+  fusion-delta witness needed (petal-N-ring is single-class, so
+  pre-fusion=fused-fusion=1.000 — doesn't stress the lump-by-A /
+  split-by-B mechanism that medallion10's 0.083→1.000 demonstrates on
+  polygon geometry). Owner picked option 4 (web-search-informed):
+  parametric **petal-N-mixed-ring** with non-uniform inner/outer
+  radii. Investigation revealed:
+  - bikar's `repeat at C0 depth N` construct binds `$radius` as a
+    single variable per repeat block — non-uniform radii would require
+    a DSL extension (per-ring radius parameter), out of scope.
+  - The existing `bikar/patterns/Petal Tutorial/Petal-2-Ring.bkr`
+    template **already produces multi-class arc geometry** (X-inner
+    arcs on C0, X-outer arcs on ring-1, Y-region arcs between adjacent
+    ring-1 circles — three structurally distinct face classes from a
+    uniform-radius construction). This makes it the cleanest
+    fusion-delta witness available without DSL changes.
+  - **Second hard stop:** Petal-2-Ring.bkr has **explicit unrolled
+    enumeration** of intersections (`X0`..`X5`, `Y0`..`Y5`) and arc
+    connections (24 lines for N=6). Naive `str.replace("6", "{{N}}")`
+    won't expand the per-N enumeration. To parametrize requires either
+    (a) a bikar DSL `for i in 0..N` loop construct (out of scope), or
+    (b) a Python-side template macro engine (turns `.bkr.tmpl` into
+    `.bkr.j2`, requires templating dep + scope expansion).
+  - **Resolved 2026-05-05:** owner picked (a) wait for bikar DSL
+    extension. Filed as bikar-side ticket #195 (`for i in 0..N` loop
+    construct in pattern blocks). #194 (the iter-8 slice) blocks on
+    #195. Cascade pauses at iter-8 until the DSL extension ships;
+    iter-7 SHIP holds as the load-bearing arc-path coverage in the
+    interim.
 - **Owner decisions resolved 2026-05-04 (Omar) — went with all three recommendations:**
   1. Corpus size: 3 first (Phase 1.A) → expand to 8 (Phase 1.B). ✓
   2. qiyas#76 (construction hints) folded into this cascade as #151 (D4). ✓
