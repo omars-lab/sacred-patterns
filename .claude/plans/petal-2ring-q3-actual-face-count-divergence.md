@@ -1,6 +1,8 @@
 ---
-status: HARD-STOP — needs owner decision
+status: RESOLVED 2026-05-06
 discovered: 2026-05-06
+resolved: 2026-05-06
+resolution: Option I (per-face class resolver via bikar schema 1.15 face_class) — shipped via cascade slices #210, #211, #212, then refined-A C3 contract step (qiyas#226) made face_class the load-bearing class-selector while preserving the legacy multiset path for face_class-null corpora as `derive_fused_partition_v2_multiset`.
 discovered_by: claude during /loop work on task #207 (Option D parametric template authoring)
 related:
   - decision: qiyas/docs/decisions/2026-05-05-petal-n-2ring-class-partition.md
@@ -114,3 +116,40 @@ Per the autonomous-loop input verbatim (in the cascade plan):
 > - Spec divergence: if implementation reveals a spec is wrong, STOP. Surface the divergence as a doc edit proposal under .claude/plans/ and wait.
 
 This doc is the surface. Task #207 is paused with the marker below; #208-#210 stay pending.
+
+## Resolution outcome (2026-05-06)
+
+Owner picked **Option I** (per-face data with combiner callback —
+CGAL-canonical pattern). Shipped as a 4-slice cascade:
+
+- **Slice 0 (#210, bikar):** schema 1.15 — gt-emitter walks face
+  primitives and resolves a per-face `face_class` via dominant-arc
+  class fold.
+- **Slice 1 (#211, qiyas):** F1.v3 ingests `face_class`, makes it the
+  load-bearing class-selector in `derive_fused_partition_v2`.
+- **Slice 2 (#212, qiyas):** parametric Petal-N-2ring × {K=2,3,4,6}
+  corpus authored with per-arc `.className` directives.
+- **Slice 3 (this slice, doc closeout):** record resolution on the
+  parent decision doc (qiyas) + flip this plan to RESOLVED.
+
+Subsequent refined-A Phase 3 (qiyas#226) contracted
+`derive_fused_partition_v2` to require `face_class_for` (sub-decision
+C3, scoped contract: legacy multiset preserved as
+`_v2_multiset` for face_class-null corpora). That contract is what
+locked Option I in as the long-term spec.
+
+**Calibration outcome (iter-8 re-run, 2026-05-06):**
+- petal-2-ring K=2: fused_v3=1.000 (delta +0.508)
+- petal-2-ring K=3: fused_v3=0.756 (delta +0.012, partial — class-skew)
+- petal-2-ring K=4: fused_v3=1.000 (delta +0.508)
+- petal-2-ring K=6: fused_v3=1.000 (delta +0.371)
+
+3 of 4 K-instances ship at the SHIP threshold; K=3 stays partial for
+the structural reason §"Q3 smoke test results" predicted (no template
+authoring change can fix it without renaming the partition itself).
+
+The original cascade tasks all complete: #207, #208, #209, #210
+(superseded by the Option I cascade), #211, #212. Decision doc
+parent (`qiyas/docs/decisions/2026-05-05-petal-n-2ring-class-partition.md`)
+gained a §"Resolution (2026-05-06)" section pointing back at this plan
+and the slice cascade.
