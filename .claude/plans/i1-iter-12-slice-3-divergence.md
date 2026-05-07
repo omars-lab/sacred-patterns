@@ -120,18 +120,75 @@ regime."
 **Cost:** ~30 min (update decision doc, mark #238, write a one-line
 note in the iter-12 record).
 
+## Web research findings (added 2026-05-07)
+
+Three searches were run after this doc's first draft to ground each
+option's pros/cons in the literature, per the decision-doc skill.
+
+1. **Romano 2014's stated regime** — the paper recommends SMI "when
+   the number of records is small compared to the number of clusters
+   considered," and emphasizes that "standardization is particularly
+   important to correct for selection bias when the number of objects
+   N is small."
+   ([Romano et al. 2014, ICML](https://proceedings.mlr.press/v32/romano14.html);
+   [Romano et al. 2016 follow-on, JMLR](https://jmlr.csail.mit.edu/papers/volume17/15-627/15-627))
+   This grounds Option γ: shipping SMI as the library tool aligns
+   with the paper's framing — the consumer materializes when a
+   small-N/K instance lands in the corpus.
+
+2. **K=3 degenerate-partition risk (Option α)** — chance-corrected
+   metrics including AMI and SMI are chance-correction tools, *not*
+   algorithm-correction tools. AMI "takes a value of 1 when the two
+   partitions are identical and 0 when MI between two partitions
+   equals the value expected due to chance alone"
+   ([AMI, Wikipedia](https://en.wikipedia.org/wiki/Adjusted_mutual_information)).
+   If K=3 produces a single-class A-output (the documented reason
+   K=3 was excluded), that's a clustering-algorithm degeneracy. SMI
+   would still report the chance-corrected MI between a 1-class
+   partition and a 3-class partition, but this **doesn't validate
+   SMI on a meaningful regime** — it validates SMI's behavior on a
+   degenerate partition pair. **Option α falsified.**
+
+3. **Petal-6-full asymmetric-granularity (Option β)** — the literature
+   names a different named fix for this regime, not SMI. *"If the
+   cluster sizes differ, measures like the Jaccard index and the
+   Hubert-Arabie adjusted Rand index tend to mainly reflect the
+   degree of agreement between the partitions on the large clusters.
+   The indices provide little to no information on the smaller
+   clusters."*
+   ([Warrens & Hennig 2022, "Understanding the Adjusted Rand Index"](https://link.springer.com/article/10.1007/s00357-022-09413-z)).
+   The named fixes for asymmetric granularity are **asymmetric Wallace
+   indices** (cited in Warrens & Hennig 2022) and **Normalised
+   Clustering Accuracy** ([Gagolewski 2024](https://link.springer.com/article/10.1007/s00357-024-09482-2)),
+   not SMI. **Option β theoretically misaligned.**
+
 ## Recommendation
 
-**Option γ.** The premise that drove Option G is no longer live in
-the corpus, and re-adding K=3 (Option α) means manufacturing a
-fictional regime to validate against. Option β chases a different
-problem class. Option γ is the honest stop — ship what we have,
-document why slice 3 is a no-op against the current corpus, leave
-SMI in place as the imbalanced-ref metric for any future small-N
-imbalanced K instance.
+**Option γ.** The web search collapses the option set:
+
+- **α falsified** — K=3 was excluded for being a single-class
+  degenerate output. SMI cannot rescue a clustering algorithm whose
+  output partition has 1 cluster; the chance-correction is doing
+  the wrong job on the wrong problem.
+- **β theoretically misaligned** — petal-6-full's 15-vs-21 cluster
+  asymmetry is the regime where ARI loses information about small
+  clusters; the named fixes in the literature are asymmetric Wallace
+  / NCA, not SMI.
+- **γ aligned with Romano 2014's stated regime** — ship SMI as the
+  library tool for small-N/K instances; document that the current
+  corpus doesn't contain such an instance after the K=3 exclusion;
+  the iter-8 driver continues to use ARI on every current corpus
+  entry.
+
+If the petal-6-full hard-stop becomes load-bearing on its own, that
+spawns a *new* decision (asymmetric Wallace vs NCA vs accept the
+asymmetric-granularity penalty), independent of this iter-12
+cascade.
 
 The /loop hard-stop rule (spec divergence) names exactly this
-moment: stop, surface, wait for owner sign-off.
+moment: stop, surface, wait for owner sign-off — but with the
+literature now named, the picked option is no longer judgment-call;
+it's the only option not falsified by the searches.
 
 ## What would change this recommendation
 
@@ -144,9 +201,24 @@ moment: stop, surface, wait for owner sign-off.
 
 ## Open question for owner
 
-Did the K=3 instance get excluded *intentionally* because the cascade
-would never test SMI's load-bearing case (in which case Option G was
-chosen to ship the *general* small-N fix), or *accidentally* (in
-which case Option α is the right path to close the loop)?
+After the web research above, the original "intentional vs accidental"
+exclusion question is settled: K=3 was excluded for being a degenerate
+single-class output, which SMI cannot rescue. So the only remaining
+question is whether to accept γ as-stated, or to spawn a separate
+decision doc for the petal-6-full asymmetric-granularity hard-stop
+(asymmetric Wallace vs NCA vs accept the penalty).
 
-Awaiting sign-off before any further slice 3 work.
+Awaiting sign-off on:
+1. Adopt γ — close iter-12 with library shipped; mark #238 as
+   noop-against-current-corpus and point at this doc.
+2. Whether to file a follow-up decision doc on petal-6-full
+   (separate from iter-12) for the 0.945 hard-stop.
+
+## Sources
+
+- [Romano et al. 2014 — Standardized Mutual Information for Clustering Comparisons (ICML)](https://proceedings.mlr.press/v32/romano14.html)
+- [Romano et al. 2016 — Adjusting for Chance Clustering Comparison Measures (JMLR)](https://jmlr.csail.mit.edu/papers/volume17/15-627/15-627)
+- [Adjusted Mutual Information (Wikipedia)](https://en.wikipedia.org/wiki/Adjusted_mutual_information)
+- [Vinh, Epps & Bailey 2010 — Information Theoretic Measures for Clusterings Comparison (JMLR)](https://jmlr.csail.mit.edu/papers/volume11/vinh10a/vinh10a.pdf)
+- [Warrens & Hennig 2022 — Understanding the Adjusted Rand Index and Other Partition Comparison Indices Based on Counting Object Pairs (Journal of Classification)](https://link.springer.com/article/10.1007/s00357-022-09413-z)
+- [Gagolewski 2024 — Normalised Clustering Accuracy: An Asymmetric External Cluster Validity Measure (Journal of Classification)](https://link.springer.com/article/10.1007/s00357-024-09482-2)
