@@ -97,6 +97,19 @@ For each option:
 
 **What changes:** which files, which repos, which surfaces.
 
+**Presentation — concrete shape:** the actual artifact this option produces,
+shown in a form the reader can audit. Pick the form that matches the
+decision class:
+  - Schema/contract decisions: a JSON/code block showing the exact field
+    shape (key names, types, example values).
+  - Algorithm decisions: pseudocode or a 5–10 line sketch of the core loop.
+  - Architecture decisions: a tree/diagram of files+modules+arrows.
+  - Process decisions: the smallest concrete example run end-to-end.
+This section is NOT a re-paraphrase of "What changes" — it's the *artifact
+the reader would see in a diff* if this option were picked. The reader
+must be able to compare Option A's shape against Option B's shape
+side-by-side and tell them apart at a glance.
+
 **Web research:**
 - <claim from web search> — [<title>](<url>)
 - ...
@@ -149,16 +162,22 @@ Either "PENDING — owner review required" or:
 
 After a decision is made, update §1 frontmatter `status` and `decided` fields. Never delete the rejected options — they're the load-bearing record.
 
-## Web search discipline
+## Web search discipline — HARD PRECONDITION for the Recommendation
 
-For each option, run at least one web search and cite the result. The search should target:
-- **Canonical implementations** of the option's pattern (e.g., "how do mainstream computational geometry libraries handle X").
-- **Prior-art critiques** of the workaround options (e.g., "why is goal-seeking calibration considered an anti-pattern in ML").
+**No Recommendation section may be written before web search is complete for every option.** This is a gate, not a guideline. The recommendation that comes out of local reasoning alone is the recommendation most likely to flip after the user asks "did we websearch this?" — which has happened, and which is the failure mode this gate exists to prevent.
+
+For each option, run at least one web search BEFORE writing §6 (Recommendation) and cite the result. The search should target:
+- **Canonical implementations** of the option's pattern (e.g., "how do mainstream computational geometry libraries handle X", "RFC for JSON canonicalization", "PROV canonical form").
+- **Prior-art critiques** of the workaround options (e.g., "why is goal-seeking calibration considered an anti-pattern in ML", "metadata as ground truth pitfalls").
 - **Independent witnesses** of the cost estimate (e.g., "how long does a typical DCEL edge-key migration take in similar codebases").
+
+**Why this gate exists:** local reasoning systematically under-weights options that match a canonical pattern named in literature, because the canonical pattern's *advantages* aren't visible from inside the codebase — they're visible in the citations that converge on the same shape. The 2026-05-11 `pattern-identity-signature-shape` decision is the case in point: the first draft recommended Option A from local reasoning; after three WebSearch calls surfaced RFC 8785, Peel et al. 2017, and PROV Canonical Form, the recommendation flipped to Option C — same evidence base, different ranking, because prior art changed which costs were load-bearing.
 
 If a search returns nothing relevant, say so in the doc — that absence is signal. **Don't fabricate citations.** If you can't find prior art for an option, the doc should record "no canonical precedent found"; that's information.
 
 Use the `WebSearch` tool. Include the URLs as markdown hyperlinks in the option's "Web research" section. Aggregate sources at the bottom of the doc in a `Sources:` section.
+
+**Self-check before writing §6:** for each option, can you cite at least one source (or an explicit "no prior art found")? If any option still has empty Web research, return to WebSearch — do not advance.
 
 ## Anti-patterns
 
@@ -175,6 +194,34 @@ A single markdown file at the path defined in §"Where it lives", plus:
 - An update to any related issue doc's "Options considered" section to point at the decision doc rather than re-listing options.
 - (If applicable) A task created via TaskCreate for the picked option's implementation.
 
+## Post-ACCEPT — keep the mental model current
+
+When (and only when) status flips to `ACCEPTED`, update the relevant
+repo's mental-model doc with a one-paragraph **principle** + link to
+the full decision. This is what makes the decision *operational* — the
+mental model is what future agents read on day one; the decision doc
+is the audit trail they consult on day N when something looks
+arbitrary.
+
+Target docs:
+- qiyas → `qiyas/docs/dev-mental-model.md` §"Decisions that shaped this codebase"
+- sacred-patterns → `sacred-patterns/docs/dev-mental-model.md` (create the section if missing — same shape)
+- bikar → `bikar/docs/dev-mental-model.md` (same)
+
+What the entry must contain:
+1. A short H3 heading naming the *durable rule* in imperative or
+   declarative form. Not the option letter, not the symptom, not the
+   pattern — the rule. ("`face_class` is the sole class-selector"
+   beats "iter-8 face_class vs multiset.")
+2. One paragraph (3–6 sentences) on what the rule means and why it
+   generalizes beyond the originating instance. Distill, don't copy.
+3. Trailing `→ [date — slug](decisions/YYYY-MM-DD-slug.md)` link.
+
+If a previously-ACCEPTED decision is **superseded**, mark the entry
+`(SUPERSEDED by [...])` rather than deleting it — the audit trail
+includes the superseded principle for future readers wondering why
+something *isn't* the case anymore.
+
 ## Verification
 
 Before considering the skill done, check:
@@ -185,5 +232,6 @@ Before considering the skill done, check:
 - [ ] Recommendation references §4 questions and §5 tenets, not just intuition.
 - [ ] "What would change this recommendation" section is non-empty.
 - [ ] Frontmatter `status` reflects whether owner has decided.
+- [ ] **If status is ACCEPTED:** mental-model doc updated with a principle entry per "Post-ACCEPT" above.
 
 If any check fails, the doc is not ready. Don't ship it just to clear the task.
