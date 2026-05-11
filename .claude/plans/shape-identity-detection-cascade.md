@@ -321,3 +321,134 @@ After each phase, run this loop to confirm the cascade is healthy:
   selectors overlap the K classes (the classify path overwrites
   source-tag-based class assignment). #207 (parametric template) is
   unblocked with these constraints.
+- **I1 next-corpus + macro-lift decision (ACCEPTED 2026-05-11, owner: omareid):**
+  `qiyas/docs/decisions/2026-05-11-i1-next-corpus-and-macro-lift.md`.
+  After iter-15 SHIP'd α-resolver + γ-narrow contract with ARI=1.000 across
+  all three petal entries in Phase 1.B, the cascade hits two coupled
+  questions: (1) which 3–5 corpus entries to add so 1.000 ARI is a real
+  signal not a saturation artifact; (2) when to re-measure macro lift on
+  bikar-medallion-10. **Picked Option E** (composed 5-entry plan). Entries
+  1+2 (macro-lift re-measure + Star-10 polygon-only witness) ship as a
+  single shipment; entries 3–5 (petal-N-3ring, hexagram-lens, mirror-only)
+  are gated on the stopping rules in the decision doc.
+- **I1 tenet-11 revision (REVISED 2026-05-11 same day, owner: omareid):**
+  same decision doc, §"Tenet-11 revision". Investigation of entry 1
+  surfaced `qiyas validate-detector` as stale (iter-1 canonical+shifted-grid
+  matcher; never updated to consume turning-function distance, fused-distance
+  v3, α-resolver, or γ-narrow contract). The per-iter ARI scripts
+  (`iter-5/7/8/9-*.py`) became the actually-load-bearing scoring path —
+  two parallel scoring paths emerged organically, which is the exact
+  failure mode CLAUDE.md tenet 11 was authored to prevent. **Phase 0
+  unification** added before entries 1–5: rebuild `validate-detector`'s
+  internals on `derive_fused_partition_v2`, refactor per-iter scripts to
+  thin wrappers, consolidate Phase 1.A + 1.B corpora under one root,
+  retire the iter-1 macro-fidelity report contract. Entries 1–5 unchanged
+  in scope but reduced to thin corpus additions / CLI invocations
+  post-Phase 0. Tasks #285 (Phase 0 umbrella), #286–#289 (slices 0a–0d);
+  #280–#284 (entries 1–5) now blocked by #285.
+
+## Slice 0c (#288) — SHIPPED 2026-05-11
+
+Q1.γ + Q2.γ owner picks landed 2026-05-11. Slice 0c materialized as the
+new `calibration/i1-corpus/` root with one driver, one splits file, one
+entry-id convention, all 9 entries at bikar schema 1.17, all 9 entries
+carrying auto-derived `pattern.identity.json`. Reflection log at
+`qiyas/calibration/i1/iter-16-corpus-regen-reflection.md` records the
+per-entry pre/post deltas (only the schema_version field changed; shape
+counts, types, and source_primitives populations are byte-identical).
+Pre-regen snapshots preserved at `qiyas/calibration/i1/pre-regen-snapshot/`.
+
+The dual roots (`tests/fixtures/corpus-phase1a/` +
+`qiyas/calibration/phase-1b-corpus/`) are NOT yet deleted — that's slice
+0d's gate. Live consumers (six iter-N scripts + seven test files) still
+hard-code the old paths and need to migrate.
+
+### Original surfaced sub-decisions (resolved)
+
+Slice 0c (corpus consolidation) was structurally ready: 7-commit cleanup
+landed in qiyas (3d90266..c9431ac), tree clean, pytest green except for
+the pre-existing #268 TF scalene_triangle regression. The physical move
+surfaced two material sub-decisions not covered by the accepted
+2026-05-11 next-corpus decision doc, surfaced for owner pick rather than
+unilaterally picking. **Both resolved Q1.γ + Q2.γ on 2026-05-11.**
+
+### Q1 — Schema-version policy on consolidation
+
+Current state of `pattern.gt.json` files across the two corpora:
+
+- **Phase 1.A** (3 entries: medallion10-iter14, star10, star7): uniform at
+  bikar schema 1.15 (regenerated 2026-05-06 in commit 2856b6a).
+- **Phase 1.B** (6 entries): **mixed** — petal-N-ring entries are at 1.13,
+  petal-6-full is at 1.15, petal-N-2ring is at 1.16. Bikar's current head
+  is at **1.17** (extension_factor added 2026-05-09 via #277).
+
+The 1.17 bump added `params.extension_factor` and `boundaries[]` (schema
+1.16); the 1.15 bump added `face_class`. Whether mixed-schema entries in
+one umbrella corpus is safe depends on whether downstream readers
+(B-partition, validate_detector after the 0a rebuild) tolerate the
+older-schema entries.
+
+Three sub-options:
+
+- **Q1.α**: Move-as-is. Consolidate the mixed-schema state into the umbrella;
+  flag 1.17 regen as a separate follow-on after 0a lands. *Pro:* cheapest
+  0c shipment; *Con:* leaves the umbrella with mixed-schema entries that 0a
+  might need to special-case.
+- **Q1.β**: Regen Phase 1.A to 1.17 inside 0c, then consolidate. *Pro:*
+  Phase 1.A becomes schema-uniform with the latest bikar; *Con:* doesn't
+  fix Phase 1.B's internal 1.13/1.15/1.16 mix; that's the bulk of the
+  schema heterogeneity.
+- **Q1.γ**: Regen *all 9 entries* to 1.17 inside 0c. *Pro:* uniform schema
+  going into 0a; *Con:* re-runs the full bikar render pipeline 9 times,
+  doubles the slice's complexity, and re-renders may produce different gt
+  contents than the committed ones — turning slice 0c into a regression
+  audit rather than a structural move.
+
+The 2026-05-11 decision doc says "Phase 0 slice 0c can re-regen to 1.17
+if needed before consolidating" — leaving the trigger conditions
+deliberately unspecified. The owner picks.
+
+### Q2 — pattern.identity.json handling in the unified corpus
+
+Phase 1.A entries each carry `pattern.identity.json` — hand-authored
+answer-keys from #147's C2 annotation pass. Phase 1.B entries have no
+identity.json; their truth partition is derived from `pattern.gt.json` via
+the B-partition (face_class + source_primitives). This asymmetry is
+load-bearing for `validate_detector` today (it reads identity.json) but
+*not* load-bearing for the post-0a rebuild that runs on
+`derive_fused_partition_v2` (which derives truth from gt.json directly,
+ignoring identity.json).
+
+Three sub-options:
+
+- **Q2.α**: Keep identity.json on 1.A entries, add an optional
+  `identity_path` field to corpus.json schema. *Pro:* preserves the C2
+  answer-key; *Con:* the 0a rebuild won't consume it, making it dead
+  weight in the unified corpus.
+- **Q2.β**: Drop identity.json from 1.A entries on consolidation, derive
+  truth uniformly from gt.json via B-partition. *Pro:* uniform truth
+  derivation across all 9 entries, matches what 0a will read; *Con:*
+  loses the hand-authored answer key, no fallback if B-partition has bugs.
+- **Q2.γ**: Generate identity.json for 1.B entries (via B-partition over
+  their gt.json), making all 9 entries identity.json-bearing for legacy
+  compatibility. *Pro:* maximum flexibility, all entries readable by both
+  old and new paths; *Con:* doubles the truth-storage and the two paths
+  can drift.
+
+### Owner pick (2026-05-11)
+
+**Q1.γ + Q2.γ — aggressive close-the-gap, quality over speed.** All 9
+entries regenerated at schema 1.17 through the unified driver; all 9
+carry auto-derived identity.json from `derive_b_partition`. The
+"reproducibility caveat" called out in Q1.γ's con turned out to be
+worst-case posturing — pre/post comparison shows only the
+`schema_version` field changed; shape-level data is byte-identical
+across all 9 entries (see iter-16 reflection log). The Q2.γ
+"two paths can drift" con is structurally prevented by auto-derivation:
+identity.json is *generated* from gt.json on every regen, not hand-
+authored, so it cannot drift away from the gt.json it's derived from.
+
+The original recommendation (Q1.α + Q2.β, minimum scope) was overridden
+in favor of the quality-aligned aggressive path, consistent with the
+sacred-patterns tenet 13 ("time can be sacrificed for quality") that
+landed in the same session.
