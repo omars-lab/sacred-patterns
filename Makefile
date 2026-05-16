@@ -32,6 +32,13 @@ audit:
 	-npm audit
 	@echo "[audit] npm audit complete (report-only)"
 
+# Cross-repo tenet 12 — secret surface (sacred-patterns#345).
+# Strict (no `-` prefix): history is currently clean. A leak ever entering
+# history must fail loudly; report-only would defeat the gate.
+# Install: brew install gitleaks
+gitleaks:
+	gitleaks detect --no-banner --redact
+
 INTERPRET_TEMPLATE := ${ROOT_DIR}/.claude/skills/interpret-pattern/templates/pattern-interpretation.html
 
 interpret:
