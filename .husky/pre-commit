@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+# Cross-repo tenet 12: pre-commit gate prevents tenet 9 (JSDoc on exports) and
+# tenet 16 (no `any` silencers) regressions from landing. Mirrors qiyas's
+# planned ruff+mypy hook (qiyas#344) and bikar's planned hook (bikar#344).
+#
+# Only runs when staged files include .ts under src/ts/ — keeps the gate fast
+# on doc-only / config-only commits.
+
+staged_ts=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^src/ts/.*\.ts$' || true)
+
+if [ -n "$staged_ts" ]; then
+  echo "[pre-commit] eslint src/ts/"
+  npx eslint src/ts/ || exit 1
+  echo "[pre-commit] tsc --noEmit"
+  npx tsc --noEmit || exit 1
+fi
