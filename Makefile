@@ -24,6 +24,14 @@ open: compile
 serve:
 	npm run serve
 
+# Cross-repo tenet 12 — dependency vulnerability surface (sacred-patterns#346)
+# Report-only (exit 0 even on findings) — gating is intentional follow-on (#346 → #343).
+# Currently clean (0 vulns); kept report-only so adding it to a CI gate later is a
+# one-line change (`-npm audit` → `npm audit`).
+audit:
+	-npm audit
+	@echo "[audit] npm audit complete (report-only)"
+
 INTERPRET_TEMPLATE := ${ROOT_DIR}/.claude/skills/interpret-pattern/templates/pattern-interpretation.html
 
 interpret:
