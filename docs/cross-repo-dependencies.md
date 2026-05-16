@@ -49,6 +49,18 @@ Pure "future maybe" links (e.g. "if we add X here, Y might want it there") don't
 | iteration-validate.sh `--auto-capture-on-go` | qiyas#77 | — | coordinated | pending | V2.E populates qiyas fixture corpus on every converged session without human intervention. Mechanical step: `qiyas fixtures capture` (already shipped in qiyas#65). See qiyas/docs/roadmap.md §V2.E. |
 | escalate-qiyas-divergence skill | (qiyas/docs/issues destination) | — | sacred-patterns-side | pending | V2.F closes divergence-policy enforcement gap. Skill mechanical step uses qiyas#65 fixture-capture; lands issues at qiyas/docs/issues/. See qiyas/docs/roadmap.md §V2.F. |
 
+## Partial-shapes via construction (#106 cascade)
+
+The "construction-extended-then-clipped shape" pattern — needed to break medallion-10's ~74% ceiling where the central decagram chords physically must reach past the medallion boundary, then get clipped to it — landed across all three repos. The qiyas detector + bikar DSL primitives are now wired end-to-end:
+
+| Repo | Capability | Where to look |
+|------|-----------|---------------|
+| qiyas | OpenPolyline shape + `partial_polygon` detector + `A6 CLIPPED-MISSING` verdict + `extend_and_clip` counterfactual | qiyas#256 (slices 1-7); reads `params.partial` + `params.clipped_at_boundary` from gt.json |
+| bikar | `boundary X = union(...)` + `extend connect ... beyond F` + `extend edges from <poly> beyond F` + `clip pattern to X` + `params.extension_factor` + `params.clipped_at_boundary` + `params.partial` emission | bikar#258 PR1 (boundary), PR2 (extend), PR3 (clip) — schema 1.16 → 1.17 → 1.19 |
+| sacred-patterns | Iteration-guide warning-translation row for `A6 ... CLIPPED-MISSING` → DSL idiom (`extend + clip pattern to medallion_outline`) | this doc + `.claude/skills/learn-new-pattern/iteration-guide.md` §E2 mechanical edit table |
+
+**Validation gate** (#260): re-run iter-14 medallion-10 against the full cascade; confirm at least one `A6 ... CLIPPED-MISSING` warning materializes in `overall.warnings`, surfaces a non-zero `counterfactual_score_delta`, and the DSL idiom applies cleanly. Until that runs, treat the cascade as **shipped but unverified end-to-end**.
+
 ## Recently resolved (last 30 days, prune after)
 
 | sacred-patterns | qiyas | bikar | direction | shipped | notes |

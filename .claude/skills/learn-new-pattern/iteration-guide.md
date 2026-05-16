@@ -303,7 +303,7 @@ Generate TWO screenshots per iteration — **blueprint** (structural edges only)
     - `overall.structural_score` — A6 PASS count (e.g. `"5/7"`) or `"n/a"` if no baseline
     - `overall.pixel_similarity` — median of pixel-diff scores (regression detection only, NOT the convergence target)
     - `overall.composite_score` — `qiyas score`'s weighted geometric-mean composite (null when qiyas score didn't run)
-    - `overall.warnings[0]` — **the next-action directive**. Ranked by counterfactual score delta — fixing it is expected to deliver the largest score lift. `overall.warnings[*].context.counterfactual_rationale` explains *why* this fix raises the score.
+    - `overall.warnings[0]` — **the next-action directive**. Ranked by `counterfactual_adjusted_score_delta` (Tax A crystallization × Tax B fragmentation cost) with `counterfactual_score_delta` (raw, upside-only) as fallback — fixing it is expected to deliver the largest *net* score lift after edit cost. `overall.warnings[*].context.counterfactual_rationale` explains *why* this fix raises the score; `counterfactual_tax_rationale` shows the cost adjustment; `counterfactual_fix_archetype` names the construction class the fix belongs to.
     - `overall.blocking_issues` — ranked human-readable list (deterministic gates: validate-svg + A2/A4/A5/A6)
 
     Per-tool subdirectories under `validation/`:
@@ -364,7 +364,10 @@ For each warning, record in `evaluation.md`:
 | `severity` | `error` (gates convergence) / `warn` (degrades score) |
 | `message` | Human-readable summary qiyas computed |
 | `context.counterfactual_rationale` | "If X were Y, score would improve by Z" — the proposed mechanical fix |
-| `counterfactual_score_delta` | Predicted score lift from fixing this warning. **The largest delta is the next iteration's target.** |
+| `counterfactual_score_delta` | **Raw** predicted score lift from fixing this warning (upside-only — does not model edit cost). |
+| `counterfactual_adjusted_score_delta` | **Net** predicted lift after Tax A (crystallization probability) and Tax B (fragmentation cost). **This is the actual ranking key — `warnings[0]` is the largest adjusted delta.** |
+| `context.counterfactual_fix_archetype` | Construction class the fix belongs to (e.g. `add_strapwork_block`, `tune_existing_parameter`). Determines Tax B's cost basis. |
+| `context.counterfactual_tax_rationale` | One line explaining how raw → adjusted (which prior, which fragmentation cost). |
 
 **Why C0 first:** qiyas already did the comparison. Free-form Claude analysis re-derives observations that qiyas measured and ranked. Ground the evaluation in `validation.json` first; use C1 to cross-check that qiyas's top-ranked warning matches what you see in the reference, not to invent a parallel evaluation.
 
@@ -376,7 +379,7 @@ For each warning, record in `evaluation.md`:
 ## C0. Validation Rollup (validation.json)
 go_no_go: iterate  |  topology: incomplete  |  structural: 5/7  |  pixel: 74.2%  |  composite: 0.74
 
-### Top warnings (ranked by counterfactual_score_delta)
+### Top warnings (ranked by counterfactual_adjusted_score_delta — net of fix cost)
 1. **missing-shapes** [error, source=diff, Δ +0.172]
    "51 of 139 ref shapes have no match in recon"
    Counterfactual: if recon had the 51 missing ref shape(s), they would match perfectly (param_drift=0)
@@ -863,6 +866,7 @@ The next iteration's priority is **`overall.warnings[0]`** (highest counterfactu
 | Warning `id` | Mechanical edit derivation |
 |---|---|
 | `missing-shapes` | Add the missing reference shapes. `context.sample_ref_ids` lists representative ref-shape IDs to start from. Inspect them in `validation/qiyas/report.html` (Tier-3 workbench). Architectural change — never a color/proportion tweak. |
+| `A6 ... CLIPPED-MISSING vertex_count=N in zone Z` | A shape the baseline expected at this zone exists *partially* in recon as an open polyline — the construction reaches the right region but is being cut off at the medallion boundary. Fix in bikar DSL: `extend connect every K beyond F` to push the chord endpoints past the boundary, then `clip pattern to medallion_outline` so the partial face becomes a closed clipped shape. The encoder will then re-classify the polyline as a clipped polygon with `params.partial=true`. **Distinct from `MISSING`** — MISSING means the construction wasn't attempted in that zone; CLIPPED-MISSING means it was attempted but didn't reach. See `docs/cross-repo-dependencies.md` §partial-shapes for the qiyas+bikar primitives. |
 | `low-geometric-score` | Geometric score < 0.8 means matched shapes have wrong vertex/edge structure. Look at the lowest-scoring pairs in `validation/qiyas/diff.json` and fix per-shape geometry. |
 | `high-param-drift` | `context.sample_pair_ids` lists pairs with the worst parameter drift. Compare side-by-side in the Tier-3 workbench; correct the construction parameters (radii, angles) for that shape class. |
 | `high-position-drift` | Shapes are roughly correct but mislocated. Recompute positions from first principles (polar coords from center, `360/n` divisions) — likely a magic number leaked into placement. |
