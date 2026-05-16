@@ -8,7 +8,9 @@ module.exports = tseslint.config(
     ],
     rules: {
       'no-prototype-builtins': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
+      // Cross-repo tenet 16 — Any silences the strict-typing gate; derive the
+      // real type instead. Mirrors qiyas ANN401 and bikar no-explicit-any.
+      '@typescript-eslint/no-explicit-any': 'error',
     },
   },
   {

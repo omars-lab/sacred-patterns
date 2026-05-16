@@ -6,7 +6,7 @@ import {Star, ElongatedFivePointStar, FivePointStar} from "./star"
 import * as d3 from 'd3'
 import {_map_even_odd} from "./helpers"
 // import {isEven} from "./helpers"
-import {appendText, appendPolygon, appendCircle, appendCircleWithMidpoint, d3SVG, d3CIRCLE} from "./canvas"
+import {appendText, appendPolygon, appendCircle, appendCircleWithMidpoint, d3SVG, d3CIRCLE, d3SvgElement} from "./canvas"
 import {IO} from "./types"
 import {Decagon} from "./polygons"
 
@@ -18,7 +18,7 @@ export function invertHex(hex: string): string {
     return invertedHex
 }
 
-export function appendLinearGradientDef(svgDefs: any, id: string, color1: string, color2: string) {
+export function appendLinearGradientDef(svgDefs: d3SvgElement<SVGDefsElement>, id: string, color1: string, color2: string) {
     const gradient = svgDefs.append("linearGradient")
         .attr("id", id)
         .attr("x1", "0%")

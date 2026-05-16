@@ -6,7 +6,9 @@
   "scripts": {
     "build": "webpack --config webpack.config.js",
     "serve": "npx serve site",
-    "test": "node test/regression/check.js"
+    "test": "node test/regression/check.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/ts"
   },
   "author": "",
   "license": "ISC",
