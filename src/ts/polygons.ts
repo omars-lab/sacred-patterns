@@ -5,6 +5,19 @@ import {Line, Lines} from "./lines"
 // https://codepen.io/Elf/details/rOrRaw
 // https://www.d3indepth.com/shapes/
 
+/**
+ * Abstract regular-N-gon base — answers "what carries the shared
+ * inscribed-in-a-circle construction (center, size, radial-shift) for
+ * every regular polygon, so per-N subclasses (`Triangle`, `Square`,
+ * `Pentagon`, ...) only override `number_of_points` and inherit the
+ * `points` / `lines` / `outerCircle` derivations?". The construction
+ * convention: every regular polygon is inscribed in an `outerCircle`
+ * of radius `size`, vertices sampled at `2π/n` intervals starting at
+ * angle `radial_shift`. Subclasses are tagged-union-style (no extra
+ * fields, only `number_of_points` differs) rather than dispatch
+ * tables so call sites read as `new Pentagon(...)` rather than
+ * `new Polygon(5, ...)` — the type-name *is* the documentation.
+ */
 export class Polygon {
     constructor(public center:Point, public size:number, public radial_shift:number=0) {}
 
@@ -39,29 +52,49 @@ export class Polygon {
 
 }
 
-// https://byjus.com/maths/chord-of-circle/
+/**
+ * Chord length between two radian-positions on a circle — answers
+ * "given two points on a circle of radius r at angles rad1 and rad2,
+ * what's the straight-line distance between them?". Needed because
+ * polygon-to-polygon adjacency math (hexagon tiling, packing offsets)
+ * is expressed as 'shift by one chord-length in the right direction.'
+ * Order-independent: `max - min` collapses to the absolute angular
+ * gap so callers don't have to pre-sort the inputs. See:
+ * https://byjus.com/maths/chord-of-circle/.
+ */
 export function determine_chord_length(r: number, rad1: number, rad2: number): number {
     return 2 * r * Math.sin((Math.max(rad1, rad2) - Math.min(rad1, rad2))/2);
 }
 
+/**
+ * Sagitta (arc-to-chord vertical distance) between two radian-positions
+ * — answers "how deep is the arc bulge from a chord on a circle of
+ * radius r?". Used wherever construction needs to offset a polygon by
+ * the *vertical* gap between two parallel rows (hexagon tiling: row
+ * spacing = chord-length minus sagitta), not the chord itself. See:
+ * https://www.mathopenref.com/sagitta.html.
+ */
 export function determine_sagitta_length(r: number, rad1: number, rad2: number): number {
     // https://www.mathopenref.com/sagitta.html
     const l = determine_chord_length(r, rad1, rad2) / 2;
     return r - Math.sqrt(Math.pow(r, 2)-Math.pow(l, 2))
 }
 
+/** Regular 3-gon — `Polygon` subclass that fixes `number_of_points` to 3. */
 export class Triangle extends Polygon {
     get number_of_points(): number {
         return 3;
     }
 }
 
+/** Regular 4-gon — `Polygon` subclass that fixes `number_of_points` to 4. */
 export class Square extends Polygon {
     get number_of_points(): number {
         return 4;
     }
 }
 
+/** Regular 5-gon — `Polygon` subclass that fixes `number_of_points` to 5. */
 export class Pentagon extends Polygon {
     get number_of_points(): number {
         return 5;
@@ -69,6 +102,18 @@ export class Pentagon extends Polygon {
 }
 
 
+/**
+ * Regular 6-gon with hex-grid adjacency helpers — answers "why does
+ * `Hexagon` carry per-direction neighbor constructors (`above`,
+ * `below`, `northEast`, ...) when other polygons don't?". Because
+ * hexagons tile the plane in a six-around-one grid that's a
+ * load-bearing construction primitive (flower-of-life, six-petal
+ * rosettes, honeycomb backgrounds), so the directional offsets are
+ * compiled in once here rather than re-derived at every call site.
+ * The magic constants (1.729, 2.15) are sagitta-and-chord values
+ * pre-computed for radius 1 — the inline comments link to the
+ * trigonometric derivations that produced them.
+ */
 export class Hexagon extends Polygon {
 
     get number_of_points(): number {
@@ -143,30 +188,43 @@ export class Hexagon extends Polygon {
     }
 }
 
+/** Regular 7-gon — `Polygon` subclass that fixes `number_of_points` to 7. */
 export class Heptagon extends Polygon {
     get number_of_points(): number {
         return 7;
     }
 }
 
+/** Regular 8-gon — `Polygon` subclass that fixes `number_of_points` to 8. */
 export class Octagon extends Polygon {
     get number_of_points(): number {
         return 8;
     }
 }
 
+/** Regular 9-gon — `Polygon` subclass that fixes `number_of_points` to 9. */
 export class Nonagon extends Polygon {
     get number_of_points(): number {
         return 9;
     }
 }
 
+/** Regular 10-gon — `Polygon` subclass that fixes `number_of_points` to 10. */
 export class Decagon extends Polygon {
     get number_of_points(): number {
         return 10;
     }
 }
 
+/**
+ * Sides-to-class dispatch table — answers "how does code that picks a
+ * polygon class by numeric N (e.g., 'draw a regular k-gon at this
+ * radius for variable k') look up the right constructor without a
+ * switch?". The map is keyed by `number_of_points` rather than by
+ * shape-name string because callers typically have N from a loop
+ * variable or config field, and string-keying would require a
+ * round-trip through a name table.
+ */
 export const PolygonWithSides = {
     3: Triangle,
     4: Square,
