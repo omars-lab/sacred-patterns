@@ -58,6 +58,13 @@ module.exports = tseslint.config(
       // Style: no whitespace-only first line (mirrors ruff D205 — must have
       // content immediately, with structured body following).
       'jsdoc/no-blank-blocks': 'error',
+      // Cross-repo tenet 1 ("Simplicity over complexity") — >10 branches per
+      // function means it's doing too many things; split it (extract helpers,
+      // dispatch tables, collapse nested conditionals). Mirrors qiyas ruff
+      // C901 max-complexity=10 (qiyas#348) and bikar eslint complexity gate
+      // (bikar#348). Baseline measurement on src/ts/ at gate-landing showed
+      // zero pre-existing violations — no grace list needed.
+      complexity: ['error', { max: 10 }],
     },
   },
   {
