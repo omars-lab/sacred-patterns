@@ -3,6 +3,19 @@ import {Point} from "./points"
 import {Circle} from "./circles"
 import {Line, Lines} from "./lines"
 
+/**
+ * Compass-and-straightedge N-pointed star — answers "how does a construction
+ * express an N-pointed star as the zigzag between a central reference circle
+ * and N surrounding circles, the way Islamic-geometry pattern books (e.g.,
+ * Broug's *Islamic Geometric Patterns*, p. 16) draw it?". The star is
+ * parameterized by `numberOfPoints` (N) and `size` (the central radius);
+ * `radial_shift` rotates the whole figure so callers can align star tips with
+ * existing geometry without re-deriving vertex angles. The construction
+ * builds `numberOfPoints` satellite circles around the center, then walks
+ * vertices by alternating between satellite-circumference points and
+ * central-circumference points — the same alternation that produces the
+ * star's convex/concave silhouette in the reference diagrams.
+ */
 export class Star {
 
     constructor(public center:Point, public numberOfPoints:number, public size:number, public radial_shift:number=0) {}
@@ -92,11 +105,31 @@ export class Star {
     }
 }
 
+/**
+ * Pre-rotated 5-pointed star convenience constructor — answers "why is there
+ * a named helper when `new Star(p, 5, s)` would do?". Because a bare 5-star
+ * lands one tip on the positive x-axis (radian 0), but every reference
+ * pentagram diagram in the catalog draws the star tip-up. The π/2 rotation
+ * is folded in here so call sites read as `FivePointStar(p, s)` without
+ * sprinkling the same orientation correction across every pentagram
+ * construction.
+ */
 export function FivePointStar(point:Point, size:number): Star {
     const s = (new Star(point, 5, size)).rotate(Math.PI/2);
     return s;
 }
 
+/**
+ * Per-vertex radial elongation wrapper around a `Star` — answers "how does a
+ * construction stretch some star tips farther from the center than others
+ * (asymmetric stars, decorative variations) without re-deriving every
+ * vertex's angle?". Wraps a finished `Star`, then for each vertex index `i`
+ * scales the center→vertex line by `elongationFactors[i]` (defaulting to 1
+ * so unmentioned vertices stay put). The factor map is sparse on purpose:
+ * callers specify only the vertices they want to push out or pull in, and
+ * the rest inherit the underlying star's geometry — keeping the diff
+ * between "regular star" and "decorated star" readable at the call site.
+ */
 export class ElongatedFivePointStar {
     constructor(public star:Star, public elongationFactors: Record<number, number>) {}
 
