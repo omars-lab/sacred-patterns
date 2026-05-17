@@ -3,12 +3,34 @@ import {Line} from "./lines";
 import {Point} from "./points";
 import {Optional} from "./types"
 
+/**
+ * Per-circle rendering metadata threaded alongside geometry — answers
+ * "how does a `Circle` carry recursion-level and styling information
+ * without polluting the pure-geometry constructor signature?". `level`
+ * is required because the recursive flower-of-life routines need depth
+ * to color-fade by `colorForLevel`; `fill`/`stroke` are optional
+ * one-off overrides for hand-styled circles that escape the level-based
+ * scheme.
+ */
 export interface CircleMetadata {
     level: number;
     fill?: string;
     stroke?: string;
 }
 
+/**
+ * 2D circle with both pure-geometry operations and rendering metadata —
+ * answers "what carries the (x, y, r) triple plus the helpers that every
+ * other primitive (stars, polygons, surrounding-flower recursions) needs
+ * to position themselves relative to a reference circle?". The construction
+ * convention is *origin-relative*: most patterns derive every coordinate
+ * from a central circle's `(x, y, r)`, so this class concentrates the
+ * polar-coordinate sampling (`pointOnCircumferenceAtRadian`), the
+ * surrounding-circle factory (`surroundingCircles` / `surroundWithFlower`),
+ * and the recursive flower-of-life builder (`surroundWithFlowersRecursively`)
+ * in one place. Metadata flows through transforms so a deeply-nested
+ * recursive child still knows its depth for color fading at render time.
+ */
 export class Circle {
 
     constructor(public x:number, public y:number, public r:number, private _metadata?:Optional<CircleMetadata>) {}
