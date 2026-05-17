@@ -57,7 +57,7 @@ export function appendSVGToDOM(id: string, width:number, height:number): d3SVG {
 
 export function rotateOuterCircles(centralCircle:Circle, currentShift:number, outerCirclesSVGS:d3CIRCLE[]): [number, Circle[]] {
     const newShift = currentShift + 1;
-    console.log("Current shfit", newShift);
+    console.log("Current shift", newShift);
     const newOuterCircles = centralCircle.surroundingCircles(6, 1, (newShift/10)*Math.PI*2/6);
     _.forEach(
         _.zip(newOuterCircles, outerCirclesSVGS),

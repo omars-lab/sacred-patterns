@@ -47,6 +47,16 @@ gitleaks:
 semgrep:
 	semgrep --config=p/typescript --config=p/security-audit --error --quiet --metrics=off src tools
 
+# Cross-repo tenet 12 — typo surface (sacred-patterns#349).
+# Strict (no `-` prefix): src/ts + tools/ + docs were triaged to 0 at baseline
+# by fixing src/ts/index.ts:60 (shfit → shift). `ans` is a legitimate variable
+# name (user-answer prompt) in tools/auto-iterate*.py; codespell flags it as
+# "and" — suppressed via -L ans. src/js/ is gitignored TypeScript build output
+# (mirrors eslint config ignore). Mirrors qiyas local.spelling + bikar wiring.
+# Install: pip install codespell
+spelling:
+	codespell -L ans --skip="src/js,node_modules,site" src tools .claude docs CLAUDE.md README.md REFERENCES.md
+
 INTERPRET_TEMPLATE := ${ROOT_DIR}/.claude/skills/interpret-pattern/templates/pattern-interpretation.html
 
 interpret:
