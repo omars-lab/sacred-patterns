@@ -11,13 +11,31 @@ import {IO} from "./types"
 import {Decagon} from "./polygons"
 
 
-// https://stackoverflow.com/questions/35969656/how-can-i-generate-the-opposite-color-according-to-current-color
+/**
+ * Bitwise-invert a 6-digit hex color string — answers "given a fill
+ * color, what contrasting color is guaranteed to be visible on top of
+ * it, for use as a paired background/foreground gradient stop?". XORs
+ * the numeric value with `0xFFFFFF` rather than per-channel subtraction
+ * so the operation is one CPU op and order-independent. Used by
+ * `appendSVGToDOM` to derive `invertedSvgGradient` from the primary
+ * `svgGradient`'s stops without hand-picking a second palette.
+ * See: https://stackoverflow.com/questions/35969656.
+ */
 export function invertHex(hex: string): string {
     const invertedHex = (Number(`0x1${hex}`) ^ 0xFFFFFF).toString(16).substring(1).toUpperCase();
     console.log(invertHex);
     return invertedHex
 }
 
+/**
+ * Define a top-left to bottom-right linear gradient under `<defs>` —
+ * answers "how does a drawing register a reusable two-stop gradient
+ * once (in `<defs>`) and then reference it by `url(#id)` from any
+ * element's `fill`/`stroke`?". The 0%→100% diagonal is hard-coded
+ * because every gradient in this codebase reads top-left-to-bottom-right
+ * (matches the reading direction); callers that need other angles would
+ * extend the signature rather than override after the fact.
+ */
 export function appendLinearGradientDef(svgDefs: d3SvgElement<SVGDefsElement>, id: string, color1: string, color2: string) {
     const gradient = svgDefs.append("linearGradient")
         .attr("id", id)
@@ -39,6 +57,17 @@ export function appendLinearGradientDef(svgDefs: d3SvgElement<SVGDefsElement>, i
         .attr("stop-opacity", 1);
 }
 
+/**
+ * Create a new `<svg>` under `<body>` pre-wired with the canonical
+ * two-gradient `<defs>` — answers "where do all `draw*` entry points
+ * get a fresh canvas that already carries `svgGradient` and
+ * `invertedSvgGradient` so element fills can reference them by id
+ * without per-drawing setup?". The dimensions are caller-supplied
+ * (radius × size) so a single drawing routine can render at any zoom
+ * without code change; the gradient stops are baked in because every
+ * drawing in this library shares the dark-cool palette.
+ * See: https://www.freshconsulting.com/d3-js-gradients-the-easy-way/.
+ */
 export function appendSVGToDOM(id: string, width:number, height:number): d3SVG {
     // https://www.freshconsulting.com/d3-js-gradients-the-easy-way/
     
@@ -55,6 +84,16 @@ export function appendSVGToDOM(id: string, width:number, height:number): d3SVG {
     return <d3SVG>(svg);
 }
 
+/**
+ * Advance the radial shift of a flower-of-life outer ring by one step and
+ * D3-transition each SVG `<circle>` to the new position — answers "how
+ * does the rotating-circles animation move six already-painted DOM nodes
+ * to fresh polar positions on every tick without re-painting or layout
+ * thrash?". Returns the new shift count alongside the new Circle
+ * positions so the caller's `setInterval` loop can thread the shift
+ * forward immutably (tenet 10a — no caller-visible mutation) instead
+ * of stashing it in module-level state.
+ */
 export function rotateOuterCircles(centralCircle:Circle, currentShift:number, outerCirclesSVGS:d3CIRCLE[]): [number, Circle[]] {
     const newShift = currentShift + 1;
     console.log("Current shift", newShift);
@@ -74,6 +113,16 @@ export function rotateOuterCircles(centralCircle:Circle, currentShift:number, ou
     return <[number,Circle[]]>[newShift, newOuterCircles];
 }
 
+/**
+ * Build the six hex-grid neighbors around an inscribed hexagon — answers
+ * "given a reference circle, what's the canonical six-around-one ring
+ * of hexagons that share an edge with the central one (the load-bearing
+ * primitive for flower-of-life, six-petal rosettes, and honeycomb
+ * backgrounds)?". Order matches the Hexagon directional helpers
+ * (`northWest`, `northEast`, `above`, `below`, `southWest`, `southEast`)
+ * so callers depending on positional indexing (alternating fill, for
+ * instance) can rely on a stable rotation.
+ */
 export function surroundingHexagons(circle:Circle): Hexagon[] {
     return [
         // - [ ] How do I make this cleaner ...?
@@ -87,6 +136,17 @@ export function surroundingHexagons(circle:Circle): Hexagon[] {
     ];
 }
 
+/**
+ * Tile a hexagon with six surrounding nonagons whose intersections form
+ * a 6-point star — answers "what's the construction that fills a single
+ * hex cell with the rotated-nonagon motif that, repeated across a
+ * hex-grid, produces the classic Islamic 6-point-star tessellation?".
+ * Every other nonagon is pre-rotated by π via `_map_even_odd` so
+ * adjacent nonagons interlock correctly; the size factor `0.75 * R`
+ * (origin-relative per the CLAUDE.md construction convention) is the
+ * empirical proportion that lands the nonagon vertices on the hexagon
+ * edges.
+ */
 export function nonagonsThatFormA6PointStarCenteredAt(centralHexagon:Hexagon): Polygon[] {
     const centralCircle = centralHexagon.outerCircle;
     const outerCircles = centralCircle.surroundingCircles(6, 1);
@@ -118,6 +178,13 @@ export function nonagonsThatFormA6PointStarCenteredAt(centralHexagon:Hexagon): P
 // -----------------------------------------------------------------------------
 
 
+/**
+ * Render every `PolygonWithSides` entry into its own freshly-created SVG —
+ * answers "where does the gallery page that shows triangle through
+ * decagon side-by-side get its drawings?". One SVG per polygon (not one
+ * SVG with multiple polygons) so each demo can be inspected, screenshot,
+ * or styled independently from the DOM without coordinate offset math.
+ */
 export function drawDifferentPolygons(drawingId:string, radius:number, size:number) : IO {
     let svg:d3SVG;
     _.forOwn(
@@ -131,6 +198,15 @@ export function drawDifferentPolygons(drawingId:string, radius:number, size:numb
     )
 }
 
+/**
+ * Render a 2×2 grid of Star-of-David + inscribed-hexagon motifs using
+ * Hexagon's directional helpers (`right`, `above`, `above().right`) —
+ * answers "how does the demo prove that a Star (two interlocking
+ * triangles) tiles correctly across the hex grid?". Each cell paints
+ * the star, the π/2-rotated counterpart, and the inscribing hexagon
+ * so a reader can verify the three primitives line up at every grid
+ * position — visual regression-test for the hex-neighbor math.
+ */
 export function drawStarGrid(drawingId:string, radius:number, size:number) : IO {
     const star = new Star(new Point(radius * size / 2, radius * size / 2), 6, radius);
     const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
@@ -148,6 +224,16 @@ export function drawStarGrid(drawingId:string, radius:number, size:number) : IO 
     appendPolygon(svg, Hexagon.withinCircle(star.above().right().outerCircle).lines);
 }
 
+/**
+ * Render a single π/4-rotated Star with its construction circles
+ * overlaid — answers "what's the diagnostic view that shows both the
+ * final star *and* the reference circles each tip was drawn from, so a
+ * reader can audit whether the satellite positions are right?". Uses
+ * `appendCircleWithMidpoint` (not the plain `appendCircle`) because the
+ * midpoint dots are the load-bearing signal in this view — they show
+ * the rotation pivots and satellite anchors that the star geometry
+ * derives from.
+ */
 export function drawRotatedStar(drawingId:string, radius:number, size:number): IO {
     const star = new Star(new Point(radius * size / 2, radius * size / 2), 6, radius);
     const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
@@ -160,6 +246,15 @@ export function drawRotatedStar(drawingId:string, radius:number, size:number): I
     );
 }
 
+/**
+ * Render Stars with point-counts 6 through 11 each into its own SVG —
+ * answers "where does the gallery page that compares stars across
+ * tip-counts (so a reader can see how a 6-point vs 9-point vs 11-point
+ * star looks at the same radius) get its drawings?". Includes the outer
+ * construction circle via `appendCircleWithMidpoint` so the radius
+ * envelope is visually equal across tiles, isolating the visual
+ * variable to N.
+ */
 export function drawDifferentStars(drawingId:string, radius:number, size:number): IO {
     let star:Star;
     let svg:d3SVG;
@@ -174,6 +269,16 @@ export function drawDifferentStars(drawingId:string, radius:number, size:number)
     )
 }
 
+/**
+ * Render a flower-of-life ring and animate the inner ring's radial shift
+ * with `setInterval` — answers "what's the live demo that shows the
+ * six-around-one ring rotating against a static outer ring of L2
+ * neighbors?". Two ring depths (L1 + L2) are painted once at startup;
+ * only L1 transitions on each tick because re-rotating L2 would
+ * re-create the very flowers L2 emits — visual feedback loop. The
+ * 50ms interval pairs with the d3 transition duration so each step
+ * just completes before the next fires.
+ */
 export function drawRotatingCircles(drawingId:string, radius:number, size:number): IO {
     const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
     const centralCircle = new Circle(radius * size / 2, radius * size / 2, radius);
@@ -194,6 +299,16 @@ export function drawRotatingCircles(drawingId:string, radius:number, size:number
 }
 
 
+/**
+ * Render a two-ring hexagon tessellation, each cell filled with the
+ * 6-point-star nonagon motif — answers "what's the headline drawing
+ * that the landing page uses to demonstrate the hex-grid + nonagon
+ * composition working at full pattern scale (not just one cell)?".
+ * `background_theme` and `lines_theme` are loose `unknown` bags
+ * (deliberate exception to tenet 15 here — they're CSS-style maps with
+ * arbitrary keys forwarded to d3 `.style()`, so a tighter type would
+ * just restate `Record<string, string>`).
+ */
 export function drawHexagonWithSurroundingNonagons(drawingId: string, radius: number, size: number, background_theme: unknown, lines_theme: unknown): d3SVG {
     const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
 
@@ -222,6 +337,16 @@ export function drawHexagonWithSurroundingNonagons(drawingId: string, radius: nu
     return <d3SVG>(svg);
 }
 
+/**
+ * Render an N-level recursive flower-of-life with a hexagon inscribed in
+ * every circle — answers "what's the headline drawing that shows the
+ * flower-of-life construction at arbitrary depth, with each level color-
+ * faded so a reader can see the recursion depth at a glance?". The
+ * `radius*2/5.25` origin circle is the empirical fit that makes the
+ * outermost ring at `maxLevels` fall just inside the canvas at the
+ * default 600×600 size; it's not magic, it's `5.25 ≈ 2 + 1 + sin(π/3)·2`
+ * for a 3-level fit and was extrapolated from there.
+ */
 export function drawCirclesRecursively(drawingId:string, radius:number, size:number, maxLevels:number): IO {
     const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
     // Recursively Add circles around middle circle ...
@@ -238,6 +363,16 @@ export function drawCirclesRecursively(drawingId:string, radius:number, size:num
     // appendCircleWithMidpoint(<d3SVG>svg, circle);
 }
 
+/**
+ * Render a 10-around-1 ring of `ElongatedFivePointStar`s with a Decagon
+ * encircling them — answers "what's the composed-motif demo that proves
+ * `ElongatedFivePointStar`'s per-vertex elongation map works at every
+ * rotation, by chaining 10 instances around a central decagon with each
+ * star rotated to point outward and a different vertex elongated?".
+ * The elongation index `(3+(i*2)) % 10` rotates *with* the star so the
+ * elongated vertex always points radially inward — visual regression
+ * for both the per-vertex elongation math and the rotation composition.
+ */
 export function drawChainedStars(drawingId:string, radius:number, size:number): IO {
     const numbereOfStars = 10;
     const svg = appendSVGToDOM(drawingId, radius * size, radius * size);

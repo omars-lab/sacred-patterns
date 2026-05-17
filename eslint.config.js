@@ -3,14 +3,13 @@ const jsdoc = require('eslint-plugin-jsdoc');
 
 // Cross-repo tenet 9 ("Document intent — name the question the code answers")
 // — TS mirror of qiyas's ruff D101/D103 + D205/D400/D401 gate (qiyas#341,
-// #382, #383). New code must carry a JSDoc block on every exported class
-// and function. All 9 pre-existing src/ts/ files carry untyped exports
-// and are listed in the grace list below; each entry folds into
-// sacred-patterns#386 (the parallel drain ticket to qiyas#385). The
-// grace list shrinks monotonically as #386 is worked.
-const JSDOC_GRACE_FILES = [
-  'src/ts/index.ts',
-];
+// #382, #383). The grace list shipped with the gate (sacred-patterns#384)
+// drained to zero via #386 — every src/ts/ export now carries a
+// hand-authored WHY-style JSDoc block. New code blocks at lint time
+// without exception; if a future grace period is needed, restore the
+// JSDOC_GRACE_FILES const + the matching `files: JSDOC_GRACE_FILES`
+// overrides block, never silence the rule itself (mirrors tenet 16:
+// no `Any`/`# type: ignore` to silence the strict gate).
 
 module.exports = tseslint.config(
   {
@@ -57,18 +56,6 @@ module.exports = tseslint.config(
       // (bikar#348). Baseline measurement on src/ts/ at gate-landing showed
       // zero pre-existing violations — no grace list needed.
       complexity: ['error', { max: 10 }],
-    },
-  },
-  {
-    // Grace list — pre-existing tenet-9 debt captured when the gate landed
-    // (sacred-patterns#384, 2026-05-16). Each entry folds into #386 (drain
-    // by hand-authoring docstrings per tenet 9). New code in any *other*
-    // file blocks at lint time. Same monotonically-decreasing discipline
-    // as qiyas#341 grace lists.
-    files: JSDOC_GRACE_FILES,
-    rules: {
-      'jsdoc/require-jsdoc': 'off',
-      'jsdoc/require-description-complete-sentence': 'off',
     },
   },
   {
