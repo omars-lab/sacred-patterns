@@ -39,6 +39,14 @@ audit:
 gitleaks:
 	gitleaks detect --no-banner --redact
 
+# Cross-repo tenet 12 — SAST (sacred-patterns#347).
+# Strict (no `-` prefix): src/ + tools/ are currently clean (0 findings at
+# baseline). Any new finding is either a regression or a real issue and must
+# surface loudly; report-only would defeat the gate.
+# Install: pip install semgrep
+semgrep:
+	semgrep --config=p/typescript --config=p/security-audit --error --quiet --metrics=off src tools
+
 INTERPRET_TEMPLATE := ${ROOT_DIR}/.claude/skills/interpret-pattern/templates/pattern-interpretation.html
 
 interpret:
