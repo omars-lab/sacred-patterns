@@ -10,7 +10,6 @@ const jsdoc = require('eslint-plugin-jsdoc');
 // grace list shrinks monotonically as #386 is worked.
 const JSDOC_GRACE_FILES = [
   'src/ts/index.ts',
-  'src/ts/lines.ts',
   'src/ts/polygons.ts',
 ];
 

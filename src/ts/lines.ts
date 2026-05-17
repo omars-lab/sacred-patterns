@@ -11,6 +11,17 @@ function _rotate_list_right<T>(arr:T[]): T[] {
     return arr_copy;
 }
 
+/**
+ * Directed line segment between two `Point`s — answers "what carries
+ * a finite straight-line primitive plus the slope/orientation/length
+ * helpers every construction routine needs to compose stars, polygons,
+ * and chord intersections without re-deriving the inequalities each
+ * time?". The segment is *directed* (p1 → p2) because extend-and-scale
+ * operations need an anchor point (p1) and a movable endpoint (p2);
+ * callers wanting an undirected edge ignore the direction at the
+ * point of comparison. Slope is computed lazily (no cache) because
+ * the construction path mutates rarely and re-reads are cheap.
+ */
 export class Line {
 
     constructor(public p1:Point, public p2:Point) {}
@@ -143,6 +154,16 @@ export class Line {
 
 }
 
+/**
+ * Static factory namespace for bulk-constructing `Line`s — answers
+ * "where does code that takes an ordered list of polygon vertices and
+ * needs the closed-polygon edges live, without forcing every call site
+ * to write its own `_.zip(points, points.slice(1).concat(points[0]))`
+ * boilerplate?". Implemented as a class with static methods (rather than
+ * a bare module) so the call site reads `Lines.fromPoints(...)`, which
+ * parallels the `Line` primitive name and signals "many lines" by
+ * pluralization at the type level.
+ */
 export class Lines {
 
     static fromPoints(points:Point[]): Line[] {
