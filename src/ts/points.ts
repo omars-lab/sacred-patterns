@@ -1,3 +1,15 @@
+/**
+ * Two-dimensional Cartesian point — answers "what carries the (x, y) pair
+ * that every other primitive (Line, Circle, Polygon, Star) composes with,
+ * and which quadrant-comparison helpers does construction code need to
+ * reason about relative positions without re-deriving the inequalities?".
+ * The class deliberately stores `x` and `y` as bare numbers (not a vector
+ * type) so that D3 attribute accessors can read them directly without
+ * unwrapping, matching the convention used throughout the SVG canvas
+ * layer. Quadrant predicates are framed as "given that I'm the origin, is
+ * `p2` in quadrant N?" so callers can chain rotational comparisons in
+ * polar layouts without recomputing each origin offset.
+ */
 export class Point {
 
     constructor(public x:number, public y:number) {}

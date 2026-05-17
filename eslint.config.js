@@ -11,13 +11,10 @@ const jsdoc = require('eslint-plugin-jsdoc');
 const JSDOC_GRACE_FILES = [
   'src/ts/canvas.ts',
   'src/ts/circles.ts',
-  'src/ts/helpers.ts',
   'src/ts/index.ts',
   'src/ts/lines.ts',
-  'src/ts/points.ts',
   'src/ts/polygons.ts',
   'src/ts/star.ts',
-  'src/ts/types.ts',
 ];
 
 module.exports = tseslint.config(
