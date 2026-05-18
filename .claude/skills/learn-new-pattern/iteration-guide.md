@@ -373,6 +373,8 @@ For each warning, record in `evaluation.md`:
 
 **When C0 and C1 disagree:** if qiyas reports `missing-shapes` but C1 says all elements PRESENT, the disagreement itself is the finding — qiyas is matching against `baseline.json` (user-verified) while C1 is matching against your visual impression. Trust qiyas; revisit `baseline.json` only if you have evidence the user-verified expectations are wrong.
 
+**When qiyas itself is wrong (the divergence case):** if the disagreement is "qiyas is measuring something but the measurement is incorrect" (e.g. qiyas reports A2 cv 0.27 while visual inspection shows intact N-fold symmetry, or qiyas reports a shape MISSING when the reference clearly contains it), do NOT silently patch the score, do NOT branch around the qiyas call, and do NOT introduce a local checker. Invoke `escalate-qiyas-divergence` — it captures a fixture, files the qiyas issue, links cross-repo, and decides wait-vs-workaround with a deletion deadline. The Tenet 2 root-cause discipline applies cross-repo: the local "fallback" is the bug.
+
 **Record in `evaluation.md`:**
 
 ```markdown
