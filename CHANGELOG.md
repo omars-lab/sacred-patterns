@@ -252,3 +252,17 @@ decision doc `qiyas/docs/decisions/2026-05-16-typed-shape-params-vs-object-bag.m
 - #410 [sp] [#398 BLOCKER] Owner clarify Option A mechanism: gt.json as geometry vs label oracle
 - #412 [debugging-tooling] Investigate code-graph visualization for impl/dep/test-coverage tracking
 - #417 [qiyas] [#311 Q1] star7 gt.json has face_class=None + fill=None for all 30 shapes
+
+## Counterfactual fragmentation tax (qiyas#109 / #118)
+
+Bounded the cf_delta upside-only bias surfaced by iter-15/16/17 of bikar-medallion-10 (per `feedback_cf_delta_cost_blind` memory). Plan named 5 fix archetypes; Tax B subtracts predicted fragmentation cost from raw composite_delta.
+
+- #109 [qiyas] Plan: counterfactual fragmentation/interaction tax
+- #118 [qiyas] Implement #109 PR2 — Tax B fragmentation cost (fix-archetype classifier)
+
+## Strapwork rotation canonicalisation (bikar#113 / #115)
+
+Root-caused iter-16 medallion-10's 247 sector-fragmenting band extras to `assignStrands` outer-loop non-invariance. Audit confirmed medallion-10 is NOT Hankin-PIC, so the fix is the seed-order canonicalisation in #114 PR1 (commit bikar 8bc6735), not a new strapwork mode. `data-strand` IDs are renderer-internal — verified label-agnostic. #114 stays in-flight (PR1 slice 2 — orchestrator re-render validation — is owner-gated).
+
+- #113 [bikar] Plan: rotation-canonicalize strapwork strand assignment — see `sacred-patterns/.claude/plans/bikar-strapwork-rotation-canonicalization.md`
+- #115 [bikar/research] Audit: medallion-10 is NOT Hankin-PIC; strapwork kernel correctly input-agnostic — see `bikar/docs/issues/2026-05-18-medallion-10-is-not-hankin-pic-audit.md` (commit bikar 8096047)
