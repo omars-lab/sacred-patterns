@@ -266,3 +266,10 @@ Root-caused iter-16 medallion-10's 247 sector-fragmenting band extras to `assign
 
 - #113 [bikar] Plan: rotation-canonicalize strapwork strand assignment — see `sacred-patterns/.claude/plans/bikar-strapwork-rotation-canonicalization.md`
 - #115 [bikar/research] Audit: medallion-10 is NOT Hankin-PIC; strapwork kernel correctly input-agnostic — see `bikar/docs/issues/2026-05-18-medallion-10-is-not-hankin-pic-audit.md` (commit bikar 8096047)
+
+## Test discipline — taxonomy + divergence enforcement (qiyas#158 / sp#78)
+
+Closed two strategic doc/skill gaps that the I1 cascade kept tripping over: (a) ALGORITHM vs INTEGRATION test intent was unnamed, letting per-fixture ARI scores stand in for algorithm correctness across 13 iterations (Tenet 7/8 failure pattern); (b) the divergence policy in `qiyas/docs/sacred-patterns-integration.md` was documented but unenforced (strategic gap #6), letting workarounds land without filed qiyas issues.
+
+- #158 [qiyas] Test taxonomy — ALGORITHM (synthetic, pin invariants) vs INTEGRATION (real fixture, pin pipeline well-formedness) — see `qiyas/docs/test-taxonomy.md`; cross-linked from dev-mental-model §12 and the four add-* skills (commit qiyas ec9af06)
+- #78 [sp] `escalate-qiyas-divergence` skill — capture fixture / file qiyas issue / cross-link / decide wait-vs-workaround with deletion deadline; iteration-guide §C0 cross-references it (commit sp 6cea752)
