@@ -1,13 +1,15 @@
 ---
-name: decision-doc
-description: Author a structured decision doc when work surfaces a non-trivial choice with multiple plausible paths. Captures every option (not just the picked one) with web-research-grounded pros/cons, layman summary, key open questions, and a final recommendation. Use this BEFORE recommending a path on any cross-repo, architectural, or root-cause-vs-workaround decision.
+name: present-options
+description: Present a structured set of options when work surfaces a non-trivial choice with multiple plausible paths. Captures every option (not just the picked one) with web-research-grounded pros/cons, layman summary, key open questions, and a final recommendation. Use this BEFORE recommending a path on any cross-repo, architectural, or root-cause-vs-workaround decision. (Renamed from `decision-doc` 2026-05-11 — same shape, clearer name.)
 user_invocable: true
 argument: "<topic-slug-or-issue-link>"
 ---
 
-# decision-doc
+# present-options
 
 Produce a decision doc that the owner (or future-you) can read cold and audit. The point is not to advocate for the recommended option — it is to capture *what was considered*, *why each option exists*, *what evidence informed the weighing*, and *what would change the picked answer*.
+
+**Companion skill:** when a shipped recommendation gets falsified, switch to the `handle-falsification` skill — that skill runs the reopen / introspect / re-search / capture-lesson protocol so the failure feeds back into this doc instead of being silently retried.
 
 ## When to invoke
 
@@ -39,7 +41,7 @@ The cost of writing the doc is ~30 minutes. The cost of an unaudited decision is
 
 - **Default:** `<repo-root>/docs/decisions/YYYY-MM-DD-<slug>.md` in the repo where the *decision* will be applied (not necessarily where the symptom surfaced — Option A might live in bikar even if the falsification happened in qiyas).
 - **Cross-repo decisions:** put the canonical doc in the repo that owns the *fix*, and add a one-line cross-reference in the other repos' issue docs. Don't duplicate the body.
-- If `docs/decisions/` doesn't exist in the target repo, create it. The first line of the directory's `README.md` (also create) should be: "Decision docs authored via the `decision-doc` skill in sacred-patterns."
+- If `docs/decisions/` doesn't exist in the target repo, create it. The first line of the directory's `README.md` (also create) should be: "Decision docs authored via the `present-options` skill in sacred-patterns."
 
 ## Required sections — in order
 
@@ -149,6 +151,17 @@ A list of conditions under which a different option becomes correct. Examples:
 
 This section is what makes the doc *audit-able*: future readers can check whether the conditions still hold.
 
+**Conditional tasks — required follow-up.** Every entry in §7 names a *condition* that flips the picked option. For each such condition, ask: *if that condition became true tomorrow, would there be implementation work worth doing?* If yes, **file the work as a conditional task in the backlog at ACCEPT time, not at trigger time.** The task body must:
+- Lead with the trigger condition (e.g., "DO NOT ACTIVATE until F3 spec supports multi-group output").
+- Name the concrete work that would land once triggered (templates, refactors, PRs, etc.).
+- Cross-reference back to this decision doc.
+
+Why file at ACCEPT instead of waiting for the trigger: the trigger condition is most legible *right now*, while the option weighing is fresh. By the time the trigger fires (months or quarters later), the rationale for *why* this work matters is harder to reconstruct. The conditional task preserves it.
+
+Conditional tasks that exist only as backlog gravity (no implementation work to capture) are NOT filed — naming them in §7 is enough. The filing is for cases where there's real follow-up scope worth pre-capturing.
+
+*Failure mode this prevents:* trigger conditions that fire silently — the F3 spec moves to multi-group, but no one remembers that this enables the composite probe Option A was scoped for, so the work that would extract that value never gets queued.
+
 ### 8. Final decision
 
 Either "PENDING — owner review required" or:
@@ -157,10 +170,23 @@ Either "PENDING — owner review required" or:
 **Decided:** YYYY-MM-DD by <handle>
 **Picked:** Option <Letter>
 **Rationale:** <2-3 sentences>
-**Follow-ups:** <task IDs filed>
+**Follow-ups (implementation):** <task IDs filed for picked-option slices>
+**Follow-ups (conditional / backlog — track triggers, not work):**
+- **If <§7 condition>:** file task "<imperative subject>" — only activates after <trigger>.
+- (repeat per §7 condition that has real follow-up scope)
 ```
 
 After a decision is made, update §1 frontmatter `status` and `decided` fields. Never delete the rejected options — they're the load-bearing record.
+
+The conditional follow-up block mirrors §7. Every condition with real implementation scope gets one bullet here AND one filed task in the backlog (per §7's "Conditional tasks" rule). Conditions without follow-up work can be omitted from this block.
+
+### 9. Falsification log (only after a recommendation gets falsified)
+
+If the recommendation ships and then gets falsified (test fails, regression surfaces, owner rejects, second variant fails for the same root reason), **stop and invoke the `handle-falsification` skill instead of attempting another variant inline.** That skill runs the structured protocol — reopen frontmatter, fill the falsification log section, introspect which layer of the doc is wrong (implementation / option / enumeration / framing), re-run web-search, author new options, capture the cross-repo memory lesson.
+
+The falsification log section the skill writes lives in this doc (don't fork to a new file unless the framing question itself was wrong — that case triggers a `SUPERSEDED-BY` link to a new doc).
+
+Tenet 7 stop rule applies: after 2 variants of the picked option falsify, escalate via the skill rather than authoring a 3rd variant. The cost of the skill is ~30-60 minutes; the cost of skipping it is the next agent rediscovering the dead-end from scratch.
 
 ## Web search discipline — HARD PRECONDITION for the Recommendation
 
@@ -187,12 +213,46 @@ Use the `WebSearch` tool. Include the URLs as markdown hyperlinks in the option'
 - **Recommending the cheapest option by default.** Cost is one input; root-cause vs. workaround is another; tenet alignment is another. If the recommendation collapses to "cheapest" you've under-weighted the future cost of workarounds.
 - **Skipping web search to save time.** The 30 minutes you save authoring the doc costs hours when the next agent can't tell whether the picked option was the canonical one or a local invention.
 
-## Output
+## Output — TWO required artifacts, in this order
 
-A single markdown file at the path defined in §"Where it lives", plus:
+This skill produces **two** artifacts. Both are mandatory. Producing only the chat summary without the on-disk doc, or only the doc without surfacing the exec summary, is a skill failure.
+
+### Artifact 1 (on disk, FIRST) — the full decision doc
+
+A single markdown file at the path defined in §"Where it lives", containing **every section in §"Required sections"** with full detail: frontmatter, layman summary, implications, questions, all options with web research / pros / cons / tenet alignment / concrete-shape presentation, recommendation, change-conditions, decision block. This is the audit trail. It must be on disk **before** you write the chat summary — write the file first, then summarize. The doc is the source of truth; the chat summary is a pointer.
+
+Also produced:
 - A one-line entry in `docs/decisions/README.md` (create if missing) listing the new doc.
 - An update to any related issue doc's "Options considered" section to point at the decision doc rather than re-listing options.
 - (If applicable) A task created via TaskCreate for the picked option's implementation.
+
+### Artifact 2 (in chat, SECOND) — the exec summary
+
+After the file is saved, surface to the user a short layman-readable exec summary that says exactly what they need to decide. Format:
+
+```markdown
+## Decision needed — <short title>
+
+**Doc:** <absolute path to the file you just wrote>
+
+**The choice in plain English:** <one or two sentences. No jargon. A non-technical reader must understand what's at stake.>
+
+**Your options:**
+- **Option A — <imperative verb phrase>.** <one-sentence layman gloss>. Cost: <X>. Recommended.
+- **Option B — <imperative verb phrase>.** <one-sentence layman gloss>. Cost: <X>.
+- **Option C — <imperative verb phrase>.** <one-sentence layman gloss>. Cost: <X>.
+
+**Why the recommendation:** <one sentence — the single most load-bearing reason, not all reasons>.
+
+**What would flip it:** <one sentence on the condition under which a different option becomes correct>.
+```
+
+Constraints on the exec summary:
+- **Under 200 words total.** If it's longer, the doc on disk is doing too little work.
+- **Layman language only.** If you used a technical term (DCEL, ARI, face_class, etc.) in the exec summary, replace it with the plain-English equivalent — the doc on disk carries the technical detail.
+- **No re-listing pros/cons in chat.** That's what the doc is for. The exec summary only carries the *one* most load-bearing reason for the recommendation.
+- **Always include the absolute doc path.** The user must be one click away from the audit trail.
+- **Always name an explicit recommendation.** "It depends" is a non-answer; if the recommendation is genuinely contingent, encode the contingency in "What would flip it."
 
 ## Post-ACCEPT — keep the mental model current
 
@@ -233,5 +293,6 @@ Before considering the skill done, check:
 - [ ] "What would change this recommendation" section is non-empty.
 - [ ] Frontmatter `status` reflects whether owner has decided.
 - [ ] **If status is ACCEPTED:** mental-model doc updated with a principle entry per "Post-ACCEPT" above.
+- [ ] **If status is ACCEPTED:** every §7 trigger condition with real implementation scope has BOTH a bullet in §8's "Follow-ups (conditional / backlog)" block AND a filed task in the backlog. Trigger conditions without follow-up scope can be omitted from §8.
 
 If any check fails, the doc is not ready. Don't ship it just to clear the task.
