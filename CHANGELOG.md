@@ -17,6 +17,34 @@ cross-repo orchestration owned by sacred-patterns.
 
 ---
 
+## CI report standard — meaning-level fixture gate + visual report duo (qiyas#474)
+
+Replaced qiyas's byte-strict fixture-drift comparator with a meaning-level
+Pydantic invariants model and pinned the cross-repo CI report standard
+(`actions/upload-artifact@v4` + `$GITHUB_STEP_SUMMARY`). Originated in qiyas
+#469 → #474 (same fixture, 2 byte-drift failures in 24h driven by mypy-strict /
+Pydantic typing refactors); resolved as decision-doc Option D (replace the
+contract, not patch it). Standard now realized end-to-end in qiyas; bikar and
+sacred-patterns hold pointer docs that activate when their first CI
+report-emitting job lands.
+
+- #475 [qiyas] Slice 0 — pin `docs/ci-report-standard.md` + ACCEPT Option D
+- #476 [qiyas] Slice 1 — `FixtureInvariants` Pydantic model + first `invariants.yaml`
+- #477 [qiyas] Slice 2 — meaning-level comparator + `--strict` byte-strict escape hatch
+- #478 [qiyas] Slice 3 — `qiyas fixtures report` + `report-index` CLI subcommands
+- #479 [qiyas] Slice 4 — wire artifact + step summary into `.github/workflows/ci.yml`
+- #480 [qiyas] Slice 5 — sweep (one fixture in corpus; pre-migrated in Slice 1)
+- #481 [qiyas] Slice 6 — `tools/ci-report-validate.py` for inspection skills
+- #482 [qiyas] Slice 7 — cross-repo pointer docs + memory entry
+- #483 [qiyas] Slice 8 — close cascade, file adoption follow-ups, this entry
+
+Source: qiyas `d5f5a6c`, `059f125`, `699f8ea`, `71d48ae`; bikar `928e05c`;
+sacred-patterns `6b27504`. Decision: `qiyas/docs/decisions/2026-05-20-byte-strict-fixture-comparator-decay.md`.
+Plan: `qiyas/.claude/plans/2026-05-20-meaning-invariants-and-default-ci-visual-reports.md`.
+Standard: `qiyas/docs/ci-report-standard.md`. Memory: `reference_ci_report_standard.md`.
+
+---
+
 ## Validation orchestrator — Phase 2 / Phase 3 (`qiyas` as the single analytical pipeline)
 
 Replaced sacred-patterns' parallel analytical tooling (svg-diff, zone-audit,
