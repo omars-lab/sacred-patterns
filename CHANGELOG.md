@@ -17,6 +17,141 @@ cross-repo orchestration owned by sacred-patterns.
 
 ---
 
+## bikar#424 multi-arc origin-coincidence (face-extractor / DCEL linkage)
+
+Face extractor produced sliver/malformed faces on petal-N-ring at N ∈ {4, 8, 12}
+(any N where 4 satellite circles pass through the shared origin vertex). Phase 1
+probes located the bug at the DCEL linkage step (`buildHalfEdges`), not at the
+angular sort. Cascade ran through 7 falsifications across Options B/C/D/E/G;
+Option F (arc-identity-aware linkage — same-circle continuation overrides CCW
+sibling at pass-through vertices) authored as the surviving plan. Freeze-accept
+path also authored for N=4/8/12 as permanent corpus limitation pending owner
+pick between Option F shipment and freeze.
+
+- #423 [bikar] Tier 0 / template: single-rhombus template — 4 collinear points
+- #424 [bikar #333 Rung-2 root cause] face-extractor multi-arc origin-coincidence
+- #425 [bikar] Phase 1 — instrument `buildHalfEdges`, falsify angular-sort hypothesis
+- #426 [bikar] Phase 2 — decision doc + impl for origin-coincidence fix
+- #427 [bikar] Phase 3 — regen corpus + audit dict + close cascade
+- #428 [bikar] Option C slice 1 — consumer audit (EdgeGraph downstream)
+- #430 [bikar] Geometry pipeline architecture doc — stages + contracts + vertex-identity policy
+- #431 [bikar] Promote probe-script views to first-class debug methods on EdgeGraph / PlanarGraph
+- #438 [bikar] Apply handle-falsification skill to Option C+D narrative (retroactive)
+- #439 [bikar] Option E — author implementation plan (DSL vertex-identity caller-supplied)
+- #440 [bikar] Option E Slice 0 — DSL arc-emit primitives + named-point identity mapping audit
+- #441 [bikar] Option E Slice 1 — EdgeGraph typed `endpointIdentity` field (no behavior change)
+- #442 [bikar] Option E Slice 2 — DSL evaluator wires named-point ID through to edge metadata
+- #443 [bikar] Option E Slice 3 — kernel `getNodeIndex` consumes `endpointIdentity` as primary merge key
+- #447 [bikar] Option B — chord-bisector sort key plan for `compareOutgoing`
+- #448 [bikar] Freeze-accept path — document N=4/8/12 as permanent corpus limitation
+- #449 [bikar] Option F — decision doc for arc-identity-aware linkage rule
+- #450 [bikar] Option F Slice 1 — author `findSameArcContinuation` helper + unit test
+- #456 [bikar] ESCALATION — owner decision needed after 7 falsifications
+
+Decision docs: `bikar/docs/decisions/2026-05-19-face-extractor-origin-coincidence-fix.md`
+(Phase 1f probe data + Option F mechanism). Plan:
+`bikar/.claude/plans/option-f-arc-identity-aware-linkage.md`. Falsification
+log: `bikar/.claude/plans/option-b-chord-bisector-sort.md` (FALSIFIED).
+Skills authored alongside: sacred-patterns `handle-falsification` (#436) +
+`debug-kernel-change` (#432) + cross-refs in `present-options` / `decision-doc` (#437).
+
+## Cross-repo skills + tenets (sacred-patterns)
+
+Verification ladder + falsification feedback loop authored as standalone
+skills after the bikar#424 cascade demanded both. Tenets 21 (full-suite
+acceptance) + 22 (promote-probes-to-methods) added to bikar CLAUDE.md to
+codify the lessons from 7 falsifications.
+
+- #432 [sp] debug-kernel-change skill — verification ladder for kernel/intersection/face-extractor edits
+- #433 [bikar] Tenets 21 + 22 to CLAUDE.md — full-suite acceptance + promote-probes-to-methods
+- #436 [sp] handle-falsification skill — feed falsification back into decision docs
+- #437 [sp] present-options + decision-doc skills cross-reference handle-falsification
+
+## bikar 4-layer region-identity fix — gt-emitter Map consumption (Option D)
+
+bikar#333 Rung-1 fix: `connect arc … .petal` was not flowing class through
+the 4-layer chain to SVG fill emission. Option D (gt-emitter Map consumption)
+shipped corpus-wide, closing `face_class=null` on petal-N-ring N ∈ {4,6,8,10}.
+
+- #333 [bikar] Region-identity class doesn't reach SVG fill emission (parent issue)
+- #421 [bikar] Option D — gt-emitter Map consumption + corpus sweep
+- #422 [bikar] §B6 — decision doc for `fill-void-where` Map population gap
+
+Decision: `bikar/docs/decisions/2026-05-18-region-identity-class-emission-4-layer-fix.md`.
+
+## qiyas mypy strict mode (qiyas#335 / #339)
+
+Cross-repo tenet 16 (no `Any` to silence strict typing) enforced for qiyas:
+mypy `--strict` enabled in `pyproject.toml`, ~140 errors fixed, CI gate added,
+pre-commit hook re-enabled. Slice 1 was already in CHANGELOG as #338; closing
+slices 2 + 3 + follow-on here.
+
+- #335 [qiyas] Add mypy strict to pyproject + CI gate (parent)
+- #339 [qiyas] Slice 2 — fix ~140 strict mypy errors in src/qiyas
+- #340 [qiyas] Slice 3 — verify strict-mode green + CI gate
+- #387 [qiyas] Follow-on — re-enable mypy --strict block in `.githooks/pre-commit`
+
+PIVOT to typed Shape variants (qiyas#362) still open as next-step.
+
+## qiyas telemetry + fixture gate restoration (qiyas#457-#464)
+
+Wave that surfaced when CI silence (#461 root) was investigated: telemetry
+byte-equality on 15-digit floats (#457), CLI-reference freshness gate not
+running in CI (#459), full pytest suite too slow for CI (#460), 1 red test
+on master under CI silence (#461). Closed via `_assert_telemetry_close`
+helper (#464), Makefile `ci-local` target (#462), Stop hook (#463). Most
+were absorbed by qiyas#474 (meaning-level invariants superseded the
+byte-strict noise floor); residual ones closed here.
+
+- #457 [qiyas] Telemetry snapshot tests use byte-equality on 15-digit floats
+- #458 [qiyas] `test_fixtures_no_drift` failing on master — root-cause investigation
+- #459 [qiyas] CLI-reference freshness gate doesn't run in CI / pre-commit on `cli.py` changes
+- #460 [qiyas] Full pytest suite takes 22min uninstrumented, 60min+ under coverage
+- #461 [qiyas] CI doesn't run pytest on master — silence is the bug
+- #462 [qiyas] [#461 Option A] Makefile `ci-local` target — simulate CI pipeline locally
+- #463 [qiyas] [#461 Option A] Stop hook to run CI simulation on task completion
+- #464 [qiyas] [#457 Option B Slice 1] `_assert_telemetry_close` helper in test_telemetry_snapshots
+
+## CI platform portability — Linux runner failures (qiyas#468 / #469 / #470)
+
+Pinned baselines measured on macOS dev box; CI runs `ubuntu-latest` and
+native libs produce slightly different outputs. Encoder-drift half (#468/#469)
+absorbed by qiyas#474's meaning-level invariants (band-tolerant); robustness
+floor half (#470) remains tracked as scope-reduced #471.
+
+- #468 [qiyas] CI Linux: encoder drops 1/18 shapes (test_emit_audit_round_trip)
+- #469 [qiyas] CI Linux: bikar-medallion-10-strapwork shape count 555→554 drift
+- #470 [qiyas] CI Linux: robustness floors miss on Moroccan-12 jpeg=90, Topkapi-Star crop=0.85
+
+Memory: `feedback_ci_platform_portability.md`. Follow-on: #471 (scope-reduced
+to robustness-floors-only after #474 absorption).
+
+## bikar deps — Vite 8 + ws security upgrade
+
+- #388 [bikar] Vite v8 upgrade — clear esbuild dev-server vuln chain (4 moderate)
+- #435 [bikar] ws@8.20.0 uninitialized memory disclosure via @supabase/realtime-js
+
+## qiyas#400 Slice 2 — bikar `data-sides` carry-through (parser-side)
+
+Bikar's `render.svg` emits `data-sides="N"` + `data-face-index` + `data-layer`
+on every face path. Pre-Slice-2 the qiyas parser discarded those attributes
+and the polygon classifier re-derived sides from raster-jittered vertices —
+failing on squares (4), pentagons (5), hexagons (6). Slice 2 carries the
+metadata onto `Contour` (`source_tag`, `authoritative_sides`, `face_index`,
+`layer`); bumps SCHEMA_VERSION 1.13 → 1.14. Slice 3 (consumption side)
+shipped as commit fa7e836 — pending CI green to close as #488.
+
+- #487 [qiyas] Slice 2 — thread `data-sides` / `source_tag` through `svg_primitives.py` onto Contour
+
+Source: qiyas commit 59f5beb. Issue: `qiyas/docs/issues/2026-05-18-svg-direct-discards-bikar-data-sides.md`.
+Decision: `qiyas/docs/decisions/2026-05-18-shape-vocabulary-vs-detector-tolerances.md`.
+
+## Misc shipped
+
+- #329 [qiyas] [#290 RESCOPE] Petal-N-ring template — drop `where sides == 2`, regen corpus, verify N=4/N=8 classify
+
+---
+
 ## CI report standard — meaning-level fixture gate + visual report duo (qiyas#474)
 
 Replaced qiyas's byte-strict fixture-drift comparator with a meaning-level
