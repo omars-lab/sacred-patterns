@@ -81,11 +81,18 @@ sees scale-confounded inputs and the learned proxy generalizes badly.
 Iter-5's fusion uses `source_primitives` multisets (provenance side).
 B-AFF training will additionally need each shape's *visual region* in
 the render — the pixel mask or polygon outline that the gallery-side
-model encodes. Today bikar emits polar coordinates; we need pixel
-coordinates too, in the same coordinate frame as `render.png`.
+model encodes.
 
-Why: a B-AFF gallery-side model takes (image patch + provenance tags) →
-embedding. Without per-shape pixel outlines, we can't crop the patch.
+**Verified satisfied 2026-05-05** (during #190 implementation): bikar's
+`gt-emitter.ts` already emits `evidence.outline` in render-pixel
+coordinates (line 464: "Build pixel-space outline"; vertices passed
+through `geomToPixel(v, bbox, scaleX, scaleY)`). Same coordinate frame
+as `render.png`. `outline_arcs.source/target` are also pixel-space.
+**No schema change needed** — `outline` IS the polygon_outline this rule
+required. No 1.13 → 1.14 bump.
+
+Why this matters: a B-AFF gallery-side model takes (image patch +
+provenance tags) → embedding. The cropping data already exists.
 
 ### Rule 3 — Parametric variation, not hand-authored one-offs
 
@@ -220,12 +227,16 @@ Three reasons to lock the discipline now, not later:
 
 Before Phase 1.B authoring starts, owner approves:
 
-- [ ] These five rules become Phase 1.B acceptance criteria.
-- [ ] `pattern.gt.json` schema gets `polygon_outline` extension
+- [x] These five rules become Phase 1.B acceptance criteria.
+- [x] `pattern.gt.json` schema gets `polygon_outline` extension
       (bikar-side change; coordinates with bikar's in-flight strapwork
       work at `421e943`+).
-- [ ] Training/val/test splits are authored as part of corpus
+- [x] Training/val/test splits are authored as part of corpus
       construction, not deferred.
-- [ ] `corpus.json` index format is the API; both consumers read it.
+- [x] `corpus.json` index format is the API; both consumers read it.
 
-Once approved, Phase 1.B starts as soon as bikar's in-flight work clears.
+**Signed off 2026-05-05 by Omar.** Phase 1.B authoring begins under
+these five rules. First parametric template: petal-N-ring (the arc-bearing
+template named in `qiyas/calibration/i1/iter-6-arc-aware-tf-smoke.md` as
+the load-bearing arc-path coverage gap from PR3's polygon-only smoke
+test). Tracked under sacred-patterns task #187 and its slices #189–#193.

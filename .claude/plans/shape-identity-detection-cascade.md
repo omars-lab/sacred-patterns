@@ -347,6 +347,38 @@ After each phase, run this loop to confirm the cascade is healthy:
   post-Phase 0. Tasks #285 (Phase 0 umbrella), #286–#289 (slices 0a–0d);
   #280–#284 (entries 1–5) now blocked by #285.
 
+- **W1 acceptance.yaml falsification surfaced 2026-05-12 (qiyas#305).** The
+  I1 acceptance gate's W1 soft-warning attributed `coverage_a < 1.0` on 4
+  constructions to bikar#290 ("per-edge outerRing.sources leak"). Fresh
+  validate-detector probe + bikar gt-emitter read falsifies that claim:
+  petal-6-full has zero shapes with empty source_primitives AND null
+  face_class (the W1 prediction), and bikar's α-resolver commit `97edbf5`
+  already populates source_primitives correctly. The actual leak is
+  qiyas-side: `a_clustering.py:119` filters `len(outline) < 3` and
+  `turning_function.py:118` raises `ValueError` on the same precondition,
+  dropping the 7 (petal-6-full) + 6 (hexagram-lens) + 10 (petal-N-ring-9be419d0) +
+  6 (petal-N-ring-bb3b4a41) 2-vertex arc-bearing lens-face outlines bikar
+  emits. Decision doc `qiyas/docs/decisions/2026-05-12-a-clustering-arc-bearing-2vertex-scope.md`
+  presents A/B/C/D with Option A (extend TF + A-clustering to handle lens-faces
+  via qiyas#184's existing ramp-aware TF math) recommended. **ACCEPTED
+  2026-05-12 — Option A.** Web-search justification: Cakmakov-Celakoska 2004
+  + Wikipedia lens-geometry confirm 2-vertex closed curves are canonical TF
+  inputs; Options B/C correspond to Goodhart-Law metric-manipulation
+  anti-pattern; Option D corresponds to SATD load-bearing-false-claim
+  anti-pattern. Task #305 rescoped to implementation (relax TF guard + remove
+  A-clustering filter + add lens-face unit fixtures + re-run I1 acceptance);
+  #300 absorbed into #305 scope, bikar#290 stays closed pending an independent
+  reproducer. **SHIPPED 2026-05-12 (qiyas commit `5ff6147`).** TF
+  `compute_turning_function` guard relaxed from `n<3` to `n<2` with an
+  explicit chord-only-degenerate raise; A-clustering filter lifted to
+  `< 2` with a new `_deserialize_outline_arcs` helper plumbing bikar's
+  `outline_arcs` field through to TF. 4 unit fixtures pin the contract
+  (symmetric/asymmetric lens invariants, chord-only raise, n=2-with-arc
+  regression guard). I1 acceptance gate re-run: all 12 constructions now
+  report `coverage_a = 1.0000`; `macro_ari_fused_vs_b = 1.000` preserved
+  (lift +0.304). `acceptance.yaml` W1 re-attributed from bikar#290 to
+  qiyas#305 as a regression guard; `open_dependencies` cleared.
+
 ## Slice 0c (#288) — SHIPPED 2026-05-11
 
 Q1.γ + Q2.γ owner picks landed 2026-05-11. Slice 0c materialized as the

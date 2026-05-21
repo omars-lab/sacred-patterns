@@ -1,12 +1,21 @@
 ---
-status: HARD-STOP — needs owner decision
+status: RESOLVED 2026-05-06 — decision doc filed (Option F / I-D selected)
 discovered: 2026-05-06
 discovered_by: claude during /loop slice 2 implementation (qiyas iter-8 re-run on face_class)
 parent: option-i-per-face-class-resolver.md
 related:
   - parent-escalation: petal-2ring-q3-actual-face-count-divergence.md
   - bikar-commit: f6525c9 (slice 0 — face_class resolver landed)
+  - decision: bikar/docs/decisions/2026-05-06-face-class-style-resolver-wiring.md
 ---
+
+> **Resolved 2026-05-06.** This document surfaced the divergence and presented
+> Options I-A/B/C inline. The authoritative decision (with full options A–F,
+> web-search citations, tenet alignment per option, and final ACCEPTED
+> selection of Option F = "I-D, delete multiset fallback") lives at
+> `bikar/docs/decisions/2026-05-06-face-class-style-resolver-wiring.md`.
+> The I-A/B/C inline section below is preserved as the original surface but
+> superseded by the decision doc.
 
 # Slice 2 spec divergence — `face_class` is a label nobody renders against
 
