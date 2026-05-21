@@ -36,6 +36,12 @@ REFERENCE_TRACED=""
 BASELINE=""
 OUT=""
 SKIP_QIYAS=0
+# B1 Option A (qiyas#398): render.svg-direct path. Default-on; encode reads
+# the bikar render.svg via qiyas's SVG fast-path instead of rasterize→trace.
+# --no-svg-direct restores the legacy raster path (escape hatch for fast-path
+# regressions on a specific input; remove once #399 count-fidelity calibration
+# lands and the SVG fast-path is unconditionally superior).
+SVG_DIRECT=1
 
 # Run a qiyas subcommand inside Docker. Stages both inputs into the output
 # dir under stable filenames (in_a.<ext>, in_b.<ext>), then mounts only the
@@ -84,6 +90,11 @@ Optional:
   --reference-traced PATH    VTracer-traced reference SVG (enables 2nd pixel-diff)
   --baseline PATH            baseline.json from interpret-pattern (enables A6)
   --skip-qiyas               Skip qiyas validate (Docker not available)
+  --svg-direct               (default) Use qiyas SVG fast-path for svg-audit
+                             encode step (qiyas#398 — bypasses rasterize→trace
+                             round-trip when the recon SVG is bikar's render.svg)
+  --no-svg-direct            Force the legacy raster encode path (escape hatch
+                             for fast-path regressions; remove once #399 lands)
   -h, --help                 Show this help
 EOF
 }
@@ -96,6 +107,8 @@ while [[ $# -gt 0 ]]; do
         --baseline) BASELINE="$2"; shift 2 ;;
         --out) OUT="$2"; shift 2 ;;
         --skip-qiyas) SKIP_QIYAS=1; shift ;;
+        --svg-direct) SVG_DIRECT=1; shift ;;
+        --no-svg-direct) SVG_DIRECT=0; shift ;;
         -h|--help) usage; exit 0 ;;
         *) echo "Unknown argument: $1" >&2; usage; exit 2 ;;
     esac
@@ -127,6 +140,7 @@ echo "  Reference:  $REFERENCE"
 [[ -n "$REFERENCE_TRACED" ]] && echo "  Traced ref: $REFERENCE_TRACED"
 [[ -n "$BASELINE" ]] && echo "  Baseline:   $BASELINE"
 echo "  Output:     $OUT"
+echo "  Encode:     primitives-source=$([[ "$SVG_DIRECT" -eq 1 ]] && echo "svg (B1 direct)" || echo "raster (legacy)")"
 echo ""
 
 # ============================================================
@@ -164,10 +178,18 @@ qiyas_docker pixel-diff "$SVG" "$REFERENCE" "$DIFF_JPG_DIR" --rasterizer magick 
 # ============================================================
 # 4. qiyas svg-audit (A1/A2/A4/A5/A6)
 # ============================================================
-# Two-step: (a) qiyas encode SVG → encoding.json (forced raster path because
-# our SVGs use clipPath, which qiyas's SVG fast-path rejects); (b) qiyas
-# svg-audit encoding.json → svg-audit.json. Baseline is passed through to
-# enable A6 when present.
+# Two-step: (a) qiyas encode SVG → encoding.json; (b) qiyas svg-audit
+# encoding.json → svg-audit.json. Baseline is passed through to enable A6 when
+# present.
+#
+# B1 Option A (qiyas#398): when --svg-direct is set (the default), encode reads
+# the bikar render.svg via qiyas's SVG fast-path (--primitives-source svg)
+# instead of rasterize→trace. The legacy comment claimed "SVGs use clipPath
+# which qiyas's SVG fast-path rejects" — empirically false as of 2026-05-21
+# (verified against Petal-Full.svg with 24 clipPath elements: fast-path encodes
+# 95 shapes cleanly, dominant_fold=6, conf=0.75). The round-trip cost was the
+# fragmented-residue starvation root-caused in qiyas#371. --no-svg-direct keeps
+# the legacy raster encode for regressions.
 echo -e "${YELLOW}[4/6] qiyas svg-audit${NC}"
 SVG_AUDIT_DIR="$OUT/svg-audit"
 mkdir -p "$SVG_AUDIT_DIR"
@@ -179,9 +201,14 @@ if [[ -n "$BASELINE" ]]; then
     cp "$BASELINE" "$svg_audit_abs/baseline.json"
     SVG_AUDIT_BASELINE_ARGS=(--baseline /work/baseline.json)
 fi
+if [[ "$SVG_DIRECT" -eq 1 ]]; then
+    ENCODE_PRIMITIVES_SOURCE="svg"
+else
+    ENCODE_PRIMITIVES_SOURCE="raster"
+fi
 {
     docker run --rm -v "$svg_audit_abs:/work" "$QIYAS_IMAGE" \
-        encode "/work/in.$svg_ext" --primitives-source raster -o /work/encoding.json &&
+        encode "/work/in.$svg_ext" --primitives-source "$ENCODE_PRIMITIVES_SOURCE" -o /work/encoding.json &&
     docker run --rm -v "$svg_audit_abs:/work" "$QIYAS_IMAGE" \
         svg-audit /work/encoding.json --out /work ${SVG_AUDIT_BASELINE_ARGS[@]+"${SVG_AUDIT_BASELINE_ARGS[@]}"}
 } >"$SVG_AUDIT_DIR/stdout.log" 2>&1 || \
