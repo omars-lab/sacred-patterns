@@ -430,6 +430,46 @@ Root-caused iter-16 medallion-10's 247 sector-fragmenting band extras to `assign
 - #113 [bikar] Plan: rotation-canonicalize strapwork strand assignment — see `sacred-patterns/.claude/plans/bikar-strapwork-rotation-canonicalization.md`
 - #115 [bikar/research] Audit: medallion-10 is NOT Hankin-PIC; strapwork kernel correctly input-agnostic — see `bikar/docs/issues/2026-05-18-medallion-10-is-not-hankin-pic-audit.md` (commit bikar 8096047)
 
+## Universal DSL Tagging cascade (Tenet 23 / qiyas#491-#503)
+
+DSL-as-source-of-truth: when bikar authors a fact (face class, symmetry
+fold, side count), that fact propagates through SVG `data-*` as
+authoritative; qiyas reads instead of re-deriving from geometry. Cascade
+codified the principle as a cross-repo tenet, shipped the contract doc,
+wired producer + consumer + matcher + scorer in 5 slices, then added a
+runtime `qiyas validate-dsl-contract --strict` CLI + Slice 5a "every
+contract row has a witness test" CI gate. Dissolved qiyas#490 anti-symmetry
+breach at root (Hexagram vs Star-8 score 0.560 → below 0.55 floor); also
+closed half of qiyas#400 type-vocabulary lumping.
+
+- #491 [cross-repo] Slice 0 — Tenet 23 (sp/bikar/qiyas mirrors) + DSL Metadata Contract v1 + decision doc
+- #492/#497 [bikar] Slice 1a/1b — emit `data-face-class` + `data-symmetry-fold` from svg-renderer
+- #493/#498 [qiyas] Slice 2a/2b — Contour consumes `face_class` + `symmetry_fold` via SCHEMA 1.14→1.15
+- #494 [qiyas] Slice 3 — matcher + scorer use the new fields; close #490
+- #499 [qiyas] Slice 3a — plumb face_class + symmetry_fold from Contour onto Shape
+- #500 [qiyas] Slice 3b — Hungarian cost adds CLASS_MISMATCH_COST on mismatch
+- #501 [qiyas] Slice 3c — `_check_dominant_fold` consults Shape.symmetry_fold before re-derivation
+- #496 [qiyas] Slice 5a — `tests/test_dsl_metadata_contract.py` gate (every contract row → witness test)
+- #503 [qiyas] Slice 5b — `qiyas validate-dsl-contract --strict` runtime CLI subcommand
+- #488 [qiyas] #400 Slice 3 — polygon classifier consumes Contour.authoritative_sides as hint
+- #490 [qiyas] Anti-symmetry breach dissolved (Star-8 svg vs Hexagram raster, 0.560 → < floor)
+- #400 [qiyas] Type-vocabulary lumping closed (squares/pentagons/lenses no longer → unknown via SVG path)
+
+Decision docs: `sacred-patterns/docs/decisions/2026-05-20-universal-dsl-tagging.md`,
+`qiyas/docs/decisions/2026-05-20-qiyas-anti-symmetry-floor-breach.md`.
+Pending: #504 Slice 5c (cross-repo GHA wiring), #495 Slice 4 (construction provenance, trigger-gated).
+
+## CI hygiene — make-target-mirrors-CI policy (qiyas#502 / #505)
+
+Establishes that every CI job has a `make local.*` equivalent so dev box can
+reproduce CI failures; `ci-local-fast` runs the 5 sub-30s gates as the pre-push
+hook the Tenet-19 "log + ship" rule depends on. The timeout-minutes:30 fix
+backfired on actual ~100min CI pytest runtime; raised to 90min in 3c1fedc;
+#506 filed to investigate the 3.4x dev-box vs CI gap.
+
+- #502 [qiyas] make target for sample CI artifact report (per ci-report-standard.md)
+- #505 [qiyas] `timeout-minutes: 90` on pytest step (replaces the GHA 6h job default)
+
 ## Test discipline — taxonomy + divergence enforcement (qiyas#158 / sp#78)
 
 Closed two strategic doc/skill gaps that the I1 cascade kept tripping over: (a) ALGORITHM vs INTEGRATION test intent was unnamed, letting per-fixture ARI scores stand in for algorithm correctness across 13 iterations (Tenet 7/8 failure pattern); (b) the divergence policy in `qiyas/docs/sacred-patterns-integration.md` was documented but unenforced (strategic gap #6), letting workarounds land without filed qiyas issues.
