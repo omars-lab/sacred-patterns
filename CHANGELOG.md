@@ -476,3 +476,24 @@ Closed two strategic doc/skill gaps that the I1 cascade kept tripping over: (a) 
 
 - #158 [qiyas] Test taxonomy — ALGORITHM (synthetic, pin invariants) vs INTEGRATION (real fixture, pin pipeline well-formedness) — see `qiyas/docs/test-taxonomy.md`; cross-linked from dev-mental-model §12 and the four add-* skills (commit qiyas ec9af06)
 - #78 [sp] `escalate-qiyas-divergence` skill — capture fixture / file qiyas issue / cross-link / decide wait-vs-workaround with deletion deadline; iteration-guide §C0 cross-references it (commit sp 6cea752)
+
+## bikar face-extractor per-component outer-marking (qiyas#513 / #512)
+
+bikar's `markOuterFace` picked the single largest-|area| face globally — correct
+for single-component planar graphs, but lost K-1 outer cycles when the graph had
+K disjoint components, surfacing downstream as ghost bounded faces with reversed
+winding. Discovered while authoring the Tier 1 corpus entry `square-and-scalene`
+(square + scalene triangle, no shared geometry): gt.json emitted 3 shapes instead
+of 4, dropping the scalene triangle. Fix uses union-find on twin half-edges to
+identify components, then per-component largest-|area| with positive-signedArea
+tie-break for polygon-only components. Cross-repo cascade: bikar commit 36a4886
++ qiyas commit 06067ea ship together; `qiyas validate-detector` now reports
+`macro_ari_fused_vs_b = 1.000` across **20/20** corpus entries (was 12/12;
+admits 7 Tier 0 single-primitive + 1 Tier 1 composition).
+
+- #513 [bikar] face-extractor: mark one outer cycle per connected component
+- #512 [qiyas] Ship square-and-scalene as first Tier 1 corpus entry
+
+Witnesses filed with the fix (Tenet 18):
+- `packages/core/tests/graph/face-extractor-disjoint-components.test.ts` (3 tests: 2 squares, square+scalene, 3 triangles)
+- Updated `packages/core/tests/render/gt-emitter-extension-factor.test.ts` from "every face = 1.5" (relied on master's accidental gt-emitter self-cancellation when both octagon cycles stayed bounded) to "dominant-vote: at least one face = 1.5"
