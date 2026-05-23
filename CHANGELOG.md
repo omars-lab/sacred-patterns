@@ -17,6 +17,88 @@ cross-repo orchestration owned by sacred-patterns.
 
 ---
 
+## 2026-05-22→23 batch — #138 cascade + #362 Phase 1 + Universal DSL Tagging closeout + Tier 1 corpus
+
+26-task batch closing five sub-cascades whose tasks all reached terminal
+status in the 2026-05-19 → 2026-05-23 window. Archived together because the
+cascades closed in overlapping commits and the task-list hygiene policy
+fired (≥20 completed + cascade closure both trigger). Each section below is
+self-contained; see decision-doc / commit cross-references for the *why*.
+
+### #138 cascade — detector under-recall + over-unknown on rendered patterns
+
+Started as "detector finds 0 circles vs baseline expects 12" (qiyas#138
+parent). Slice 1 (circle producer) shipped, then on 2026-05-22 a pipeline
+re-run falsified the parent's framing: detector already finds 14 circles
+via existing `circle_to_shape` adapter; the 12 baseline "circles" were
+stored as `type=polygon, vertex_count=0, notes="qiyas type: circle"`.
+Re-scope to Options F/G/H captured in
+`qiyas/docs/decisions/2026-05-22-138-rescope-after-empirical-delta.md`
+(REOPENED). Slice 2 (#516) pending owner pick.
+
+- #510 [qiyas] [#138 Path A] Refresh A6 baseline from SVG-direct path on iter-11
+- #511 [qiyas] [#311 follow-on] present-options decision doc for star7 missed-red-shapes
+- #514 [qiyas] [#138 Path B+C] Inspect detector-vs-baseline delta + implementation plan
+- #515 [qiyas] [#138 Slice 1 — Option A] Circle-contour producer + single-circle.bkr Tier 0 + tests
+- #517 [qiyas] [#138 conditional] Revive Option C classifier elevators (superseded by falsification)
+- #518 [qiyas] [#138 Tenet 18 witness] Codify end-to-end histogram comparison test honoring `notes` discriminator
+
+Decision doc (REOPENED + falsification log): `qiyas/docs/decisions/2026-05-22-138-rescope-after-empirical-delta.md`.
+Memory: `feedback_run_pipeline_before_authoring_rescope.md`.
+
+### #362 Phase 1 — Shape → Pydantic discriminated union migration
+
+Slices A → D3 shipped (scaffold → typed subclasses → adapter shim →
+detectors emit-side → consumers). D4 (cutover Encoding.shapes to
+list[ShapeUnion] + delete legacy Shape) pending owner pick on serialization
+shape — present-options doc filed 2026-05-23 with 4 options A/B/C/D
+(recommendation B: clean break + SCHEMA 1.17→1.18 + regen 1 strict-pinned
+fixture). Phase 2 (#363) + Phase 3 (#364) + cleanup (#365) blocked on D4.
+
+- #473 [qiyas] [#362 PR-B] Migrate Shape per-subclass models onto Polygon/ArcShape bases
+- #519 [qiyas] [Slice A] Scaffold ShapeUnion module + CircleShape (simplest variant)
+- #520 [qiyas] [Slice B] Typed subclasses for elevator-promoted polygons (Square/Pentagon/Decagon)
+- #521 [qiyas] [Slice C] Triangle family + remaining typed subclasses
+- #522 [qiyas] [Slice D1] Adapter shim: legacy Shape ↔ ShapeUnion bidirectional + tests
+- #523 [qiyas] [Slice D2] Migrate detectors emit-side to typed ShapeUnion
+- #524 [qiyas] [Slice D3] Migrate consumers (matcher/scorer/report/debug) to read ShapeUnion fields
+
+Decision docs: `qiyas/docs/decisions/2026-05-16-typed-shape-params-vs-object-bag.md`,
+`qiyas/docs/decisions/2026-05-23-362-phase-1-d4-cutover-serialization.md` (PROPOSED).
+
+### Universal DSL Tagging cascade — final closeout
+
+Slice 5c (cross-repo GHA wiring for `validate-dsl-contract`) shipped,
+closing the cascade originally archived in the section below (see
+"Universal DSL Tagging cascade — Tenet 23 / qiyas#491-#503").
+
+- #504 [cross-repo] Slice 5c — wire `qiyas validate-dsl-contract` into qiyas + bikar GHA
+- #526 [qiyas] [#504 follow-on] Investigate petal-N-ring-0e6e3fa6 missing data-face-class
+- #507 [qiyas] [#371 conditional] Re-measure iter-14 residue after B1 lands
+
+### Tier 1 corpus + bikar multi-polygon edges-from fix
+
+Square-and-scalene shipped as the first Tier 1 corpus entry (square +
+scalene triangle, no shared geometry); discovered bikar `markOuterFace`
+multi-component bug (#513) — see "bikar face-extractor per-component
+outer-marking" section below for the cross-repo cascade.
+
+- #512 [qiyas] Ship square-and-scalene as first Tier 1 corpus entry
+- #513 [bikar] Multi-polygon edges-from: gt-emitter drops second polygon, renderer doubles it
+- #311 [qiyas] [detector] Red shapes in star7 are undetected (closed by feedback-classes B3)
+- #317 [qiyas] [feedback-classes B3] acceptance.yaml: same_color_neighbor_max_delta_rgb + corpus-wide impact
+
+### Other closeouts in this window
+
+- #371 [qiyas] [#256 follow-on] partial-polygon detector starved by fragmented residue on raster-traced inputs
+- #398 [sp] [B1 Option A] Implement render.svg-direct path in sacred-patterns iteration loop
+- #399 [qiyas] [B1 follow-on] Calibrate validate-detector count-fidelity for SVG-direct over-count
+- #471 [qiyas] [CI-platform-portability] Re-measure all pinned baselines on Linux CI runner
+- #472 [bikar] Fix CI auth — deploy.yml + sync-patterns.yml fail at npm ci (@naqshcoffee/ui 401)
+- #489 [qiyas] [#400 Slice 3 follow-on] Lens detector — authoritative hint for non-polygon shapes
+
+---
+
 ## bikar#424 multi-arc origin-coincidence (face-extractor / DCEL linkage)
 
 Face extractor produced sliver/malformed faces on petal-N-ring at N ∈ {4, 8, 12}
