@@ -1,8 +1,8 @@
 ---
-status: PROPOSED
+status: ACCEPTED 2026-05-24 — Option B with #2 carve-out (medallion-10 stays open)
 discovered: 2026-05-23
-decided: PENDING
-owner: PENDING
+decided: 2026-05-24
+owner: omareid
 related:
   - issue: qiyas#138 (detector re-scope after empirical delta)
   - issue: qiyas#525 (362 Phase 1 D4 cutover serialization)
@@ -255,9 +255,23 @@ Option B is *not* unanimous on every axis — it costs owner first-look review a
 
 ## Final decision
 
-**PENDING — owner review required.**
+**Decided:** 2026-05-24 by omareid
+**Picked:** Option B (standing authorization) with carve-out on §Q2 (medallion-10 ceiling)
+**Rationale:** owner answered the one-liners summary:
+1. Option B granted (#1) — authorization captured as memory entry `feedback_decision_pick_authorization.md`
+2. **Do NOT close medallion-10 as ceiling** (#2) — "we must strive to get better"; #80/#85/#123/#127/#129 stay open; alternate attack vectors (partial-shape #106 residue-extractor, Tier 1 corpus, detector calibration) are the next moves; iter-17 REVERT-to-iter-14 guidance still in force against naive iter-18 generation
+3. #525 — ship cutover (Pydantic discriminated-union, SCHEMA 1.17→1.18, delete legacy Shape, regen baselines)
+4. #138 — ship Option G (fix baseline schema notes-as-discriminator)
+5. #391 — ship Option A (import-linter contract gate)
+6. #434 — ship Option B (merge policy typed parameter)
 
-The exec-summary chat artifact will surface this doc and ask for the authorization grant (or a different option pick).
+Plus: **Tenet 24 granted** ("don't fear breaking things if it makes the code more robust") and the no-backwards-compat waiver for the internal three-repo cascade captured as memory entry `feedback_no_backwards_compatibility.md`.
+
+**Follow-ups (implementation):** drain queue smallest-first — #434 → #391 → #138 → #525. Each ships per its decision doc's recommended option, commits with rationale citing this doc + owner authorization, pushes per `feedback_push_authorization_general.md`.
+
+**Follow-ups (conditional / backlog — track triggers, not work):**
+- **If a downstream external consumer of #525's schema bump surfaces** (e.g., a published `@NaqshCoffee` package consumes the qiyas Encoding schema): re-author the cutover as a versioned migration. Trigger: external consumer grep against `SCHEMA_VERSION` outside qiyas/bikar/sacred-patterns.
+- **If #138 G turns out to leave gaps**: reopen with Option F (cancel Slice 1, ship Slice 2 only) as the fallback.
 
 ## Sources
 
