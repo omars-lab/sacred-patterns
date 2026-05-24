@@ -6,7 +6,7 @@ Machine-readable ground truth for the A6 Baseline Shape Validation audit. Genera
 
 ```json
 {
-  "version": "1.1",
+  "version": "1.2",
   "pattern": {
     "name": "pattern-name",
     "symmetry_order": 10,
@@ -107,7 +107,7 @@ Each entry describes a class of shapes expected in the SVG output.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id` | string | yes | Unique identifier (e.g., `"central-star"`, `"kites"`, `"hex-petals"`) |
-| `type` | string | yes | Shape type: `star`, `polygon`, `kite`, `petal`, `rhombus`, `pentagon`, `hexagon`, `bowtie`, `band-segment`, `custom` |
+| `type` | string | yes | Shape type: `circle` (v1.2+), `star`, `polygon`, `kite`, `petal`, `rhombus`, `pentagon`, `hexagon`, `bowtie`, `band-segment`, `custom`. **v1.2 (qiyas#138 Option G, 2026-05-24):** `type` is the sole authoritative discriminator. Circles serialize as `type=circle, vertex_count=0` (was `type=polygon, vertex_count=0, notes="qiyas type: circle"` in v1.1). |
 | `zone` | string | yes | Which zone this shape lives in: `inner-star`, `rosette`, `transition`, `satellite`, `outer` |
 | `vertex_count` | integer | yes | Expected number of vertices per polygon |
 | `count` | integer | yes | Expected number of instances |
@@ -115,7 +115,7 @@ Each entry describes a class of shapes expected in the SVG output.
 | `approximate_area_ratio` | number | no | Expected average area of one instance as fraction of total medallion area |
 | `area_tolerance` | number | no | Acceptable fractional deviation from area ratio (default: 0.3 = 30%) |
 | `distance_from_center` | object | no | `{ "min": 0, "max": 0.5 }` — centroid distance range, normalized to R |
-| `notes` | string | no | User/Claude notes about this shape |
+| `notes` | string | no | User/Claude notes about this shape. **v1.2:** informational only — never parsed as a discriminator. Single-qiyas-type buckets drop `notes`; only multi-type collapses (e.g. equilateral/isoceles/right triangle → polygon[vc=3]) retain it for human review. |
 | `group` | string | no | Group ID if this shape belongs to a rotational group (v1.1+) |
 | `relationships` | array | no | Semantic connections to other shapes (v1.1+) |
 
