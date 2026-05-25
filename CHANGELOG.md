@@ -17,6 +17,55 @@ cross-repo orchestration owned by sacred-patterns.
 
 ---
 
+## 2026-05-23→25 batch — #362 Phase 1 D4 cutover + #363 Phase 2 producer cutover + #138 closeout + drain queue
+
+12-task batch closing the typed-wire-format cutover (qiyas #525 → #531 → #532 → #534 → #535 → #536, end-to-end), the #138 detector under-recall thread, and three drain-queue picks (#391 import-linter, #434 bikar merge policy, #138 baseline schema). Cascade closed 2026-05-25 with commit qiyas `8bfe319` (slice 4c). Net cascade outcome: `Shape` legacy class deleted, `Encoding.shapes: list[ShapeUnion]` typed-wire-format live, `Arrangement.params: dict` bag-typed anti-pattern eliminated, `_LEGACY_FIXTURE_DEFAULTS` 16-shape fallback dict + `from_legacy*` helpers + `to_legacy*` bridges + `@property params` shim all deleted (−1327 LOC).
+
+### #362 Phase 1 D4 — Encoding.shapes typed-wire-format cutover
+
+D4 ships in three slices: D4a (#525) cutover `Encoding.shapes` field type, D4b (#531) SCHEMA bump 1.17→1.18, D4c (#532) delete legacy `Shape` class + bridges. Producer-side cascade follows in #534 (Phase 2 ArrangementUnion ctor) → #535 (slice 4b consumer migration to typed dispatch + bridge deletion) → #536 (slice 4c `_LEGACY_FIXTURE_DEFAULTS` + dict-flattening validator deletion + medallion-10 fixture in-place migration).
+
+- #525 [qiyas] [#362 Phase 1 Slice D4] Cutover Encoding.shapes to list[ShapeUnion]; delete legacy Shape; bump SCHEMA 1.17→1.18
+- #531 [qiyas] [#525 D4b] SCHEMA_VERSION bump 1.17 → 1.18 for typed-wire-format cutover
+- #532 [qiyas] [#525 D4c] Delete legacy Shape, from_legacy, to_legacy, _LEGACY_FIXTURE_DEFAULTS, @property params bridge
+- #534 [qiyas] [#363 Phase 2 follow-on] Cut producer over to typed ArrangementUnion ctor
+- #535 [qiyas] [#532 slice 4b] Migrate .params consumers to typed dispatch; delete bridge
+- #536 [qiyas] [#535 slice 4c] Delete _LEGACY_FIXTURE_DEFAULTS + dict-flattening validator + regen medallion-10-strapwork on x86_64
+
+Decision doc: `qiyas/docs/decisions/2026-05-23-362-phase-1-d4-cutover-serialization.md` (ACCEPTED Option B — clean break + SCHEMA bump + regen). Memory: `feedback_legacy_removal_ordering.md` (producers-before-consumers deletion ordering — falsified once in slice 4a).
+
+### #138 cascade closeout — detector under-recall
+
+#138 parent + Slice 2 (#516) closed via Option G (baseline schema notes-as-discriminator fix, archived earlier) + #529 drain-queue + #530 status commit + #533 pre-existing rosette EXCESS/PARTIAL triage (root-caused to unrelated emit→audit round-trip drift; not slice 4c regression).
+
+- #138 [qiyas] [#129 PR1 follow-on] qiyas: detector under-recall + over-unknown on rendered patterns
+- #516 [qiyas] [#138 Slice 2 — Option B] Render iter-18 + re-measure against iter-11 baseline
+- #529 [qiyas] [drain queue] Ship #138 — baseline schema notes-as-discriminator fix (Option G)
+- #530 [qiyas] Commit qiyas #138 decision doc ACCEPTED status (Option G)
+- #533 [qiyas] [#138 follow-on] Diagnose pre-existing test_emit_audit_round_trip_is_clean rosette EXCESS/PARTIAL
+
+Decision doc: `qiyas/docs/decisions/2026-05-22-138-rescope-after-empirical-delta.md` (ACCEPTED Option G).
+
+### Drain queue — typed parameters + layering gate
+
+Three older PROPOSED docs picked up under 2026-05-24 decision authority: bikar merge policy (#434/#527 Option B), qiyas+bikar import-linter (#391/#528 Option A), Phase 2 ArrangementUnion (#363) + Phase 3 Warning union (#364) + helper cleanup (#365) ship as part of the cascade since their consumers all migrated in #535/#536.
+
+- #363 [qiyas] [#339 PIVOT] Migration: Arrangement → discriminated union (Phase 2)
+- #364 [qiyas] [#339 PIVOT] Migration: Warning → per-source discriminated union (Phase 3)
+- #365 [qiyas] [#339 PIVOT] Cleanup: delete _param_int / _param_float helpers
+- #391 [cross-repo] [#349 follow-on] Import-linter contract-based layering gate (qiyas + bikar)
+- #434 [bikar] Decision doc: make merge policy a typed parameter on buildIntersectionGraph (vs magic constant)
+- #527 [qiyas] [drain queue] Ship #434 — bikar merge policy as typed param on buildIntersectionGraph (Option B)
+- #528 [cross-repo] [drain queue] Ship #391 — import-linter contract gate (Option A)
+
+Decision docs: `bikar/docs/decisions/2026-05-18-buildintersectiongraph-merge-policy-as-parameter.md` (ACCEPTED Option B), `qiyas/docs/decisions/2026-05-18-import-linter-layer-contracts.md` (ACCEPTED Option A), `sacred-patterns/CLAUDE.md` Tenet 24 (no backwards compatibility — pre-authorizes breaking-change ordering used in slice 4a→4c).
+
+### Sacred-patterns
+
+- #111 [sp] [qiyas] Plan: hierarchical/quadtree pixel-diff with per-region localization — plan filed at `sacred-patterns/.claude/plans/hierarchical-pixel-diff.md`; implementation tracked in #112 (still pending, deferred).
+
+---
+
 ## 2026-05-22→23 batch — #138 cascade + #362 Phase 1 + Universal DSL Tagging closeout + Tier 1 corpus
 
 26-task batch closing five sub-cascades whose tasks all reached terminal
