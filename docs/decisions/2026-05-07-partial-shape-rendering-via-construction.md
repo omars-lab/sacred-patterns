@@ -1,5 +1,5 @@
 ---
-status: REOPENED 2026-05-25 — Option A falsified (2 variants); Options E/F/G/H drafted, recommendation = G then E (PENDING owner re-decision)
+status: REOPENED 2026-05-25 — Option A falsified, Option G shipped + fixture verdict surfaced Option I (qiyas detector + sliver cleanup, NOT Option E/F clip semantic change); PENDING owner re-decision
 discovered: 2026-05-07
 decided: 2026-05-07 (original), PENDING (re-decision)
 owner: omar (sacred-patterns owner)
@@ -479,9 +479,34 @@ pattern decagram_full
 - Tenet 8 (general problem): violates. Per-pattern ceiling acceptance.
 - Tenet 19 (bias for action): the action is "stop"; defensible only if the stop is grounded in resource constraints, not in giving up.
 
+## Option G — Tier 0/1 fixture empirical findings (filed 2026-05-25 after fixture ran)
+
+The Tier 0 + Tier 1 fixture (`bikar/packages/core/tests/dsl/evaluator-extend-clip-composition.test.ts`, committed bikar 2026-05-25) ran against current main and produced these concrete numbers:
+
+| Test | Construction | Boundary | Result |
+|---|---|---|---|
+| **TIER 0 baseline** | hex (r=100) `extend connect every 2 beyond 1.5` | none | 7 boundedFaces |
+| **TIER 0 inner clip** | same | `union(Cinner r=40)` (boundary inside extension) | **1 face, 0 partials** — star points dropped wholesale |
+| **TIER 0 outer clip** | same | `union(Couter r=130)` (boundary between construction and extension) | **13 faces, 12 partials** — boundary-incident inside-fragments preserved as `partial: true` |
+| **TIER 1 multi-circle** | same | `union(C0 r=100, Csat at (100,0) r=50)` | **13 faces, 11 partials** — virtually identical to Tier 0 outer; multi-circle UNION works as expected |
+
+**Empirical conclusion — Option E is probably WRONG.** The cascade plan's predicted mechanism (`extend → clip preserves inside fragments via partial annotation`) DOES work at Tier 0 and Tier 1. Both single-circle and multi-circle UNION boundaries correctly produce boundary-incident partial-annotated faces. This is the OPPOSITE of what the L2-introspection of the falsification log hypothesized.
+
+**Where the falsification's root reason actually sits:** the medallion-10 iter-20/iter-21-probe failures (extra-shapes 30→42 severity error, missing-shapes still 36) must therefore be a **Tier 2/3 scale-dependent issue** — likely:
+- (i) sliver-polygon culling at 10-fold rotational symmetry (the 10 satellite circles produce sliver polygons at each pairwise intersection that need a post-clip cleanup pass), OR
+- (ii) qiyas detector misclassifying boundary-incident partial-annotated faces as `extra-shapes` because the detector wasn't taught to recognize `partial: true` faces, OR
+- (iii) the cascade plan's expected `boundedFaces` count for medallion-10 was wrong from the start — partial annotation produces MORE faces than the reference image has, not fewer.
+
+**Implication for Option E vs F vs new options:**
+- Options E and F (clip semantic change + new intersect primitive) are likely **NOT needed**; the primitive works as documented at Tier 0/1.
+- A NEW option (call it **Option I**) is now indicated: investigate the qiyas detector's handling of `partial: true` faces from bikar SVG output, AND/OR add post-clip sliver-polygon cleanup pass to bikar evaluator.
+- Option G's value already realized: the empirical finding here saved 3-5 days that would have been burned on the wrong primitive change.
+
 ## Recommendation
 
-**Option G + Option E (sequenced: G first, then E informed by G's fixture).**
+**~~Option G + Option E (sequenced: G first, then E informed by G's fixture).~~** Superseded 2026-05-25 by Option G's fixture verdict (see above).
+
+**Updated recommendation 2026-05-25: Option G (already shipped — Tier 0/1 fixture) + investigate Option I (qiyas detector + sliver-polygon cleanup).**
 
 The falsification's introspection (step 3 of handle-falsification skill) checked L2, L3, *and* L4 — the doc was wrong at multiple layers. A single new primitive option (E or F alone) addresses L2 + L3 but not L4 (the cascade-plan author skipped a composition-validity check). Option G addresses L4 directly and is cheap (1 day) and high-leverage (every future cascade plan inherits).
 
