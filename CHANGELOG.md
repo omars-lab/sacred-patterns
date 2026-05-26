@@ -17,6 +17,16 @@ cross-repo orchestration owned by sacred-patterns.
 
 ---
 
+## 2026-05-25 — #114 bikar strapwork rotation-canonicalization (Slice 2 closeout)
+
+PR1 (bikar `8bc6735`, 2026-05-18) shipped `canonicalEdgeOrder` — polar-angle seed ordering in `assignStrands` outer loop to root-fix bikar#115 rotation non-invariance. Slice 2 end-to-end validated 2026-05-25 via medallion-10 iter-23 (re-render of iter-16's broken `crossing over` DSL through patched bikar): A2 cv 0.2671 (BROKEN) → 0.0526 (UNEVEN, **below** iter-14's 0.067 strapwork-free baseline); A5 status BROKEN → COMPLETE (10 lenses, 33 estimated bands, 292 band-crossings, dominant_fold 10 conf 0.76). PR2 (orbit detection per approach B) not triggered. PR3 (Hankin face-walk per Kaplan 2005) remains deferred.
+
+- #114 [bikar] [#85 strapwork blocker] Implement strapwork rotation-canonicalization (3 PRs planned, PR1 sufficient)
+
+Plan: `sacred-patterns/.claude/plans/bikar-strapwork-rotation-canonicalization.md`. Evaluation: `~/Dropbox/Data/sacred-patterns/bikar-medallion-10/iterations/23/evaluation.md`. Unblocks #85 strapwork iteration.
+
+---
+
 ## 2026-05-23→25 batch — #362 Phase 1 D4 cutover + #363 Phase 2 producer cutover + #138 closeout + drain queue
 
 12-task batch closing the typed-wire-format cutover (qiyas #525 → #531 → #532 → #534 → #535 → #536, end-to-end), the #138 detector under-recall thread, and three drain-queue picks (#391 import-linter, #434 bikar merge policy, #138 baseline schema). Cascade closed 2026-05-25 with commit qiyas `8bfe319` (slice 4c). Net cascade outcome: `Shape` legacy class deleted, `Encoding.shapes: list[ShapeUnion]` typed-wire-format live, `Arrangement.params: dict` bag-typed anti-pattern eliminated, `_LEGACY_FIXTURE_DEFAULTS` 16-shape fallback dict + `from_legacy*` helpers + `to_legacy*` bridges + `@property params` shim all deleted (−1327 LOC).
