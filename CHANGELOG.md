@@ -17,7 +17,69 @@ cross-repo orchestration owned by sacred-patterns.
 
 ---
 
-## 2026-05-25 — #85 medallion-10 iter-24/25/26/27/28 cascade local-optimum at iter-25 (v20 verdict closed)
+## 2026-05-26 — #132 Tier 1 corpus expansion Ticks 22→42 (21-tick batch) + #85 medallion-10 iter-19/20/30 + #106 cascade Options E/G/I + #114 closeout
+
+Batch archive of 31 completed tasks across four threads. Three threads dominate: the qiyas#132 Tier 1 calibration-corpus expansion (Ticks 22→42, 20 entries shipped after Tick 22 falsified), the qiyas#106 partial-shape cascade re-decision sequence (Options E/G/I authored + Option I shipped), and the sacred-patterns#85 medallion-10 cascade iter-19/20/30 deliverables. Plus drain-queue closeout of #114 (logged separately above) and an investigation of #132/#80/#85 corpus render drift (#545).
+
+### #132 [qiyas] Tier 1 corpus expansion — Ticks 22→42 (20 shipped, 1 falsified)
+
+Tier 1 entries extend the I1 calibration corpus into composition territory: triangle+polygon shared-vertex/edge, scalene+asymmetric-polygon (pent/hex/hept/oct), arc-bearing lens topologies (dual-lens, chained-lens, arc-cap), and the heterogeneous symmetric/symmetric family (D_4/D_6/D_8 polygon pairs + arc-bearing D_6+lens, D_4+lens). Each ticked entry shipped with macro_ari_fused_vs_b=1.0, total_merged_with_neighbor=0, ci-local-fast 6/6 green. Tick 22 (quintuple-junction-shared-vertex) FALSIFIED on the face-walker polyclass trap (memory `feedback_classify_by_predicate_cannot_witness_same_class_cross_refs.md`); kept on disk as Tenet 18 witness.
+
+- #546 [qiyas] [#132 Tick 22] Quintuple-junction-shared-vertex FALSIFIED + lesson captured
+- #547 [qiyas] [#132 Tick 23] Two-lens-shared-vertex — pure arc-bearing dual-lens topology
+- #548 [qiyas] [#132 Tick 24] chained-lens-shared-circle — three lenses sharing CIRCLES in a chain
+- #549 [qiyas] [#132 Tick 25] arc-cap-and-scalene-triangle-disjoint — chord+arc 2-sided semicircle witness
+- #550 [qiyas] [#132 Tick 26] scalene-and-asymmetric-pent-shared-vertex — 3+5 dual-asymmetric cell
+- #551 [qiyas] [#132 Tick 27] scalene-and-asymmetric-pent-shared-edge — 3+5 dual-asymmetric edge cell
+- #552 [qiyas] [#132 Tick 28] scalene-and-asymmetric-hex-shared-vertex — 3+6 dual-asymmetric cell
+- #553 [qiyas] [#132 Tick 29] scalene-and-asymmetric-hex-shared-edge — 3+6 dual-asymmetric edge cell
+- #554 [qiyas] [#132 Tick 30] scalene-and-asymmetric-hept-shared-vertex — 3+7 dual-asymmetric cell
+- #555 [qiyas] [#132 Tick 31] scalene-and-asymmetric-hept-shared-edge — 3+7 dual-asymmetric edge cell
+- #556 [qiyas] [#132 Tick 32] scalene-and-asymmetric-oct-shared-vertex — 3+8 dual-asymmetric cell
+- #557 [qiyas] [#132 Tick 33] scalene-and-asymmetric-oct-shared-edge — 3+8 dual-asymmetric edge cell
+- #558 [qiyas] [#132 Tick 34] octagon-and-triangle-shared-vertex — sym-polygon + scalene asymmetric anchor
+- #559 [qiyas] [#132 Tick 35] octagon-and-triangle-shared-edge — sym-polygon + scalene edge variant
+- #560 [qiyas] [#132 Tick 36] heptagon-and-triangle-shared-vertex — D_7 + scalene vertex
+- #561 [qiyas] [#132 Tick 37] heptagon-and-triangle-shared-edge — D_7 + scalene edge
+- #562 [qiyas] [#132 Tick 38] square-and-hexagon-shared-vertex — first heterogeneous symmetric/symmetric (D_4+D_6)
+- #563 [qiyas] [#132 Tick 39] square-and-octagon-shared-vertex — D_4+D_8 polygon/polygon
+- #564 [qiyas] [#132 Tick 40] hexagon-and-octagon-shared-vertex — D_6+D_8, first without square anchor
+- #565 [qiyas] [#132 Tick 41] hexagon-and-symmetric-lens-shared-vertex — first arc-bearing symmetric/symmetric
+- #566 [qiyas] [#132 Tick 42] square-and-symmetric-lens-shared-vertex — D_4 + symmetric lens
+
+Corpus: 52 → 56 entries; total_visible_shapes 731 → 790 by Tick 42. Tick 43 (octagon+symmetric-lens, completes D_4/D_6/D_8 arc-bearing trio) tracked as #567 (open). Memories: `feedback_bikar_face_walker_polygon_edge_absorbed_by_coincident_arcs.md`, `feedback_per_edge_class_tags_same_trap_as_classify.md`, `feedback_bikar_face_walker_shared_edge_absorption_universal.md`. Cascade #132 continues at task #129 (PR3); parent #129 stays open.
+
+### #106 [3-repo] Partial-shape cascade — falsification + re-decision + Option I shipment
+
+After #106 Option A shipped (Tier 0 single-petal+extend+clip green), medallion-10 iter-20's clip(C0) regression falsified the cascade. Re-decision sequence per `handle-falsification` skill: #539 reopened, #540 authored Option E (intersect-before-clip semantic OR composability test gate), #541 added Option G (Tier 0 composition gate — present-options skill checkbox + single-petal+extend+clip fixture), #543 shipped Option I (qiyas detector handling of `partial:true` faces + bikar post-clip sliver cleanup, autonomous-loop-2026-05-25). Memory: `feedback_cascade_primitive_semantic_composition.md` + `feedback_check_emit_layer_before_option.md`.
+
+- #106 [3-repo] Partial-shape rendering via construction (qiyas + bikar + sacred-patterns)
+- #539 [sp] [#106 falsification] Reopen partial-shape cascade decision after iter-20 clip(C0) regression
+- #540 [sp] [#106 re-decision] Author Option E for cascade — intersect-before-clip semantic OR composability test gate
+- #541 [sp] [#106 re-decision Option G] Tier 0 composition gate — present-options skill checkbox + fixture
+- #543 [qiyas+bikar] [#106 re-decision Option I] Investigate qiyas detector partial:true handling + bikar sliver cleanup
+
+Decision doc: `sacred-patterns/docs/decisions/2026-05-07-partial-shape-rendering-via-construction.md` (REOPENED → Option I ACCEPTED). Cascade closes the #106 thread; iter-24+ pickups land in the #85 medallion-10 cascade above.
+
+### #85 [sp] medallion-10 iter-18/19/20/30 + earlier iters (drain)
+
+Pre-iter-23 cascade work: iter-18 ran Tax-B-aware ranking (#123/#127/#128), iter-19 picked up partial-shape cascade probes (#537), iter-20 layered clip pattern to medallion outline (#538) which triggered the #106 falsification above, iter-30 ran rhombus-v4 distance-filter rescaling (#544). Cascade #85 stays open per "medallion-10 stays open / keep striving."
+
+- #123 [sp] [#85] Run bikar-medallion-10 iter-18 with Tax-B-aware ranking
+- #127 [sp] [#123] Render iter-18 and validate
+- #128 [sp] [#123] Capture iter-18 G3 deliverables
+- #537 [sp] [#85] Run bikar-medallion-10 iter-19 — partial-shape cascade pickup
+- #538 [sp] [#85] Run bikar-medallion-10 iter-20 — layer in clip pattern to medallion outline
+- #544 [sp] [#85] Run bikar-medallion-10 iter-30 — rhombus-v4 distance-filter rescaling
+
+Evaluations: `~/Dropbox/Data/sacred-patterns/bikar-medallion-10/iterations/{18,19,20,30}/evaluation.md`.
+
+### Drain — #114 + #545
+
+- #114 [bikar] Strapwork rotation-canonicalization — see prior 2026-05-25 section above for closeout details (commit `8bc6735`)
+- #545 [3-repo] [#132 / #80 / #85] Investigate corpus render drift discovered during Tick 19 — drift root-caused; cascade #132 continues
+
+---
 
 iter-24 composed #106 Option I (extend+clip silhouette) with #114 PR1 (strapwork): A2 cv 0.0406 (cascade best at the time), A4 FULL, A5 COMPLETE, A6 0/18 vs `input/baseline.json` (18-shape rich-inner-zone expectation). iter-25/26/27/28 probed four mechanism-distinct constructions for the inner-star v20 verdict (chord polygon shared layer / chord polygon isolated layer / direct `face` arc declaration / chord polygon at correct baseline scale r=6 spatially isolated) — all four falsified, each at a different pipeline stage. Pattern: this construction philosophy (chord-overlay + strapwork) fundamentally cannot produce a vertex-distinct v20 shape inside the medallion. iter-25 stands as cascade local-optimum at A2 cv 0.0365 (45% better than iter-14's 0.067), A4 FULL, A5 COMPLETE, A6 0/18 reflecting philosophy mismatch with baseline. Memory: `feedback_a6_baseline_construction_philosophy_mismatch.md`. Per user direction "medallion-10 stays open / keep striving," cascade #85 stays open but stops iterating v20 / star-v6 / star-v8 verdicts; next iters target polygon-v0 / rhombus-v4 verdicts the philosophy CAN plausibly produce.
 
