@@ -17,6 +17,14 @@ cross-repo orchestration owned by sacred-patterns.
 
 ---
 
+## 2026-05-25 — #85 medallion-10 iter-24/25/26/27/28 cascade local-optimum at iter-25 (v20 verdict closed)
+
+iter-24 composed #106 Option I (extend+clip silhouette) with #114 PR1 (strapwork): A2 cv 0.0406 (cascade best at the time), A4 FULL, A5 COMPLETE, A6 0/18 vs `input/baseline.json` (18-shape rich-inner-zone expectation). iter-25/26/27/28 probed four mechanism-distinct constructions for the inner-star v20 verdict (chord polygon shared layer / chord polygon isolated layer / direct `face` arc declaration / chord polygon at correct baseline scale r=6 spatially isolated) — all four falsified, each at a different pipeline stage. Pattern: this construction philosophy (chord-overlay + strapwork) fundamentally cannot produce a vertex-distinct v20 shape inside the medallion. iter-25 stands as cascade local-optimum at A2 cv 0.0365 (45% better than iter-14's 0.067), A4 FULL, A5 COMPLETE, A6 0/18 reflecting philosophy mismatch with baseline. Memory: `feedback_a6_baseline_construction_philosophy_mismatch.md`. Per user direction "medallion-10 stays open / keep striving," cascade #85 stays open but stops iterating v20 / star-v6 / star-v8 verdicts; next iters target polygon-v0 / rhombus-v4 verdicts the philosophy CAN plausibly produce.
+
+Evaluations: `~/Dropbox/Data/sacred-patterns/bikar-medallion-10/iterations/{24,25,26,27,28}/evaluation.md`. No tasks closed (cascade continues at #85).
+
+---
+
 ## 2026-05-25 — #114 bikar strapwork rotation-canonicalization (Slice 2 closeout)
 
 PR1 (bikar `8bc6735`, 2026-05-18) shipped `canonicalEdgeOrder` — polar-angle seed ordering in `assignStrands` outer loop to root-fix bikar#115 rotation non-invariance. Slice 2 end-to-end validated 2026-05-25 via medallion-10 iter-23 (re-render of iter-16's broken `crossing over` DSL through patched bikar): A2 cv 0.2671 (BROKEN) → 0.0526 (UNEVEN, **below** iter-14's 0.067 strapwork-free baseline); A5 status BROKEN → COMPLETE (10 lenses, 33 estimated bands, 292 band-crossings, dominant_fold 10 conf 0.76). PR2 (orbit detection per approach B) not triggered. PR3 (Hankin face-walk per Kaplan 2005) remains deferred.
