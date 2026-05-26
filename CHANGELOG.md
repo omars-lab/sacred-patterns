@@ -21,7 +21,9 @@ cross-repo orchestration owned by sacred-patterns.
 
 iter-24 composed #106 Option I (extend+clip silhouette) with #114 PR1 (strapwork): A2 cv 0.0406 (cascade best at the time), A4 FULL, A5 COMPLETE, A6 0/18 vs `input/baseline.json` (18-shape rich-inner-zone expectation). iter-25/26/27/28 probed four mechanism-distinct constructions for the inner-star v20 verdict (chord polygon shared layer / chord polygon isolated layer / direct `face` arc declaration / chord polygon at correct baseline scale r=6 spatially isolated) — all four falsified, each at a different pipeline stage. Pattern: this construction philosophy (chord-overlay + strapwork) fundamentally cannot produce a vertex-distinct v20 shape inside the medallion. iter-25 stands as cascade local-optimum at A2 cv 0.0365 (45% better than iter-14's 0.067), A4 FULL, A5 COMPLETE, A6 0/18 reflecting philosophy mismatch with baseline. Memory: `feedback_a6_baseline_construction_philosophy_mismatch.md`. Per user direction "medallion-10 stays open / keep striving," cascade #85 stays open but stops iterating v20 / star-v6 / star-v8 verdicts; next iters target polygon-v0 / rhombus-v4 verdicts the philosophy CAN plausibly produce.
 
-Evaluations: `~/Dropbox/Data/sacred-patterns/bikar-medallion-10/iterations/{24,25,26,27,28}/evaluation.md`. No tasks closed (cascade continues at #85).
+Evaluations: `~/Dropbox/Data/sacred-patterns/bikar-medallion-10/iterations/{24,25,26,27,28,29}/evaluation.md`. No tasks closed (cascade continues at #85).
+
+iter-29 probed inner-star polygon-v0 (5→7 PARTIAL, +2 of 5 added circles registered) — confirmed diminishing-returns slope; cascade pauses pending a higher-net-cf_delta pivot.
 
 ---
 
