@@ -57,9 +57,23 @@ Every iteration directory MUST contain both the output AND the reference for sid
 
 Before starting any new iteration, check whether progress has stalled. Stagnation wastes iterations and compounds bad approaches.
 
-**Structural stagnation rule (takes priority):** If the structural audit (C1) has the same MISSING/MALFORMED elements for 3+ consecutive iterations, STOP. The construction approach is fundamentally wrong — no parametric tuning will add missing elements. Perform a Brutal Honesty Checkpoint (Section I) immediately.
+**Mechanical signal — `iter.json` (start here):** Run `qiyas iter analyze iterations/ --window 3 --out iterations/iter.json` (auto-invoked by `tools/iteration-validate.sh` after each iteration's `validation.json` lands). Read `iter.json` first; the per-iteration manual diffing below is the fallback for `verdict.kind == "PENDING"`. Verdict → action:
 
-**3-iteration lookback rule:** Compare the similarity scores of the last 3 iterations. If the delta across those 3 iterations is less than 1.0%, STOP and perform the stagnation analysis below before proceeding. Do not write `guidance.md` or start a new iteration until this analysis is complete.
+| `verdict.kind`                | Action                                                                                       |
+|-------------------------------|----------------------------------------------------------------------------------------------|
+| `STAGNATING_AT_structural`    | STOP — same structural warning held rank #1 with frozen `cf_delta` across the window. Brutal Honesty Checkpoint (Section I). The construction approach is wrong; no parametric tuning will help. |
+| `STAGNATING_AT_placement`     | STOP for placement audit — top mis-placed warning is frozen. Re-examine point derivations before another parametric tweak. |
+| `OSCILLATING`                 | STOP — top warning toggles in/out across the window, or score series flips sign ≥2 times. Pick one branch and commit to it; alternating is making things worse. |
+| `REGRESSING`                  | REVERT — score is monotone non-increasing across the window with `score[-1] < score[0] − 0.02`. The most recent change is harmful. |
+| `CONVERGING`                  | CONTINUE — top-3 warnings are all `delta_class=shrinking` and score is non-decreasing. `predicted_iterations_to_converge` gives a rough budget. |
+| `STABLE_AT_GO`                | SHIP — all warnings empty across the window and score ≥ `--go-score-threshold` (default 0.85). |
+| `PENDING`                     | Fall through to the manual analysis checklist below — trajectory state is mixed. |
+
+`iter.json` also names `top_edit_candidate.warning_key` (the trajectory the next edit should address, picked by a 5-rule first-match-wins selector). Treat it as the recommended starting point for guidance.md.
+
+**Structural stagnation rule (takes priority — mirrored by `STAGNATING_AT_structural`):** If the structural audit (C1) has the same MISSING/MALFORMED elements for 3+ consecutive iterations, STOP. The construction approach is fundamentally wrong — no parametric tuning will add missing elements. Perform a Brutal Honesty Checkpoint (Section I) immediately.
+
+**3-iteration lookback rule (mirrored by `--window 3` default):** Compare the similarity scores of the last 3 iterations. If the delta across those 3 iterations is less than 1.0%, STOP and perform the stagnation analysis below before proceeding. Do not write `guidance.md` or start a new iteration until this analysis is complete.
 
 **Stagnation analysis checklist** (work through all five):
 
@@ -658,13 +672,19 @@ satellites:    PARTIAL  (8 found, 10 expected)
 
 **This is the most critical step in the entire process.** The goal is not just to fix what's broken — it's to fundamentally understand what geometric/structural principle you're missing.
 
-#### D0. Walk the validation.json warnings (start here)
+#### D0. Read iter.json first; walk validation.json warnings only on PENDING
 
-Before any open-ended inspection, walk every warning in `overall.warnings` (not just `[0]`) and answer:
+Before any open-ended inspection, read `iterations/iter.json` (produced by `qiyas iter analyze iterations/ --window 3` — auto-invoked by `tools/iteration-validate.sh`):
 
-1. **Was this warning present in the previous iteration?** Compare `iterations/{nn}/validation/validation.json` to `iterations/{nn-1}/validation/validation.json`. If a warning's `counterfactual_score_delta` shrank, the iteration moved in the right direction. If it grew, the change made things worse.
-2. **Did this iteration's edit address `warnings[0]`?** Read the previous iteration's `guidance.md`. If the planned edit was for warning X but warning X's delta did not shrink, the edit failed to land — that's the root cause to investigate, not a new structural theory.
-3. **Did a new warning appear?** A regression. The change introduced a problem that was not present before. Identify which edit added it.
+1. **`verdict.kind`** — gives you the stagnation/regression/convergence verdict over the window without hand-diffing per-iteration JSONs. See the table in §"Stagnation Detection" above for the action per verdict.
+2. **`top_edit_candidate.warning_key`** — the trajectory the next edit should target, selected from cross-iteration trends (not just the snapshot's `warnings[0]`). When present, this is a stronger signal than `warnings[0]` because it accounts for whether a warning is shrinking, fixed, or oscillating.
+3. **`warning_trajectories[]`** — per-warning `presence` / `cf_delta_series` / `rank_series` / `delta_class`. Use this when the verdict is `PENDING` (mixed trajectory state) or when you want to inspect a specific warning's history before designing the next edit.
+
+The questions below — only fall back to them when `iter.json` reports `verdict.kind == "PENDING"`, or when you need to disambiguate a `CONVERGING` verdict's next step beyond `top_edit_candidate`:
+
+1. **Was this warning present in the previous iteration?** `iter.json`'s `warning_trajectories[].presence` already answers this for every warning, not just `warnings[0]`. If `cf_delta_series[-1] < cf_delta_series[-2]`, the iteration moved in the right direction; if it grew, the change made things worse.
+2. **Did this iteration's edit address `warnings[0]`?** Read the previous iteration's `guidance.md`. If the planned edit was for warning X but warning X's `delta_class` is `fixed` (rather than `shrinking`), the edit failed to land — that's the root cause to investigate, not a new structural theory.
+3. **Did a new warning appear?** A warning whose `first_seen_iter == last iter index` is a regression. The change introduced a problem that was not present before. Identify which edit added it.
 
 This grounds the retrospective in measured deltas before any visual hypothesis-building.
 

@@ -287,5 +287,39 @@ python3 "$SCRIPT_DIR/iteration-validate-rollup.py" \
     --out "$OUT/validation.json"
 
 echo ""
+
+# ============================================================
+# Cross-iteration trajectory analysis (qiyas iter analyze)
+# ============================================================
+# After the per-iteration validation.json lands, walk every prior iteration's
+# validation.json and emit iterations/iter.json — the trajectory+verdict
+# rollup the iteration loop consumes for stagnation/regression detection
+# (iteration-guide.md §"Stagnation Detection"). Best-effort: a missing CLI
+# (older qiyas image) is logged, not fatal.
+#
+# Layout assumption: $OUT == iterations/{nn}/validation/, so the iterations
+# root is two parents up. iter.json lands at iterations/iter.json.
+ITER_ROOT="$(cd "$OUT/../.." && pwd)"
+ITER_JSON="$ITER_ROOT/iter.json"
+
+if [[ $SKIP_QIYAS -eq 0 ]]; then
+    echo -e "${CYAN}Running qiyas iter analyze on $ITER_ROOT...${NC}"
+    if docker run --rm \
+        -v "$ITER_ROOT:/work" \
+        "$QIYAS_IMAGE" \
+        iter analyze /work --window 3 --out /work/iter.json \
+        > "$ITER_ROOT/iter-analyze.log" 2>&1; then
+        echo "  $ITER_JSON"
+    else
+        echo -e "${YELLOW}  iter analyze unavailable (older qiyas image?) — see $ITER_ROOT/iter-analyze.log${NC}"
+    fi
+else
+    echo -e "${YELLOW}qiyas iter analyze — skipped (--skip-qiyas)${NC}"
+fi
+
+echo ""
 echo -e "${GREEN}Validation complete${NC}"
 echo "  $OUT/validation.json"
+if [[ -f "$ITER_JSON" ]]; then
+    echo "  $ITER_JSON"
+fi
