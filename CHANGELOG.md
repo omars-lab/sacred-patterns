@@ -17,6 +17,101 @@ cross-repo orchestration owned by sacred-patterns.
 
 ---
 
+## 2026-05-26 — V2 iteration-aware analysis cascade closeout (#74 V2.A + #75 V2.B) + #132 Tier 1 Ticks 43→61
+
+Batch archive of 31 completed tasks across two threads. Thread 1: qiyas#74 V2.A
+(iter analyze sub-command with verdict + top_edit_candidate + cross-iteration
+trajectories) and qiyas#75 V2.B (global warning optimizer — net-delta ranking
+via cross-warning interaction matrix) shipped end-to-end across 6 slices each;
+sacred-patterns iteration-guide D0 now consumes both layers. Thread 2: qiyas#132
+Tier 1 corpus expansion Ticks 43→60 (extensive shared-edge/shared-vertex
+polygon×lens combinatorics that surfaced 7 distinct bikar face-walker /
+gt-emitter defects — face-walker shared-edge absorption, both-CL-outside
+absorption, gt-emitter same-class drop, hetero-class drop, line-primitive
+render-only + unclassified polygon drop, D3 chord-sharing merge) plus Tick 61
+(bikar decision doc PROPOSED, owner-PENDING).
+
+### #74 [qiyas] V2.A — iter analyze sub-command (Slices 1-6 SHIPPED)
+
+`qiyas iter analyze` ingests a `<root>/<int>/validation/validation.json`
+corpus and emits iter.json with verdict.kind (STABLE_AT_GO / CONVERGING /
+STAGNATING_AT_{structural,placement} / OSCILLATING / REGRESSING / PENDING),
+top_edit_candidate (selected by 5-rule first-match-wins from cross-iteration
+trajectories), iterations-to-converge prediction, and warning_trajectories[]
+(per-warning presence / cf_delta_series / rank_series / delta_class). sp
+iteration-guide.md D0 + Stagnation Detection sections + tools/iteration-
+validate.sh consume iter.json first; per-iteration drilldown is the
+PENDING-only fallback. Calibration smoke at qiyas/calibration/iter-analyze/.
+
+- #74 [qiyas] [V2.A] qiyas iter analyze — iteration-aware analysis sub-command
+- #586 [qiyas] [#74 Slice 2] iter analyze CLI scaffold + walker + synthetic fixture
+- #587 [qiyas] [#74 Slice 3] warning_trajectories + delta_class classification
+- #588 [qiyas] [#74 Slice 4] verdict + top_edit_candidate + iterations-to-converge prediction
+- #589 [sp]    [#74 Slice 5] sacred-patterns iteration-guide consumes iter.json
+- #590 [qiyas] [#74 Slice 6] qiyas iter analyze calibration smoke test
+
+### #75 [qiyas] V2.B — Global warning optimizer (Slices 1-6 SHIPPED)
+
+Cross-warning interaction matrix layer: net_delta = adjusted_upside −
+Σ p_fires × expected_regression. `qiyas score` writes
+`recommended_actions[]` ranked by net_delta in score.json (Slice 3);
+`qiyas calibrate-interaction-matrix` rebuilds matrix.json from an
+iteration corpus with glob-stripping (`rosette_petal_0` →
+`rosette_petal_*`) and confidence bands (high≥20, medium 5-19, low<5)
+(Slice 4); `qiyas iter analyze` surfaces `top_edit_candidate.
+recommended_action_rank` + `recommended_action_net_delta` +
+`recommended_action_predicted_collateral` when score.json is present
+(Slice 5); sacred-patterns iteration-guide D0 prefers these fields over
+the bare `warnings[0]` directive (Slice 6 sp half). Backward-compat:
+empty matrix path + absent-score.json fallback preserved end-to-end.
+Calibration smoke at qiyas/calibration/interaction-matrix-smoke/.
+
+- #75  [qiyas] [V2.B] Global warning optimizer — net-delta ranking via interaction matrix
+- #591 [qiyas] [#75 Slice 2] InteractionMatrix data model + JSON loader
+- #592 [qiyas] [#75 Slice 3] net_delta + recommended_actions emission in score.json
+- #593 [qiyas] [#75 Slice 4] qiyas calibrate-interaction-matrix CLI
+- #594 [qiyas] [#75 Slice 5] V2.A iter analyze consumes recommended_actions
+- #595 [qiyas+sp] [#75 Slice 6] interaction-matrix calibration smoke + sacred-patterns consumer
+
+### #132 [qiyas] Tier 1 corpus expansion — Ticks 43→61
+
+Continues the Tier 1 calibration-corpus expansion from the prior batch (Ticks
+22→42) into polygon×symmetric-lens shared-edge/shared-vertex topologies and
+their asymmetric-lens counterparts. Surfaced 7 distinct bikar face-walker /
+gt-emitter defects (memories: `feedback_bikar_face_walker_short_chord_octagon_absorption.md`,
+`feedback_asymmetric_lens_intrudes_polygon_interior.md`,
+`feedback_bikar_face_walker_both_cl_outside_lens_absorption.md`,
+`feedback_bikar_gt_emitter_drops_same_class_faces.md`,
+`feedback_bikar_line_primitive_render_only.md`,
+`feedback_bikar_gt_emitter_drops_unclassified_polygons.md`,
+`feedback_bikar_gt_emitter_unions_same_class_chord_faces.md`). 9 shipped clean,
+10 falsified (kept on disk per Tenet 18). Tick 61 shipped the bikar decision
+doc PROPOSED, owner-PENDING.
+
+- #567 [qiyas] [#132 Tick 43] Tier 1 octagon-and-symmetric-lens-shared-vertex
+- #568 [qiyas] [#132 Tick 44] Tier 1 hexagon-and-symmetric-lens-shared-edge
+- #569 [qiyas] [#132 Tick 45] Tier 1 square-and-symmetric-lens-shared-edge
+- #570 [qiyas] [#132 Tick 46] Tier 1 octagon-and-symmetric-lens-shared-edge
+- #571 [qiyas] [#132 Tick 47] Tier 1 square-and-asymmetric-lens-shared-vertex
+- #572 [qiyas] [#132 Tick 48] Tier 1 hexagon-and-asymmetric-lens-shared-vertex
+- #573 [qiyas] [#132 Tick 49] Tier 1 octagon-and-asymmetric-lens-shared-vertex
+- #574 [qiyas] [#132 Tick 50] Tier 1 square-and-asymmetric-lens-shared-edge
+- #575 [qiyas] [#132 Tick 51] Tier 1 hexagon-and-asymmetric-lens-shared-edge
+- #576 [qiyas] [#132 Tick 52] FALSIFIED — both-CL-outside shared-edge absorption witness
+- #577 [qiyas] [#132 Tick 53] FALSIFIED — both-CL-outside absorption generalizes from D_4 to D_6
+- #578 [qiyas] [#132 Tick 54] FALSIFIED — surfaces new gt-emitter same-class drop defect
+- #579 [qiyas] [#132 Tick 55] FALSIFIED — gt-emitter same-class drop generalizes D_4→D_6
+- #580 [qiyas] [#132 Tick 56] FALSIFIED — gt-emitter same-class drop placement-variant-independent
+- #581 [qiyas] [#132 Tick 57] DISAMBIGUATED — same-class alone doesn't trigger gt-emitter drop
+- #582 [qiyas] [#132 Tick 58] FALSIFIED — hetero-class lens drops BOTH faces (worse than homo)
+- #583 [qiyas] [#132 Tick 59] FALSIFIED — line primitive render-only + unclassified polygon drop
+- #584 [qiyas] [#132 Tick 60] FALSIFIED — D3 gt-emitter merges same-class chord-sharing sub-polygons
+- #585 [qiyas] [#132 Tick 61] Decision doc shipped — bikar PROPOSED, owner-PENDING
+
+Cascade #132 continues at task #129 (PR3); parent #129 stays open.
+
+---
+
 ## 2026-05-26 — #132 Tier 1 corpus expansion Ticks 22→42 (21-tick batch) + #85 medallion-10 iter-19/20/30 + #106 cascade Options E/G/I + #114 closeout
 
 Batch archive of 31 completed tasks across four threads. Three threads dominate: the qiyas#132 Tier 1 calibration-corpus expansion (Ticks 22→42, 20 entries shipped after Tick 22 falsified), the qiyas#106 partial-shape cascade re-decision sequence (Options E/G/I authored + Option I shipped), and the sacred-patterns#85 medallion-10 cascade iter-19/20/30 deliverables. Plus drain-queue closeout of #114 (logged separately above) and an investigation of #132/#80/#85 corpus render drift (#545).
