@@ -17,6 +17,96 @@ cross-repo orchestration owned by sacred-patterns.
 
 ---
 
+## 2026-05-27 — #132 Tier 1 Ticks 63→75 + GHA-spend structural cascade + owner-pick execution batch
+
+Batch archive of 22 completed tasks across four threads. Thread 1: qiyas#132
+Tier 1 corpus expansion Ticks 63→75 (13 entries) extending shared-vertex /
+shared-circle / multi-lens combinatorics — established N-lens-on-shared-C0
+independence rule (N=1/2/3, D_4/D_5), promoted Tick 23's degree-6 all-arc
+risk to a witnessed bikar limitation, sharpened rule boundary. Thread 2:
+GHA-spend Tenet 22 structural cascade — added `paths-ignore` + `concurrency`
++ `timeout-minutes` to workflow YAML across qiyas + bikar; installed
+nektos/act for local workflow mirroring; codified governance line in all
+three CLAUDE.md files. Thread 3: 2026-05-24 owner picks executed end-to-end
+— #525 Phase 1 D4 single-cutover, #138 medallion-10 iter-18 render, #597
+evalMirror fix following naming-conventions plan; hier-diff PR2 sector-
+aware + PR3 warning rollup. Thread 4: older closeouts (#77 V2.E auto-
+capture, #112 hier pixel-diff core implementation).
+
+### Thread 1 — #132 Tier 1 Ticks 63→75 (13 entries, qiyas + bikar)
+
+Tick 63 probed `mirror` primitive (asymmetric scalene mirror across axis);
+surfaced bikar evalMirror bug — reflected polygon body silently not emitted
+as a second face. Tick 68 falsified path-a intersect-derived shared-vertex
+on first try (non-convex-hull-tangent placement + homogeneous-sides classify
+predicate). Tick 68b re-authored with convex-hull-tangent + heterogeneous-
+sides; SHIPPED PASS, confirms Tick 21 path-a as a working recipe. Ticks
+69/70/71 established polygon+lens-on-shared-circle independence at D_4 / D_5
+/ D_6 — refined Tick 25's conditional-arc-enrollment rule to a tighter
+local-not-propagated boundary. Ticks 72/73/74 extended to multi-lens-on-
+shared-C0 (N=2 D_4, N=3 D_4, N=2 D_5) — N-lens independence rule witnessed
+across both N and polygon-symmetry dimensions. Tick 75 FALSIFIED — triple-
+lens-shared-vertex (degree-6 all-arc incidence) confirms Tick 23's flagged
+risk; the rule boundary is now sharply defined (works for spatially-
+disjoint or polygon-anchored; breaks for ≥3 lenses converging at one
+all-arc vertex). Six new feedback-type memory entries indexed in MEMORY.md
+across the 13-tick batch.
+
+- #596 [qiyas]  [#132 Tick 63] Probe `mirror` primitive — asymmetric scalene mirrored across axis
+- #611 [qiyas]  [#132 Tick 68] First intersect-derived shared-vertex (Tick 21 path-a)
+- #612 [qiyas]  [#132 Tick 68b] Re-author Tick 21 path-a with heterogeneous-sides + convex-hull-tangent
+- #613 [qiyas]  [#132 Tick 69] Polygon-and-lens-shared-circle Tier 1 — square on C0 + lens C0×CL
+- #614 [qiyas]  [#132 Tick 70] Pentagon-and-lens-shared-circle — D_5 polygon × shared C0
+- #615 [qiyas]  [#132 Tick 71] Hexagon-and-lens-shared-circle — D_6 polygon × shared C0
+- #616 [qiyas]  [#132 Tick 72] Square-with-two-lenses-shared-circle — multi-lens independence on shared C0
+- #617 [qiyas]  [#132 Tick 73] Multi-lens shared-circle — N=3 lenses (Tenet 8 3-witness)
+- #618 [qiyas]  [#132 Tick 74] Multi-lens shared-circle — D_5 orthogonal polygon-symmetry witness
+- #619 [qiyas]  [#132 Tick 75] Triple-lens-shared-vertex — degree-6 all-arc incidence FALSIFIED (negative witness retained per Tenet 18)
+
+### Thread 2 — GHA-spend Tenet 22 structural cascade (5 entries, qiyas + bikar + sp)
+
+After 2026-05-26 GHA spending-limit breach froze the loop, this cascade
+codified the budget discipline as a structural rule. Workflows now carry
+`paths-ignore: ['**.md', 'docs/**', '.claude/**']` + `concurrency.group`
+with PR-only `cancel-in-progress` + `timeout-minutes`. nektos/act installed
+locally to mirror workflows pre-push. CLAUDE.md Tenet 22 (bikar) and
+mirror conventions added to qiyas + sp. Owner-only Slice E (raise spending
+limit + set org cap) remains pending as #603.
+
+- #599 [qiyas]  [gha-spend] qiyas ci.yml: add paths-ignore + concurrency + timeout-minutes (Slice A)
+- #600 [bikar]  [gha-spend] bikar deploy.yml: add paths-ignore + concurrency + timeout-minutes (Slice B)
+- #601 [bikar]  [gha-spend] bikar bump-peer-deps + sync-patterns: timeout-minutes audit (Slice C)
+- #602          [gha-spend] CLAUDE.md governance line — 3 repos (Slice D)
+- #604          [gha-spend] Install nektos/act for local workflow mirror (Slice E my part)
+
+### Thread 3 — 2026-05-24 owner picks executed (7 entries, qiyas + bikar)
+
+#525 Phase 1 D4 schema cutover — single-cutover migration with baseline
+regen (no compat shims per cross-repo no-backcompat tenet). #138 Slice 2
+rendered medallion-10 iter-18 with visual confirm of design-drift hypothesis
+from the 2026-05-22 re-scope decision doc. #597 evalMirror fix gated on
+#607's derived-shape naming-conventions plan (mirror/rotate/transform
+composition) so the producer-side fix could land coherently with future
+rotate/transform work. #598 closed the bikar mental-model doc gap by
+authoring the end-to-end cross-repo flow doc. hier-diff PRs 2 and 3
+landed sector-aware mode for rotationally symmetric patterns and wired
+warnings into the score rollup.
+
+- #597 [bikar]  evalMirror: reflected polygon body not emitted as second face
+- #598          mental-model: end-to-end cross-repo flow doc + close bikar mental-model gap
+- #605 [qiyas]  [#525] Phase 1 D4 schema cutover — single-cutover, regen baselines
+- #606 [qiyas]  [#138 Slice 2 / #516] Render medallion-10 iter-18 + visual confirm
+- #607 [bikar]  [#597 prereq] Derived-shape naming-conventions plan (mirror/rotate/transform composition)
+- #608 [qiyas]  hier-diff PR2: sector-aware mode for rotationally symmetric patterns
+- #609 [qiyas]  hier-diff PR3: wire warnings into score rollup
+
+### Thread 4 — Older standing closeouts (2 entries)
+
+- #77  [qiyas]  [V2.E] Auto-capture on GO — populate fixture corpus from converged sessions
+- #112 [qiyas] Implement hierarchical pixel-diff (per #111 plan) — quadtree + SSIM, 3 PRs
+
+---
+
 ## 2026-05-26 — V2 iteration-aware analysis cascade closeout (#74 V2.A + #75 V2.B) + #132 Tier 1 Ticks 43→61
 
 Batch archive of 31 completed tasks across two threads. Thread 1: qiyas#74 V2.A
