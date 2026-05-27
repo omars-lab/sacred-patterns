@@ -36,6 +36,9 @@ REFERENCE_TRACED=""
 BASELINE=""
 OUT=""
 SKIP_QIYAS=0
+AUTO_CAPTURE_ON_GO=0
+AUTO_CAPTURE_ROOT=""
+AUTO_CAPTURE_LABEL=""
 # B1 Option A (qiyas#398): render.svg-direct path. Default-on; encode reads
 # the bikar render.svg via qiyas's SVG fast-path instead of rasterize→trace.
 # --no-svg-direct restores the legacy raster path (escape hatch for fast-path
@@ -95,6 +98,18 @@ Optional:
                              round-trip when the recon SVG is bikar's render.svg)
   --no-svg-direct            Force the legacy raster encode path (escape hatch
                              for fast-path regressions; remove once #399 lands)
+  --auto-capture-on-go       After rollup, if validation.json overall.go_no_go
+                             is GO, run 'qiyas fixtures capture' against the
+                             recon SVG so converged sessions land in the qiyas
+                             edge-case corpus automatically. Off by default.
+                             V2.E (qiyas#77).
+  --auto-capture-root DIR    Override the qiyas-checkout corpus root that
+                             --auto-capture-on-go targets. Defaults to
+                             \$QIYAS_CORPUS_ROOT or skips capture if neither
+                             is set.
+  --auto-capture-label SLUG  Override the fixture slug. Defaults to a slug
+                             derived from the iteration directory name
+                             (parent-of-validate-out plus -iterNN).
   -h, --help                 Show this help
 EOF
 }
@@ -109,6 +124,9 @@ while [[ $# -gt 0 ]]; do
         --skip-qiyas) SKIP_QIYAS=1; shift ;;
         --svg-direct) SVG_DIRECT=1; shift ;;
         --no-svg-direct) SVG_DIRECT=0; shift ;;
+        --auto-capture-on-go) AUTO_CAPTURE_ON_GO=1; shift ;;
+        --auto-capture-root) AUTO_CAPTURE_ROOT="$2"; shift 2 ;;
+        --auto-capture-label) AUTO_CAPTURE_LABEL="$2"; shift 2 ;;
         -h|--help) usage; exit 0 ;;
         *) echo "Unknown argument: $1" >&2; usage; exit 2 ;;
     esac
@@ -315,6 +333,58 @@ if [[ $SKIP_QIYAS -eq 0 ]]; then
     fi
 else
     echo -e "${YELLOW}qiyas iter analyze — skipped (--skip-qiyas)${NC}"
+fi
+
+# ============================================================
+# Auto-capture on GO (V2.E — qiyas#77)
+# ============================================================
+# When --auto-capture-on-go is set AND validation.json overall.go_no_go == GO,
+# run `qiyas fixtures capture` against the recon SVG with --root pointing at
+# an external qiyas checkout's edge-case corpus. The recon SVG (not the
+# reference) is the fixture input so the corpus accumulates *what we actually
+# converged on*, not what we were targeting.
+if [[ $AUTO_CAPTURE_ON_GO -eq 1 && $SKIP_QIYAS -eq 0 ]]; then
+    CAPTURE_ROOT="${AUTO_CAPTURE_ROOT:-${QIYAS_CORPUS_ROOT:-}}"
+    if [[ -z "$CAPTURE_ROOT" ]]; then
+        echo -e "${YELLOW}--auto-capture-on-go set but no --auto-capture-root or \$QIYAS_CORPUS_ROOT — skipping${NC}"
+    elif [[ ! -d "$CAPTURE_ROOT" ]]; then
+        echo -e "${YELLOW}--auto-capture-root $CAPTURE_ROOT does not exist — skipping${NC}"
+    else
+        GO_NO_GO="$(python3 -c "import json,sys; print(json.load(open('$OUT/validation.json'))['overall']['go_no_go'])" 2>/dev/null || echo "UNKNOWN")"
+        if [[ "$GO_NO_GO" == "GO" ]]; then
+            # Derive slug: <session-dir>-iter<NN> from iterations/<NN>/validation/.
+            ITER_DIR="$(cd "$OUT/.." && pwd)"
+            ITER_NUM="$(basename "$ITER_DIR")"
+            SESSION_DIR="$(cd "$ITER_DIR/../.." && pwd)"
+            SESSION_NAME="$(basename "$SESSION_DIR")"
+            DEFAULT_SLUG="${SESSION_NAME}-iter${ITER_NUM}"
+            SLUG="${AUTO_CAPTURE_LABEL:-$DEFAULT_SLUG}"
+            # Normalize slug to fixtures-command grammar: lowercase alnum + hyphens.
+            SLUG="$(echo "$SLUG" | tr '[:upper:]_' '[:lower:]-' | tr -cd '[:alnum:]-')"
+
+            CAPTURE_ROOT_ABS="$(cd "$CAPTURE_ROOT" && pwd)"
+            SVG_ABS="$(cd "$(dirname "$SVG")" && pwd)/$(basename "$SVG")"
+            echo -e "${CYAN}Auto-capturing GO iteration to qiyas corpus...${NC}"
+            echo "  slug: $SLUG"
+            echo "  root: $CAPTURE_ROOT_ABS"
+            CAPTURE_LOG="$OUT/auto-capture.log"
+            if docker run --rm \
+                    -v "$CAPTURE_ROOT_ABS:/corpus" \
+                    -v "$(dirname "$SVG_ABS"):/recon" \
+                    "$QIYAS_IMAGE" \
+                    fixtures capture "/recon/$(basename "$SVG_ABS")" \
+                        --label "$SLUG" \
+                        --reason "auto-captured at GO (sacred-patterns iteration-validate.sh --auto-capture-on-go)" \
+                        --root /corpus \
+                    >"$CAPTURE_LOG" 2>&1; then
+                echo -e "${GREEN}  captured: $CAPTURE_ROOT_ABS/$SLUG/${NC}"
+            else
+                echo -e "${YELLOW}  capture exited non-zero — see $CAPTURE_LOG${NC}"
+            fi
+        else
+            echo "  --auto-capture-on-go: overall.go_no_go=$GO_NO_GO (not GO) — skipping capture"
+        fi
+    fi
 fi
 
 echo ""
