@@ -50,6 +50,33 @@ the oracle.
 - The medallion-10 ceiling (sacred-patterns #85) or any "this pattern
   won't converge under the current construction philosophy" situation.
 
+## Routing — which fix is this? (read FIRST)
+
+Before you change anything, route the friction. There are **five**
+destinations, and they are cheap-to-expensive top to bottom — check them
+**in order** and take the first that fits. The expensive mistake is
+skipping straight to "build a new primitive" or "different philosophy"
+when the capability already exists and just isn't being invoked.
+
+| # | The friction looks like… | Destination | Why this and not the next one down |
+|---|---|---|---|
+| **1** | The capability **already exists** but isn't wired in — a DSL statement that's authored but never invoked, a kernel function that's tested but never called from the renderer, a `data-*` attribute the evaluator computes but the renderer drops. | **Emit / invocation fix** — grep the renderer / evaluator / barrel for the symbol; the gap is one call site. Stay in this skill (it's a `.bkr` or wiring edit). | This is the **cheapest** fix and the **most common** one missed. iter-34's A5 0→100 was exactly this: `computeStrapwork` existed, the `strapwork` DSL statement existed, the decoration segments were emitted — the only missing piece was a `strapwork …` line invoking the weave. No new geometry, no new statement. See memory `feedback_check_emit_layer_before_option` + `feedback_girih_strapwork_is_render_style_not_geometry`. |
+| **2** | Same construction **philosophy**, you just need different `.bkr` geometry — a different overlay star order, re-authored faces, a new `classify` rule, a symmetry-order change. | **This skill** (`iterate-construction-hypothesis`) — hypothesize → author → render → verify → measure. | The DSL/kernel can already express what you want; you're searching the *construction space*, not extending the *language*. |
+| **3** | You need a **new DSL statement** — new syntax / keyword / AST node, because the construction can't be *spelled* in the current grammar (e.g. a `strapwork` statement before it existed). | **bikar `dsl-design`** then **`engine-extension`** (parser→AST→evaluator path). File it as a bikar feature task. | The missing piece is *surface syntax*, not a geometry algorithm. The kernel may already have the math; you're exposing it to the language. |
+| **4** | You need a **new kernel algorithm** — a geometry primitive that doesn't exist at all (the substitution-rule field generator, a new intersection routine, `computeStrapwork` before it existed). | **bikar `engine-extension`** (kernel path) — build it in `packages/core/src/kernel/` with its own Tier-0 test per bikar Tenet 17. | The missing piece is *computation*, not syntax. Often paired with #3 (new algorithm + new statement to invoke it), but the algorithm is its own task with its own atomic witness. |
+| **5** | The construction **philosophy itself is wrong** — falsifications cluster into "this whole approach can't produce the baseline's vocabulary" (the medallion-10 wedge-and-rotate → girih finding). | **`present-options`** — author a decision doc; this is a philosophy pivot, not an iteration. | A different philosophy is a *scoped feature build behind a decision*, not a loop iteration. Grinding iterations against a philosophy ceiling is the Tenet-7 trap loop-detection rule #2 catches. |
+
+**Stop rule before extending anything (#3/#4):** confirm you ruled out #1.
+Grep for the symbol you think is missing — `computeStrapwork`,
+`girihField`, the `data-` attribute, the DSL keyword. The 2026-05-28
+iter-34 lesson is that the cheapest fix (invocation) masquerades as the
+expensive one (new geometry) until you check the emit layer. **Companion
+to bikar Tenet 26** (extend the DSL when the construction fights the
+language) — Tenet 26 governs the #2-vs-#3/#4 fork (don't hand-author
+around a missing primitive); this table adds the #1 fork above it (don't
+*build* a primitive that already exists, just invoke it) and the #5 fork
+below it (don't iterate against a philosophy ceiling).
+
 ## The hard line — construction vs detector
 
 | You may change (construction side) | You may NOT change (detector side) |
