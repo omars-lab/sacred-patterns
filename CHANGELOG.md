@@ -17,6 +17,89 @@ cross-repo orchestration owned by sacred-patterns.
 
 ---
 
+## 2026-05-28 — medallion-10 girih substitution cascade (iter-31→34, A5 0→100)
+
+The medallion-10 wedge-and-rotate construction hit a ceiling: the 10-fold
+girih field couldn't be hand-authored without gap-ridden micro-misalignment,
+and the A6 missing-shape audit kept failing because the construction couldn't
+produce the baseline's girih vocabulary. This cascade replaced the hand-author
+approach with a geometry-derived decagonal girih field, then discovered the A5
+band-crossing-integrity fix was an **invocation gap** (Tenet 26 #1 fork): the
+`strapwork` weave primitive already existed in the kernel — A5 flipped 0→100
+by rendering the decoration lines as woven bands instead of filled faces, no
+new geometry. The girih substitution-rule-engine option (C′) was falsified at
+the data-availability premise (the Lu-Steinhardt decagon rule is figure-only,
+untranscribable) and pivoted to C″ (discover the arrangement from geometry, no
+lookup table). Acceptance bar settled as A4+A2 interim (A6 baseline mismatch is
+a construction-philosophy gap, not a fixable verdict — see memory). Decision
+doc + plan: `bikar/.claude/plans/girih-substitution-rule-engine.md`.
+
+- #646 [bikar]  [#85 iter-31] Girih central decagon tile — Tier-0 construction probe — SHIPPED
+- #647 [bikar]  [#85 iter-32] Girih decagonal rosette — central decagon + 10-bowtie ring — SHIPPED
+- #648 [bikar]  [medallion-10 girih-ceiling] Add girih field-generator to kernel (Lu-Steinhardt inflation) — superseded by C″ frontier-expansion
+- #649 [bikar]  Slice 0 — Tenet 26 + decision-doc Option C′ — C′ falsified at data-availability premise, pivoted to C″
+- #650 [bikar]  Slice 1 — Decagonal girih field via frontier expansion (C″) — SHIPPED
+- #651 [bikar]  Slice 2 — girih field decagonal DSL sugar — SHIPPED
+- #652 [bikar]  Slice 3 — medallion-10 iter-33 + A6/A5 measurement — measured, surfaced A5 invocation gap
+- #653 [bikar]  Slice 4 — pocket-filling + strapwork overlay — A5 0→100 via `strapwork` invocation (Tenet 26 #1 fork)
+- #654 [bikar]  Close (1) — re-derive A6 baseline from girih-vocabulary reference — A6 6/10→6/6 after vtx=0 catch-all strip
+- #655 [bikar]  Close (2) — adopt A4+A2 as interim medallion-10 acceptance bar — ACCEPTED
+
+Witnesses + memory filed with the fix (Tenet 18):
+- `feedback_girih_strapwork_is_render_style_not_geometry` — A5 flips via render-style, not geometry
+- `feedback_transcription_option_data_availability` — verify transcription data obtainable before costing the option
+- `feedback_qiyas_baseline_emit_vtx0_catchall_drift` — strip vtx=0 catch-alls before A6 audit
+- `feedback_a6_baseline_construction_philosophy_mismatch` — stop iterating an A6 verdict the philosophy can't produce
+
+## 2026-05-28 — #132 Tier 1 Ticks 76→93 polygon-corner-leakage sweep + Phase 3/4 root-cause + closeout
+
+Continuation of the #132 Tier 1 corpus sweep. Ticks 76→93 mapped a non-
+monotonic absorb/escape/leak matrix across polygon symmetry × DCEL vertex
+degree × tangent coincidence, chasing a "polygon-corner tag leakage" symptom
+through a parity hypothesis that was REFUTED at D_8 (Tick 91: octagon clean-
+escapes despite the predicted leak). Phase 3 then found the **root cause** at
+the bikar gt-emitter: the face-walker emits a ~0.02 px² 4-vertex all-arc lasso
+sliver at lens-anchored polygon-corner vertices; a Polsby-Popper compactness
+gate at the gt-emitter (n≥3, lens exempt) dissolves all of them — the eight
+prior symptom-probe memories collapse to one root-cause entry. Phase 4
+regenerated the i1 baselines against the fixed bikar (61c207b) and re-measured
+the closeout gates; acceptance.yaml expected_constructions bumped 12→108. Two
+cross-repo process tenets landed alongside: no construction ships without
+review-portal visual verification, and the iteration skill must hypothesize
+construction-DSL variants (not threshold tweaks).
+
+- #620 [qiyas]  [#132 Tick 76] D_4 cross-polygon shared-C0 — polyclass trap fires universally
+- #621 [qiyas]  [#132 Tick 77] Homogeneous-radius degree-4 tangent contamination
+- #622 [qiyas]  [#132 Tick 78] Dormant strays at unenrolled circle-crossings stay dormant — PASS
+- #623 [qiyas]  [#132 Tick 79] Asymmetric + co-tangent decoupling — radius decoupled from tangent
+- #624 [qiyas]  [#132 Tick 80] Degree-6 + co-tangent compound over-emission — closed degree×tangent matrix
+- #625 [qiyas]  [#132 Tick 81] Polygon-anchored escape sweep
+- #626 [qiyas]  [#132 Tick 82] Boundary collapse probe
+- #627 [qiyas]  [#132 Tick 83] Universal-leakage finding (later superseded)
+- #628 [qiyas]  [#132 Tick 84] Closed polygon-anchored matrix
+- #629 [qiyas]  [#132 Tick 85] Falsified polygon-class-independence
+- #630 [qiyas]  [#132 Tick 86] Refuted interior-angle monotonicity
+- #631 [qiyas]  [#132 Tick 87] NOVEL HYBRID — octagon partial escape
+- #632 [qiyas]  [#132 Tick 88] Falsified universal-leakage
+- #633 [qiyas]  [#132 Tick 89] Heptagon D_7 deg-4 — even-vs-odd parity discriminator
+- #634 [qiyas]  [#132 Tick 90] Triangle D_3 deg-4 — small-D parity, CLEAN as predicted
+- #635 [qiyas]  [#132 Tick 91] Octagon D_8 deg-4 — parity rule REFUTED (clean escape, predicted leak)
+- #636 [qiyas]  [#132 Tick 92] D_4 + CL_a shift — H1/H2/H3 parity-replacement search
+- #637 [qiyas]  [#132 Tick 93] Scalene quad non-canonical tangent — H1 discriminator probe
+- #638 [bikar]  [#132 Phase 3] Bikar source audit — tangent-sort tie-break root cause + PP sliver gate
+- #639 [qiyas]  [#132 Phase 4] Regenerate i1 corpus baselines against bikar 61c207b
+- #640 [bikar]  [#85 probe] Re-validate medallion-10 iter-30 against bikar 61c207b sliver-fix
+- #641 [qiyas]  [#129 PR3 follow-up] Measure post-Phase-4 i1 closeout gates G1-G4 on regen baselines
+- #642 [qiyas]  [#641 follow-up] Bump i1 acceptance.yaml expected_constructions 12 → 108
+- #643 [qiyas]  [#129 PR3 follow-up] Fix spurious G3 HOLDs from visibility-filter scope mismatch
+- #644          Cross-repo tenet: no construction ships without review-portal visual verification
+- #645 [sp]     Extend iteration skill to hypothesize/attempt construction-DSL variants (not threshold tweaks)
+
+Witnesses + memory filed with the fix (Tenet 18):
+- `feedback_bikar_gt_emitter_sliver_filter_dissolves_polygon_corner_leakage` — RESOLVED root-cause entry (supersedes 8 symptom probes)
+- `feedback_bikar_polygon_corner_leakage_deg4_non_monotonic` — parity rule refuted at D_8
+- `feedback_pattern_extrapolation_at_n5_breaks_at_n6` — meta-lesson: pre-compute the discriminator on the next out-of-class witness before strengthening a rule
+
 ## 2026-05-27 — #132 Tier 1 Ticks 63→75 + GHA-spend structural cascade + owner-pick execution batch
 
 Batch archive of 22 completed tasks across four threads. Thread 1: qiyas#132
