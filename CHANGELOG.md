@@ -17,6 +17,28 @@ cross-repo orchestration owned by sacred-patterns.
 
 ---
 
+## 2026-05-28 — full-suite foundation re-verification (#658)
+
+The I1 detector metric (macro_ari_fused_vs_b=1.000) is a lossy projection
+that masked three failures only the **full** qiyas pytest suite caught
+(surfaced once the local cairo env gap was closed). Adjudicated per failure
+(real-regression vs stale-baseline), not blanket re-frozen (Tenet 7):
+
+- **Real code defect (fixed):** `svg_audit/_vocab.py::vertex_count_from_params`
+  still read the obsolete nested `params.points` / `params.sides`. The
+  qiyas#362/#536 ShapeUnion migration flattened those onto the shape dict
+  (`StarPolygonShape.points`, `RegularPolygonShape.sides`), so every
+  parametric shape resolved to vertex_count=None — collapsing all stars/
+  polygons into the A6 vc=None bucket and breaking the emit→audit
+  round-trip (`test_baseline_emit`). Fix reads top-level fields with a
+  `params` legacy fallback; witness frozen in `tests/test_vocab_vertex_count.py`.
+- **Stale baselines (re-frozen w/ provenance):** `test_iter14_detector_baseline_histogram`
+  dropped `('regular_polygon',20):9` and `test_star7_red_shape_metadata`
+  corpus audit grew 20→110 entries + iter14 (275→266). Both trace to the
+  accepted #132 gt-emitter Polsby-Popper sliver filter (bikar 61c207b)
+  dropping 9 degenerate ~0-area 20-sided lasso faces, plus the #132 Tick
+  witness fixtures entering the corpus. No detector regression.
+
 ## 2026-05-28 — medallion-10 girih substitution cascade (iter-31→34, A5 0→100)
 
 The medallion-10 wedge-and-rotate construction hit a ceiling: the 10-fold
