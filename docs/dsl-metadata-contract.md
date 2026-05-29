@@ -1,7 +1,7 @@
 # DSL Metadata Contract
 
-**Version:** v1.1 (v1 ACCEPTED + Slice 1a/1b ACCEPTED + `data-partial` / `data-clipped-boundary` ACCEPTED for #106 Option I)
-**Status:** ACCEPTED 2026-05-20 → v1.1 amendment 2026-05-25 (#106 partial-shape provenance, bikar commit 8c17615)
+**Version:** v1.2 (v1 ACCEPTED + Slice 1a/1b ACCEPTED + `data-partial` / `data-clipped-boundary` ACCEPTED for #106 Option I + `data-shape-id` PROPOSED for #663 F2 oracle)
+**Status:** ACCEPTED 2026-05-20 → v1.1 amendment 2026-05-25 (#106 partial-shape provenance, bikar commit 8c17615) → v1.2 amendment 2026-05-29 (#663 `data-shape-id` PROPOSED — F2 retrieval oracle, qiyas#661 Option C step 1)
 **Owner:** sacred-patterns (canonical); mirrors live in bikar + qiyas
 **Tenet:** sacred-patterns CLAUDE.md Tenet 23 — DSL-as-source-of-truth.
 
@@ -57,6 +57,21 @@ The Tier 0/1 composition fixture for cascade #106 (bikar 606bc7c) confirmed that
 |---|---|---|---|
 | `data-partial` | **ACCEPTED 2026-05-25** (bikar commit 8c17615). DSL `clip pattern to <boundary>` evaluator stamps `partial: true` on faces whose original geometry straddled the boundary (the kept inside portion); renderer reads `face.partial` in `buildFaceDataAttrs`. Emit site: `packages/core/src/render/svg-renderer.ts:249-252`. Value: literal string `"true"` when present; attribute omitted entirely when false. | (pending qiyas-side wiring) `Contour.partial: bool \| None` for the CLIPPED-MISSING detector to consult instead of inferring partialness from boundary-distance heuristics. | qiyas detector falls back to current path (treat all faces as fully-inside; partial-shape gap accepted as ceiling). |
 | `data-clipped-boundary` | **ACCEPTED 2026-05-25** (bikar commit 8c17615). DSL `clip pattern to <boundary>` evaluator stamps `clippedAtBoundary: <boundary-name>` on the same partial faces; renderer reads `face.clippedAtBoundary` in `buildFaceDataAttrs`. Emit site: `packages/core/src/render/svg-renderer.ts:249-252`. Value: the literal DSL boundary identifier (e.g., `outline`, `outer_b`). | (pending qiyas-side wiring) `Contour.clipped_at_boundary: str \| None`. Matcher can use the boundary name to group co-clipped partials when scoring composite identity. | None — qiyas cannot recover which boundary clipped a face from raster alone; absence means "no provenance signal." |
+
+## Attributes — v1.2 PROPOSED (`data-shape-id` — F2 retrieval oracle, qiyas#661 Option C)
+
+**Why this row exists:** qiyas's F2 cross-construction signature (spec #144) needs an *answer key* — a label saying "this shape in pattern A is the same kind as that shape in pattern B." The first F2 retrieval run (qiyas commit 7323223) scored mAP=0.61 against `data-face-class`, and the falsification (`qiyas/docs/decisions/2026-05-29-f2-face-class-is-wrong-retrieval-label.md`) proved the cause: `face_class` is a *fill/role* label (`.royal` spans 4/8/12/20-sided shapes), not a shape-identity label. The owner picked Option C: bikar emits an **authoritative shape-identity** the F2 harness labels by — an independent authored oracle, not a label derived from the descriptor under test.
+
+**What bikar actually knows (investigation, 2026-05-29, qiyas#663):** bikar has **no** generic `square`/`pentagon`/`regular_polygon N` named-shape statement that stamps a shape-kind onto faces (verified: `packages/core/src/dsl/ast.ts` has `PolygonNode` (ordered point list) + `GirihNode` (tileType) + `FaceStatementNode`, none carrying a shape-kind name). The author-chosen identity bikar *does* know flows today into the face's source tags (`face.sources`) and out to qiyas's `source_primitives`:
+- `polygon <id> points(...)` → the author's `<id>` appears as a source tag (e.g. `hexagon_poly`, `octagon_poly` — verified in i1-corpus gt.json `source_primitives`).
+- `girih <tileType> ...` → `decagon`/`pentagon`/`hexagon`/`rhombus`/`bowtie`.
+- arc primitives → `lens` / `circle` (the detector's geometric `type`, which already scores mAP=1.0 as a coarse label per the falsification doc).
+
+So `data-shape-id`'s value is the **author-chosen geometry-source identifier**, deliberately distinct from `data-face-class` (the fill/role label) and finer than the detector's coarse `type`.
+
+| Attribute | Producer (DSL → emit) | Consumer (qiyas) | Fallback when absent |
+|---|---|---|---|
+| `data-shape-id` | **PROPOSED 2026-05-29** (qiyas#663; emit lands in #664). The author-chosen shape-identity of the face's *dominant geometry source*: the `polygon <id>` identifier for polygon faces, the `girih` `tileType` for girih-tile faces, or `lens`/`circle` for single-arc-primitive faces. Value grammar: a bare DSL identifier string (e.g. `hexagon_poly`, `decagon`, `lens`). Emit site (planned): `packages/core/src/render/svg-renderer.ts` `buildFaceDataAttrs`, reading the dominant non-class, non-`layer:`, non-`boundary:` source tag from `face.sources`. **Authorability constraint (the documented gap):** when a face carries *multiple* distinct polygon-source tags (absorbed / mixed faces — `type:unknown` in gt.json, e.g. the #132 shared-edge constructions where the face-walker merged two polygons), there is **no single authoritative shape** — the attribute is **omitted** for those faces, not guessed. This is the precise condition under which the F2 cascade's documented **Option-B fallback** (signature-derived label) carries those faces instead. | (planned, #665) `evidence.shape_id: str \| None` in the qiyas gt-emitter → F2 `F2Shape.shape_id` (#666); `build_query_cases` default label becomes `lambda s: s.shape_id`. | F2 falls back to the signature-derived label (Option B) for faces with no `shape_id`; the photo/I2 cascade (no authoring producer) always uses the derived label. |
 
 ## Attributes — v2+ candidates (not yet proposed)
 
