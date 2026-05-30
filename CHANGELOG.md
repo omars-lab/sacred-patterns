@@ -17,6 +17,82 @@ cross-repo orchestration owned by sacred-patterns.
 
 ---
 
+## 2026-05-29 — pre-existing meta-tasks archival (#80/#85/#100/#129/#132)
+
+Long-lived umbrella tasks that drove multi-cascade work; the underlying
+work was shipped piecewise under their own cascade entries above. Archiving
+the umbrellas now that all sub-work has cleared.
+
+- #80  [qiyas] [catch22-driver] Restart bikar-medallion-10 iteration under qiyas-orchestrator era — closed; medallion-10 hit A4+A2 interim acceptance bar (see 2026-05-28 girih cascade)
+- #85  [bikar] [TOP-PRIORITY] Drive bikar-medallion-10 to convergence (wedge-and-rotate from iter 13) — closed at iter-34 A4+A2 (girih substitution cascade outcome)
+- #100 [qiyas] Push qiyas v0.1.1 to ghcr.io — shipped (ghcr publish)
+- #129 [qiyas] [TOP-PRIORITY] Detector calibration via construction ground-truth (3-repo cascade) — shipped (I1 cascade)
+- #132 [qiyas] [#129 PR3] Calibration corpus of construction-grounded test cases — shipped (corpus + Ticks 1-93 sweep, see 2026-05-28 #132 entry below)
+
+## 2026-05-29 — F2 cross-construction validation cascade (#661 Option C falsified → owner-handback)
+
+The F2 cross-construction signature cascade (qiyas#302 ACCEPTED Option B) tried to
+gate retrieval on bikar's authoritative DSL `data-shape-id` (Option C in
+`qiyas/docs/decisions/2026-05-29-f2-face-class-is-wrong-retrieval-label.md`).
+Steps 1-4 shipped clean (data-shape-id contract, emitter, gt-evidence threading,
+F2 relabel), but Step 5 falsified at the producer-discipline premise: real .bkr
+templates reuse author-chosen names like `scalene_tri_poly` across geometrically
+distinct triangles. Retrieval scored under shape_id gave mAP=0.296 — WORSE than
+the face_class baseline (0.607) and far worse than the detector's geom_label
+(0.892). Handle-falsification protocol executed: decision doc REOPENED, witness
+test in place (`tests/test_identity_f2_eer.py`), Option E drafted (gate on
+geom_label, EER=0.035, zero new code), Option F (escalate-to-owner) selected as
+recommendation per Tenet 19 stop-rule c. Cross-repo memory entry filed.
+
+- #660 [qiyas]   Accept #302 decision doc — F2 validation Option B (separate cascade, retrieval+EER)
+- #661 [qiyas]   F2 cross-construction validation cascade umbrella — falsified at Step 5, handed back to owner via #669
+- #663 [bikar]   [#661 Option C step 1] data-shape-id contract amendment — SHIPPED
+- #664 [bikar]   [#661 Option C step 2] svg-renderer emits data-shape-id + Tier-0 witness — SHIPPED
+- #665 [qiyas]   [#661 Option C step 3] gt-emitter carries data-shape-id into evidence.shape_id — SHIPPED
+- #666 [qiyas]   [#661 Option C step 4] F2 relabel to shape_id + 3rd report column — SHIPPED (then falsified)
+
+Witnesses + memory filed with the falsification (Tenet 18, handle-falsification):
+- `tests/test_identity_f2_eer.py` — falsifying witness frozen as regression test
+- `feedback_synthetic_test_cant_validate_unenforced_producer_discipline` — Tier-0 hand-assignment can't validate unenforced producer discipline; re-score on real corpus before picking a producer-authored gate oracle
+
+## 2026-05-28 — feedback-classes A/B1/B2 round-trip cascade (#670/#315/#316)
+
+Three-slice cascade wiring reviewer verdicts from the closeout dashboard back
+into validate-detector reports and forward into the next iteration's tooltips.
+Closes the round-trip from "reviewer flags wrong_class in pane" → JSONL → next
+report's `per_shape_labels.user_verdict` → next dashboard's SVG `<title>` +
+shape_index. The verdict enum is closed-set + pydantic-enforced so widening
+requires coordinated producer+consumer change.
+
+- #670 [qiyas] [feedback-classes A] Structured verdict field in closeout-dashboard feedback pane — SHIPPED
+- #315 [qiyas] [feedback-classes B1] qiyas validate-detector --apply-feedback FEEDBACK.jsonl — SHIPPED
+- #316 [qiyas] [feedback-classes B2] Surface user_verdict in closeout dashboard tooltip + shape_index — SHIPPED
+
+## 2026-05-28 — post-I1 cascade roadmap + I1 ratchet hygiene (#656/#662)
+
+I1 acceptance shipped; closing out post-I1 routing. #656 fixed the ratchet
+to walk the construction tree directly instead of trusting the cached
+corpus.json index (which silently masked newly-added witnesses). #662 authored
+the post-I1 cascade roadmap with dependencies (closes the #304 deferred slot
+with a real plan instead of an aspirational task).
+
+- #656 [qiyas] I1 ratchet hygiene — discover_constructions walks tree, ignores corpus.json index
+- #662 [qiyas] Author post-I1 cascade roadmap plan with dependencies (closes #304)
+
+## 2026-05-28 — F3 corpus-wide coverage gate authorable subset (#301)
+
+F3 gates G5 (corpus coverage) authored and shipped against the I1 corpus.
+G6/M3 (per-shape verdict-vs-truth) deferred to #668 (trigger-gated on closeout
+integration) because the truth oracle doesn't exist in the record the gate
+would read; ship the authorable subset, don't invent the oracle.
+
+- #301 [qiyas] F3 gates — corpus-wide F3 coverage test (G5 subset; G6/M3 deferred to #668)
+
+## 2026-05-28 — I1 corpus expansion + bikar starter-pattern regression (#299/#659)
+
+- #299 [qiyas] I1 corpus expansion — asymmetric witnesses expected to fail (paired-witness pattern per Tenet 8)
+- #659 [bikar] [roadmap L81] Starter-pattern compile regression test + remove stray empty iter-1.bkr
+
 ## 2026-05-28 — full-suite foundation re-verification (#658)
 
 The I1 detector metric (macro_ari_fused_vs_b=1.000) is a lossy projection
@@ -116,6 +192,7 @@ construction-DSL variants (not threshold tweaks).
 - #643 [qiyas]  [#129 PR3 follow-up] Fix spurious G3 HOLDs from visibility-filter scope mismatch
 - #644          Cross-repo tenet: no construction ships without review-portal visual verification
 - #645 [sp]     Extend iteration skill to hypothesize/attempt construction-DSL variants (not threshold tweaks)
+- #657 [qiyas]  Reconcile #132 polygon-corner-leakage cascade closure post-sliver-filter — closeout verified
 
 Witnesses + memory filed with the fix (Tenet 18):
 - `feedback_bikar_gt_emitter_sliver_filter_dissolves_polygon_corner_leakage` — RESOLVED root-cause entry (supersedes 8 symptom probes)
