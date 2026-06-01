@@ -145,6 +145,18 @@ D3 and Lodash are webpack **externals** (loaded via `<script>` tags, not bundled
 - **Cross-repo task linkage** — When a sacred-patterns task blocks or is blocked by work in qiyas or bikar, mention it in the task description as `qiyas#NN` or `bikar#NN` (grep-able). Active cross-repo dependencies live in `docs/cross-repo-dependencies.md` (mirror of the same file in qiyas and bikar). Prune resolved rows once both sides ship.
 - **Task hygiene — archive then delete completed tasks** — The task list is for **in-flight** work. Completed tasks consume context on every load and obscure what's actually unblocked. **Policy:** when ≥20 completed tasks have accumulated OR a cascade closes, batch-archive them to the cross-repo `CHANGELOG.md` (root of sacred-patterns; mirrors in qiyas and bikar) and delete them via `TaskUpdate status: "deleted"`. **Audit before deleting:** confirm no open task lists a completed task in its `blockedBy` — if so, the open task is stale (update its description to reference the CHANGELOG entry, then drop the blocker). The CHANGELOG is a **durable index into decision docs, plans, and commits per Tenet 6** — entries name the outcome and cross-reference the doc/commit that holds the *why*; never inline the rationale. Format: `#NN [repo-prefix] subject — one-line outcome`; group by cascade, not chronology. Skip archival for trivially-scoped tasks that left no decision-doc footprint (just delete) and for tasks whose completion is captured by a single commit message (commit hash is enough).
 
+- **Session / loop entries follow a fixed Done/Left/Next/Held structure — and every loop prompt is self-contained.** Two coupled rules so any session (an autonomous `/loop` tick or a cold start after `/clear`) can reconstruct state from disk, since the task list does NOT survive `/clear`.
+
+  **(a) Every living-doc session entry** — each `/loop` tick that appends to a living routing/status doc (e.g. `qiyas/.claude/plans/post-i1-task-routing.md`) writes the **same four fields in the same order**, so a cold reader parses "where do we stand" in seconds rather than re-reading a variable-length prose blob:
+  - **Done** — what shipped/closed *this tick* (commit hash or task #, one line).
+  - **Left** — what's still open in this workstream (one line; "nothing" is a valid answer).
+  - **Next** — the single next action, named concretely (a task #, a decision-doc pick, or "idle — trigger X hasn't fired").
+  - **Held** — held-commit counts per repo (`bikar N / qiyas N / sacred-patterns N`); per the GHA-budget memory, held should normally be 0 — a non-zero hold needs a reason on this line.
+
+  Keep each field to one or two lines. The deep narrative (hypotheses, falsification logs, witness traces) goes *below* the four-field header or in the decision doc — never inside the Done/Left/Next/Held block. This is the entry shape the routing plan's best ticks already use; the rule makes it mandatory and uniform.
+
+  **(b) Every `/loop` prompt is self-contained** — a loop prompt MUST name the on-disk references a cold session needs, never assume session memory. At minimum: point at `MEMORY.md` (auto-loaded), the relevant living routing/status doc, and the one currently-actionable gate (decision doc + its recommended pick). A bare `/loop until we address all our issues` is NOT self-contained — "our issues" is wiped at `/clear`. *Failure mode this prevents:* a cold session reading only the loop prompt, with no task list, having no idea what the issues are or where to look — it must be able to follow the prompt's named paths to rebuild the board.
+
 ## Construction Learnings
 
 General construction knowledge lives in `.claude/skills/generate-drawing/learnings/` (git-tracked). This includes:
