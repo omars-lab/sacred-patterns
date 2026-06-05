@@ -7,7 +7,7 @@ import * as d3 from 'd3'
 import {_map_even_odd} from "./helpers"
 // import {isEven} from "./helpers"
 import {appendText, appendPolygon, appendCircle, appendCircleWithMidpoint, d3SVG, d3CIRCLE, d3SvgElement} from "./canvas"
-import {IO} from "./types"
+import {BackgroundTheme, LineTheme} from "./theme"
 import {Decagon} from "./polygons"
 
 
@@ -66,12 +66,18 @@ export function appendLinearGradientDef(svgDefs: d3SvgElement<SVGDefsElement>, i
  * (radius × size) so a single drawing routine can render at any zoom
  * without code change; the gradient stops are baked in because every
  * drawing in this library shares the dark-cool palette.
+ *
+ * `mountSelector` answers "into which DOM container does this `<svg>`
+ * attach?" — it defaults to `"body"` so existing single-pattern callers
+ * and the regression harness are unchanged, but the gallery passes a
+ * per-card selector (e.g. `"#mount-d6"`) so each pattern lands in its own
+ * card instead of stacking on `<body>`.
  * See: https://www.freshconsulting.com/d3-js-gradients-the-easy-way/.
  */
-export function appendSVGToDOM(id: string, width:number, height:number): d3SVG {
+export function appendSVGToDOM(id: string, width:number, height:number, mountSelector = "body"): d3SVG {
     // https://www.freshconsulting.com/d3-js-gradients-the-easy-way/
-    
-    const svg = d3.select("body").append("svg")
+
+    const svg = d3.select(mountSelector).append("svg")
         .attr("width", width)
         .attr("height", height)
         .attr("title", id)
@@ -82,6 +88,21 @@ export function appendSVGToDOM(id: string, width:number, height:number): d3SVG {
     appendLinearGradientDef(defs, "invertedSvgGradient", `#${invertHex("28313B")}`, `#${invertHex("485461")}`);
     // appendLinearGradientDef(defs, "svgGradient", "#F2A65A", "#772F1A");
     return <d3SVG>(svg);
+}
+
+/**
+ * Apply a `BackgroundTheme` to a drawing's `<svg>` canvas — answers "how
+ * does every `draw*` entry point recolor its backdrop from a typed theme
+ * bag without each one re-implementing the `_.forOwn(...).style()` loop?".
+ * Extracted so the eight generators share one styling path (tenet 1 —
+ * keep each draw fn under the complexity gate, tenet 5 — one shape, not
+ * eight parallel copies). Each key is forwarded verbatim to D3's
+ * `.style()`, so `{ background: "RGBA(0,0,0,0.9)" }` sets the canvas fill.
+ */
+export function applyBackground(svg: d3SVG, background_theme: BackgroundTheme): void {
+    _.forOwn(background_theme, (v, k) => {
+        svg.style(k, v);
+    });
 }
 
 /**
@@ -184,18 +205,23 @@ export function nonagonsThatFormA6PointStarCenteredAt(centralHexagon:Hexagon): P
  * decagon side-by-side get its drawings?". One SVG per polygon (not one
  * SVG with multiple polygons) so each demo can be inspected, screenshot,
  * or styled independently from the DOM without coordinate offset math.
+ * Emits N svgs into `mountSelector`, each id-suffixed (`<id>-<sides>`) so
+ * they don't collide; returns the last so a caller can read one back.
+ * `lines_theme` styles the polylines; `background_theme` paints each svg.
  */
-export function drawDifferentPolygons(drawingId:string, radius:number, size:number) : IO {
-    let svg:d3SVG;
+export function drawDifferentPolygons(drawingId:string, radius:number, size:number, background_theme: BackgroundTheme = {background: "transparent"}, lines_theme: LineTheme = {}, mountSelector = "body") : d3SVG {
+    let svg:d3SVG | undefined;
     _.forOwn(
         PolygonWithSides,
         (cls, num_sides) => {
-            console.log(cls, num_sides);
-            svg = appendSVGToDOM(drawingId, radius * size, radius * size);
-            appendPolygon(svg, new cls(new Point(radius * size / 2, radius * size / 2), radius).lines);
-            // appendCircleWithMidpoint(svg, star.outerCircle);
+            svg = appendSVGToDOM(`${drawingId}-${num_sides}`, radius * size, radius * size, mountSelector);
+            applyBackground(svg, background_theme);
+            appendPolygon(svg, new cls(new Point(radius * size / 2, radius * size / 2), radius).lines, lines_theme);
         }
     )
+    // PolygonWithSides is non-empty, so the loop always assigns svg; the
+    // non-null assertion documents that invariant for the type checker.
+    return svg!;
 }
 
 /**
@@ -206,22 +232,26 @@ export function drawDifferentPolygons(drawingId:string, radius:number, size:numb
  * the star, the π/2-rotated counterpart, and the inscribing hexagon
  * so a reader can verify the three primitives line up at every grid
  * position — visual regression-test for the hex-neighbor math.
+ * `lines_theme` styles every polyline; `background_theme` paints the
+ * canvas; `mountSelector` targets the gallery card (defaults to body).
  */
-export function drawStarGrid(drawingId:string, radius:number, size:number) : IO {
+export function drawStarGrid(drawingId:string, radius:number, size:number, background_theme: BackgroundTheme = {background: "transparent"}, lines_theme: LineTheme = {}, mountSelector = "body") : d3SVG {
     const star = new Star(new Point(radius * size / 2, radius * size / 2), 6, radius);
-    const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
-    appendPolygon(svg, star.lines);
-    appendPolygon(svg, star.rotate(Math.PI/2).lines);
-    appendPolygon(svg, Hexagon.withinCircle(star.outerCircle).lines);
-    appendPolygon(svg, star.right().lines);
-    appendPolygon(svg, star.right().rotate(Math.PI/2).lines);
-    appendPolygon(svg, Hexagon.withinCircle(star.right().outerCircle).lines);
-    appendPolygon(svg, star.above().lines);
-    appendPolygon(svg, star.above().rotate(Math.PI/2).lines);
-    appendPolygon(svg, Hexagon.withinCircle(star.above().outerCircle).lines);
-    appendPolygon(svg, star.above().right().lines);
-    appendPolygon(svg, star.above().right().rotate(Math.PI/2).lines);
-    appendPolygon(svg, Hexagon.withinCircle(star.above().right().outerCircle).lines);
+    const svg = appendSVGToDOM(drawingId, radius * size, radius * size, mountSelector);
+    applyBackground(svg, background_theme);
+    appendPolygon(svg, star.lines, lines_theme);
+    appendPolygon(svg, star.rotate(Math.PI/2).lines, lines_theme);
+    appendPolygon(svg, Hexagon.withinCircle(star.outerCircle).lines, lines_theme);
+    appendPolygon(svg, star.right().lines, lines_theme);
+    appendPolygon(svg, star.right().rotate(Math.PI/2).lines, lines_theme);
+    appendPolygon(svg, Hexagon.withinCircle(star.right().outerCircle).lines, lines_theme);
+    appendPolygon(svg, star.above().lines, lines_theme);
+    appendPolygon(svg, star.above().rotate(Math.PI/2).lines, lines_theme);
+    appendPolygon(svg, Hexagon.withinCircle(star.above().outerCircle).lines, lines_theme);
+    appendPolygon(svg, star.above().right().lines, lines_theme);
+    appendPolygon(svg, star.above().right().rotate(Math.PI/2).lines, lines_theme);
+    appendPolygon(svg, Hexagon.withinCircle(star.above().right().outerCircle).lines, lines_theme);
+    return svg;
 }
 
 /**
@@ -232,18 +262,21 @@ export function drawStarGrid(drawingId:string, radius:number, size:number) : IO 
  * `appendCircleWithMidpoint` (not the plain `appendCircle`) because the
  * midpoint dots are the load-bearing signal in this view — they show
  * the rotation pivots and satellite anchors that the star geometry
- * derives from.
+ * derives from. `lines_theme` styles the star polyline (the construction
+ * circles keep their own metadata); `background_theme` paints the canvas.
  */
-export function drawRotatedStar(drawingId:string, radius:number, size:number): IO {
+export function drawRotatedStar(drawingId:string, radius:number, size:number, background_theme: BackgroundTheme = {background: "transparent"}, lines_theme: LineTheme = {}, mountSelector = "body"): d3SVG {
     const star = new Star(new Point(radius * size / 2, radius * size / 2), 6, radius);
-    const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
-    appendPolygon(svg, star.rotate(Math.PI/4).lines);
+    const svg = appendSVGToDOM(drawingId, radius * size, radius * size, mountSelector);
+    applyBackground(svg, background_theme);
+    appendPolygon(svg, star.rotate(Math.PI/4).lines, lines_theme);
     _.forEach(
         star.rotate(Math.PI/4).circles,
         c => {
             appendCircleWithMidpoint(svg, c);
         }
     );
+    return svg;
 }
 
 /**
@@ -253,20 +286,24 @@ export function drawRotatedStar(drawingId:string, radius:number, size:number): I
  * star looks at the same radius) get its drawings?". Includes the outer
  * construction circle via `appendCircleWithMidpoint` so the radius
  * envelope is visually equal across tiles, isolating the visual
- * variable to N.
+ * variable to N. Emits one id-suffixed (`<id>-<points>`) svg per
+ * tip-count into `mountSelector`; returns the last (the 11-point star).
  */
-export function drawDifferentStars(drawingId:string, radius:number, size:number): IO {
+export function drawDifferentStars(drawingId:string, radius:number, size:number, background_theme: BackgroundTheme = {background: "transparent"}, lines_theme: LineTheme = {}, mountSelector = "body"): d3SVG {
     let star:Star;
-    let svg:d3SVG;
+    let svg:d3SVG | undefined;
     _.forEach(
         _.range(6, 12, 1),
         points => {
             star = new Star(new Point(radius * size / 2, radius * size / 2), points, radius);
-            svg = appendSVGToDOM(drawingId, radius * size, radius * size);
-            appendPolygon(svg, star.lines);
+            svg = appendSVGToDOM(`${drawingId}-${points}`, radius * size, radius * size, mountSelector);
+            applyBackground(svg, background_theme);
+            appendPolygon(svg, star.lines, lines_theme);
             appendCircleWithMidpoint(svg, star.outerCircle);
         }
     )
+    // _.range(6,12) is non-empty, so svg is always assigned in the loop.
+    return svg!;
 }
 
 /**
@@ -277,10 +314,28 @@ export function drawDifferentStars(drawingId:string, radius:number, size:number)
  * only L1 transitions on each tick because re-rotating L2 would
  * re-create the very flowers L2 emits — visual feedback loop. The
  * 50ms interval pairs with the d3 transition duration so each step
- * just completes before the next fires.
+ * just completes before the next fires. This drawing is circle-based, so
+ * `lines_theme` is accepted for signature uniformity but unused here (no
+ * polylines); `background_theme` paints the canvas. Note: the
+ * `setInterval` has no stop handle — re-rendering a card orphans the old
+ * timer against a detached node (harmless; a full fix is a follow-on).
  */
-export function drawRotatingCircles(drawingId:string, radius:number, size:number): IO {
-    const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
+export function drawRotatingCircles(
+    drawingId:string,
+    radius:number,
+    size:number,
+    background_theme: BackgroundTheme = {background: "transparent"},
+    // Circle-only drawing: lines_theme has no polylines to style. Accepted
+    // for gallery signature uniformity (every card calls draw(mountSel, bg,
+    // line)) and intentionally unused — see the JSDoc above. The `_` prefix
+    // satisfies tsc's noUnusedParameters; the disable satisfies eslint
+    // (whose recommended no-unused-vars lacks an argsIgnorePattern here).
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _lines_theme: LineTheme = {},
+    mountSelector = "body",
+): d3SVG {
+    const svg = appendSVGToDOM(drawingId, radius * size, radius * size, mountSelector);
+    applyBackground(svg, background_theme);
     const centralCircle = new Circle(radius * size / 2, radius * size / 2, radius);
     // let centralSVGS = appendCircle(svg, centralCircle);
     let currentShift = 0;
@@ -296,6 +351,7 @@ export function drawRotatingCircles(drawingId:string, radius:number, size:number
     setInterval(function () {
         [currentShift, outerCircles] = rotateOuterCircles(centralCircle, currentShift, outerCirclesSVGS);
     }, 50);
+    return svg;
 }
 
 
@@ -304,18 +360,16 @@ export function drawRotatingCircles(drawingId:string, radius:number, size:number
  * 6-point-star nonagon motif — answers "what's the headline drawing
  * that the landing page uses to demonstrate the hex-grid + nonagon
  * composition working at full pattern scale (not just one cell)?".
- * `background_theme` and `lines_theme` are loose `unknown` bags
- * (deliberate exception to tenet 15 here — they're CSS-style maps with
- * arbitrary keys forwarded to d3 `.style()`, so a tighter type would
- * just restate `Record<string, string>`).
+ * `background_theme`/`lines_theme` are typed style bags (see `theme.ts`)
+ * — `background_theme` paints the canvas, `lines_theme` styles every
+ * strapwork polyline. `mountSelector` follows them (trailing + defaulted)
+ * so the gallery can target a card while the regression harness's
+ * positional 5-arg call still binds and gets the `"body"` default.
  */
-export function drawHexagonWithSurroundingNonagons(drawingId: string, radius: number, size: number, background_theme: unknown, lines_theme: unknown): d3SVG {
-    const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
+export function drawHexagonWithSurroundingNonagons(drawingId: string, radius: number, size: number, background_theme: BackgroundTheme = {background: "transparent"}, lines_theme: LineTheme = {}, mountSelector = "body"): d3SVG {
+    const svg = appendSVGToDOM(drawingId, radius * size, radius * size, mountSelector);
 
-    _.forOwn(background_theme, (v, k) => {
-        console.log(k, v);
-        svg.style(k, v);
-    })
+    applyBackground(svg, background_theme);
 
     const circle = new Circle(radius * size / 2, radius * size / 2, radius);
     const hexagons = _.concat(
@@ -345,22 +399,25 @@ export function drawHexagonWithSurroundingNonagons(drawingId: string, radius: nu
  * `radius*2/5.25` origin circle is the empirical fit that makes the
  * outermost ring at `maxLevels` fall just inside the canvas at the
  * default 600×600 size; it's not magic, it's `5.25 ≈ 2 + 1 + sin(π/3)·2`
- * for a 3-level fit and was extrapolated from there.
+ * for a 3-level fit and was extrapolated from there. The theme params
+ * follow `maxLevels` (not the uniform position) because `maxLevels` is
+ * this drawing's own required arg — `lines_theme` styles the inscribed
+ * hexagons; `background_theme` paints the canvas.
  */
-export function drawCirclesRecursively(drawingId:string, radius:number, size:number, maxLevels:number): IO {
-    const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
+export function drawCirclesRecursively(drawingId:string, radius:number, size:number, maxLevels:number, background_theme: BackgroundTheme = {background: "transparent"}, lines_theme: LineTheme = {}, mountSelector = "body"): d3SVG {
+    const svg = appendSVGToDOM(drawingId, radius * size, radius * size, mountSelector);
+    applyBackground(svg, background_theme);
     // Recursively Add circles around middle circle ...
     const circle = new Circle(radius*size/2, radius*size/2,radius*2/5.25);
     const circles = (circle).surroundWithFlowersRecursively(maxLevels);
     _.forEach(
         circles,
         c => {
-            console.log("appending c", c);
             appendCircleWithMidpoint(<d3SVG>svg, c, maxLevels);
-            appendPolygon(<d3SVG>svg, Hexagon.withinCircle(c).lines);
+            appendPolygon(<d3SVG>svg, Hexagon.withinCircle(c).lines, lines_theme);
         }
     );
-    // appendCircleWithMidpoint(<d3SVG>svg, circle);
+    return svg;
 }
 
 /**
@@ -372,10 +429,14 @@ export function drawCirclesRecursively(drawingId:string, radius:number, size:num
  * The elongation index `(3+(i*2)) % 10` rotates *with* the star so the
  * elongated vertex always points radially inward — visual regression
  * for both the per-vertex elongation math and the rotation composition.
+ * `lines_theme` styles every star/decagon polyline (the numeric index
+ * labels keep their own debug styling); `background_theme` paints the
+ * canvas; `mountSelector` targets the gallery card (defaults to body).
  */
-export function drawChainedStars(drawingId:string, radius:number, size:number): IO {
+export function drawChainedStars(drawingId:string, radius:number, size:number, background_theme: BackgroundTheme = {background: "transparent"}, lines_theme: LineTheme = {}, mountSelector = "body"): d3SVG {
     const numbereOfStars = 10;
-    const svg = appendSVGToDOM(drawingId, radius * size, radius * size);
+    const svg = appendSVGToDOM(drawingId, radius * size, radius * size, mountSelector);
+    applyBackground(svg, background_theme);
     // Recursively Add circles around middle circle ...
     const circle = new Circle(radius*size/2, radius*size/2, radius*2/5);
     const points = (circle).pointsOnCircumference(numbereOfStars, Math.PI/numbereOfStars);
@@ -390,7 +451,7 @@ export function drawChainedStars(drawingId:string, radius:number, size:number): 
                 FivePointStar(p, radius/numbereOfStars/1.35).rotate(finalRotation),
                 elongationFactor
             );
-            appendPolygon(<d3SVG>svg, s.lines);
+            appendPolygon(<d3SVG>svg, s.lines, lines_theme);
             appendText(<d3SVG>svg, `${i}: ${Math.round(180*finalRotation/Math.PI)}`, p, {
                 "font-size": `${radius/50}px`,
                 "text-anchor": "middle",
@@ -398,8 +459,9 @@ export function drawChainedStars(drawingId:string, radius:number, size:number): 
             });
         }
     );
-    appendPolygon(<d3SVG>svg, FivePointStar(circle.midpoint, radius/numbereOfStars/1.5).lines);
-    appendPolygon(<d3SVG>svg, (new Decagon(circle.midpoint, radius*2/5.25)).lines);
+    appendPolygon(<d3SVG>svg, FivePointStar(circle.midpoint, radius/numbereOfStars/1.5).lines, lines_theme);
+    appendPolygon(<d3SVG>svg, (new Decagon(circle.midpoint, radius*2/5.25)).lines, lines_theme);
+    return svg;
 }
 
 // // eslint-disable-next-line no-unused-vars

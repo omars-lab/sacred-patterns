@@ -3,6 +3,7 @@ import {Circle} from "./circles"
 import {Line} from "./lines"
 import {Point} from "./points"
 import {IO} from "./types"
+import {LineTheme} from "./theme"
 import {all} from "./helpers"
 
 // https://www.typescriptlang.org/docs/handbook/advanced-types.html
@@ -129,7 +130,7 @@ export function appendLine(onto:d3SVG, l:Line, color="black"): IO {
  * on empty input rather than producing a stray DOM element, since the
  * caller's intent for "no lines" is unambiguously "draw nothing.".
  */
-export function appendPolygon(onto:d3SVG, lines:Line[], metadata:unknown={}): IO {
+export function appendPolygon(onto:d3SVG, lines:Line[], metadata:LineTheme={}): IO {
     // Assumes lines are in connected order ...
     if (_.isEmpty(lines) || all(lines, _.isEmpty) ) {
         return;
