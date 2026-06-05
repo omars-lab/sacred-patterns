@@ -80,6 +80,10 @@ export function appendSVGToDOM(id: string, width:number, height:number, mountSel
     const svg = d3.select(mountSelector).append("svg")
         .attr("width", width)
         .attr("height", height)
+        // viewBox mirrors width×height so a CSS rule can scale the svg down
+        // to a uniform card size without distorting the geometry — the
+        // gallery caps display height while the coordinate space is intact.
+        .attr("viewBox", `0 0 ${width} ${height}`)
         .attr("title", id)
         .attr("id", id);
 
