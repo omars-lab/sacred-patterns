@@ -10,3 +10,6 @@ __pycache__/
 # playwright/*-snapshots/ dir; test-results/ is per-run trace/diff scratch.
 test-results/
 playwright-report/
+
+# retrospect-hard-problem scratch artifacts
+.claude/skills/retrospect-hard-problem/artifacts/

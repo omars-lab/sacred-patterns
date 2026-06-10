@@ -71,9 +71,10 @@ Append a new top-level section to the body:
 **Root reason (current best understanding):** <why the option couldn't work — be honest, not optimistic>
 
 **What this falsifies in the doc:**
-- [ ] The picked option's mechanism (Option <Letter> §<subsection>)
-- [ ] The option enumeration (a viable Option <Letter+1> was missing)
-- [ ] The doc's framing question (§4 asked the wrong thing)
+- [ ] The premise (§0 asserted a fact that turned out false) — L0
+- [ ] The picked option's mechanism (Option <Letter> §<subsection>) — L2
+- [ ] The option enumeration (a viable Option <Letter+1> was missing) — L3
+- [ ] The doc's framing question (§4 asked the wrong thing) — L4
 - [ ] The audit / impact analysis the doc relied on (§<subsection>)
 
 **Falsification artifacts:** <commit hash of the revert, links to test output, probe scripts>
@@ -97,6 +98,7 @@ This is the load-bearing step. The same falsification can mean very different th
 
 | Layer wrong | Symptom in the falsification | What to do next |
 |-------------|------------------------------|-----------------|
+| **L0: The premise was wrong** | The doc's *framing assumption* — the thing §0 Premise check asserted — turned out false against the code/corpus/tree (e.g. "the DSL can't express girih" but it could; "face_class is a shape identity" but it's a fill/role label; "shape_id is canonical geometry" but it's an author-name reused across distinct shapes). The options were all reasoning *from* a false premise, so none could have worked. | This is distinct from L4 (which is "the doc asked the wrong *question*"); L0 is "the doc asked a fine question but assumed a false *fact*." Record the corrected premise, mark the falsified approach as a `dead_end:` (step 3b), and — because every option inherited the bad premise — author the new option(s) from the corrected premise per step 5. The meta-lesson (step 6) is almost always a C1 reinforcement: the premise was committed before being verified. Treat as escalation-worthy (L0 ≈ L4 for the escalation gate). |
 | **L1: Implementation of the picked option** | The option's *mechanism* was right but the code had a bug (off-by-one, wrong variable, missed call site). | Fix the code and re-ship. **This is NOT the failure mode this skill handles.** If you're confident it's L1, leave a one-line note in the falsification log and continue implementation. Do not reopen the doc. |
 | **L2: The picked option itself** | The mechanism cannot work as the doc described. The doc's reasoning was wrong on a checkable claim (e.g., the audit said "consumer X has no implicit invariants," but consumer X turned out to have one). | Cross out the option in the doc (don't delete — keep the trail), author Option E with the corrected mechanism per step 5, and re-recommend. Steps 4-6 apply. |
 | **L3: The option enumeration** | The mechanism *could* work but isn't the right move; an option not in the original doc is now obviously better (e.g., the doc framed the choice as "fix the consumer or accommodate at the producer," missing "lift the invariant into a higher layer that owns both"). | Author the missing option per step 5. Steps 4-6 apply. |
@@ -105,6 +107,37 @@ This is the load-bearing step. The same falsification can mean very different th
 Check the relevant checkbox in step 1's quadrant. **If you check L3 or L4, the prior recommendation isn't just wrong — the prior reasoning process missed something. That's the meta-lesson step 6 captures.**
 
 If you check more than one box, that's fine — falsifications often expose multiple layers at once. The bikar#426 Option C falsification checked L2 (the mechanism couldn't preserve lens construction) *and* the audit subbox (the consumer audit missed upstream construction contracts).
+
+### Step 3b — Wire the falsification into the LEDGER via a `dead_end:` frontmatter block
+
+A falsification that lives only in this doc's prose won't reach the next session
+that asks "has this been tried?" — they consult `docs/decisions/LEDGER.md`, which
+is generated from **structured frontmatter keys**, not prose. So the falsified
+approach must become a `dead_end:` block in this doc's frontmatter (the generator
+folds it into the LEDGER's "Dead-ends (do not retry)" table):
+
+```yaml
+status_token: REOPENED        # or SUPERSEDED if a new doc replaces this one
+picked_option: null
+dead_end:
+  approach: <the specific approach that was falsified — what NOT to retry>
+  verdict: REFUTED            # DEAD = confirmed-dead, use the replacement ·
+                              # REFUTED = the approach is solvable / the dead-end
+                              #   belief was wrong · OPEN = open-in-field
+  use_instead: <the replacement approach, if known>
+  prior_art: <citation that settles it, or omit>
+  killed_by: <this doc's path>
+```
+
+Pick the verdict honestly against the prior-art meaning (it's typed in
+`docs/decision-schema.md`): if a published/finite rule gives the right answer the
+falsified approach ignored, it's `DEAD` (use the rule); if the falsification shows
+the approach was never actually a dead-end (an existing tool solves it), it's
+`REFUTED`; if no source resolves it either, it's `OPEN`. If the approach has no
+decision doc at all (it lived only in a transcript), add it to
+`docs/decisions/dead-ends.seed.yaml` instead. Then run `make ledger` so the
+dead-end appears in the LEDGER. *This is what makes a falsification durable across
+`/clear` — the LEDGER, not this session's memory, is what the next agent reads.*
 
 ### Step 4 — Fresh web-search for options the original doc missed
 

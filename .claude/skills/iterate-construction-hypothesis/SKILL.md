@@ -77,6 +77,50 @@ around a missing primitive); this table adds the #1 fork above it (don't
 *build* a primitive that already exists, just invoke it) and the #5 fork
 below it (don't iterate against a philosophy ceiling).
 
+## Per-iteration triage — what is this qiyas-diff signal telling me? (read SECOND)
+
+The routing table above answers *"where does the fix live"* (invocation /
+construction-space / new statement / new algorithm / philosophy). This
+checklist answers the prior question the loop kept re-asking: *"is this gap
+even mine to fix in the .bkr at all?"* Run it on every `validation.json`
+warning / `qiyas-diff` pairing **before** editing — classify the gap into
+exactly one of three owners, because editing the `.bkr` for a detector bug
+or a DSL gap is wasted motion (and a Tenet-7 trap when it tempts a detector
+tweak).
+
+**The three owners:**
+
+| Owner | The signal looks like… | First action (NOT a `.bkr` geometry edit) |
+|---|---|---|
+| **Construction issue** (yours — fix here) | The render is *visually wrong* against the reference in the way the warning names: a face missing that the reference clearly has, wrong fold order, a shape with the wrong vertex count, an overlay star at the wrong `{n/k}`. The detector is correctly reporting a real construction defect. | Route through the 5-way table → usually #1 (invocation) or #2 (construction-space). Edit the `.bkr`. |
+| **bikar DSL gap** (construction-side, but a feature not an iteration) | You know the correct geometry but **cannot spell it** in the current DSL, or the face-walker/gt-emitter *mangles* a correctly-authored construction (an absorbed polyclass face, a dropped same-class face, a sliver — see the `feedback_bikar_*` face-walker memories). The `.bkr` is right; bikar's engine can't render/emit it faithfully. | Route through the 5-way table → #3 (new statement) or #4 (new kernel algorithm). File a bikar feature task with a Tier-0 witness; do NOT hand-author a magic-number approximation (bikar Tenet 9). |
+| **qiyas detector bug** (NOT yours — escalate, never tune) | The construction is **provably correct** (portal look confirms the render matches the reference) but the detector mis-reads it — pairs two geometrically-different faces, mis-scores a fold it should read from `data-symmetry-fold`, re-derives a fact the DSL already declares (Tenet 23). The metric disagrees with a correct render. | `escalate-qiyas-divergence` — capture the fixture, file the qiyas issue with a reproducer. **Never** loosen a qiyas number from this loop (stop rule 3). |
+
+**The discriminating question** (forces the classification before any edit):
+*open the render in the portal and compare to the reference.* If the render
+is visually wrong → **construction issue** (or DSL gap if you can't author
+the fix). If the render is visually right but the score is low → **detector
+bug** (escalate) or you mis-read which warning is load-bearing. The portal
+look (Tenet 27) IS the triage instrument; you cannot classify the owner
+from the JSON alone (Tenet 26 — the serialization is lossy for topology).
+
+### qiyas-diff signal → deterministic `.bkr` edit (construction-issue owner only)
+
+When triage says **construction issue**, this maps the concrete
+`validation.json` / `qiyas-diff` signal to the smallest `.bkr` edit. These
+are starting points for the Step-1 hypothesis, not blind rewrites — each
+still gets a `predicted_cost` and a portal verify.
+
+| qiyas-diff / svg-audit signal | Most likely construction cause | Deterministic first `.bkr` edit |
+|---|---|---|
+| `unmatched_truth` face (reference has a shape the recon lacks) + A4 PARTIAL/SPARSE | A face the construction never builds, or builds then the face-walker absorbs | Grep emit layer first (5-way #1); if truly absent, add the `connect`/`cycle`/`classify` that authors that face (5-way #2) |
+| `unmatched_detector` face (recon has a shape the reference lacks) | A spurious face from an over-division or a stray intersection | Remove the extra `divide`/`intersect`, or add the missing `classify .name` so a real face isn't read as unclassified |
+| A6 MISSING/PARTIAL for a named baseline shape | The baseline shape's vocabulary isn't produced by this construction philosophy | If isolated: author the shape (5-way #2). If it clusters with other A6 misses → philosophy ceiling (5-way #5, stop rule 2) |
+| A2 N-fold BROKEN/APPROXIMATE | Symmetry construct wrong order, or a per-sector edit broke rotational identity | Fix the `repeat N` / `rotate N` order; re-author the sector once and let the symmetry construct replicate it |
+| A5 band-network GAPS/BROKEN | Strapwork decoration not woven (render-style gap, not geometry) | Invoke the `strapwork …` statement (5-way #1) — see `feedback_girih_strapwork_is_render_style_not_geometry`; do NOT add new tile geometry |
+| Face emitted with `face_class=None` / unclassified in gt.json | Polygon authored but no matching `classify` rule, or the classify-by-predicate polyclass trap | Add the `classify .name where <pred>`; if two same-`sides` classes collide, that's a DSL gap not a construction edit (`feedback_per_edge_class_tags_same_trap_as_classify`) |
+| Shape-count divergence but render looks right in the portal | Detector mis-read of a correct construction | **Escalate** (detector-bug owner) — do not edit the `.bkr` |
+
 ## The hard line — construction vs detector
 
 | You may change (construction side) | You may NOT change (detector side) |
