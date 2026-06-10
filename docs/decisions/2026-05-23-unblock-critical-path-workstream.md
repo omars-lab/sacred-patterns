@@ -1,5 +1,8 @@
 ---
 status: ACCEPTED 2026-05-24 — Option B with #2 carve-out (medallion-10 stays open)
+status_token: ACCEPTED
+picked_option: B
+tag: critical-path-workstream
 discovered: 2026-05-23
 decided: 2026-05-24
 owner: omareid

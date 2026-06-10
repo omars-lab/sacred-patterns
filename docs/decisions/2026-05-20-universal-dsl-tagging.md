@@ -1,5 +1,8 @@
 ---
-status: ACCEPTED 2026-05-20
+status: ACCEPTED 2026-05-20 — Option A (face.sources carries tags; Slice 1)
+status_token: ACCEPTED
+picked_option: A
+tag: dsl-tagging
 discovered: 2026-05-20
 decided: 2026-05-20
 owner: omar (sacred-patterns owner)

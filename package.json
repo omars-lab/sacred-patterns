@@ -10,7 +10,9 @@
     "test:visual": "playwright test",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "ledger": "sh scripts/gen-decision-ledger.sh && sh scripts/gen-decision-ledger-xrepo.sh",
+    "check:decisions": "sh scripts/check-decision-coherence.sh && sh scripts/gen-decision-ledger.sh --check && sh scripts/gen-decision-ledger-xrepo.sh --check"
   },
   "author": "",
   "license": "ISC",
