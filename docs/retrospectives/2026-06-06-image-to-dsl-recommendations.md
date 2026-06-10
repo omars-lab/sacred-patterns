@@ -31,8 +31,11 @@ applied: 2026-06-07
 >   `?? .claude/skills/loop-idle-audit/`,
 >   `M .claude/skills/iterate-construction-hypothesis/SKILL.md`.)
 >
-> **Fill the SHAs here at commit time:** decision-memory cascade `<sha>`;
-> leftovers session `<sha>`.
+> **Commit SHAs (filled 2026-06-10):** decision-memory cascade `f62c575`
+> (decision-memory layer: schema, ledgers, coherence gate) + `6a380ea`
+> (skill guards + loop-idle-audit + retrospect-hard-problem); leftovers
+> session artifacts are split across the same two commits plus the CLAUDE.md
+> tenet commit that follows them (C1–C5 + tenets 29/30).
 
 > These are PROPOSALS as diffs-in-prose. This skill does NOT apply them. Each
 > cites the retrospective §4 mistake it prevents and an evidence tier. Only
