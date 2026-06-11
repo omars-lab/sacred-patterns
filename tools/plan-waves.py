@@ -724,7 +724,7 @@ def main() -> None:
    <div class="btns">
     <button class="act" id="btn-wave-shape">Move shape</button>
     <button class="act" id="btn-wave-wave">Move wave</button></div>
-   <p class="muted">"Move wave" merges its whole wave — everything like it — into the one you picked.</p></div>
+   <p class="muted">Pick a wave — its shapes light up yellow on the picture. "Move wave" merges its whole wave — everything like it — into the one you picked.</p></div>
   <div class="sec"><p class="seclabel">Fix its flower</p>
    <select id="selflower"></select>
    <div class="btns">
@@ -733,7 +733,7 @@ def main() -> None:
    <div class="btns">
     <button class="act" id="btn-noflower">Take shape out</button>
     <button class="act" id="btn-noflower-wave">Take wave out</button></div>
-   <p class="muted">"Take out" leaves it on its own, outside any flower.</p></div>
+   <p class="muted">Pick a flower — its shapes light up yellow. "Take out" leaves it on its own, outside any flower.</p></div>
   <div class="sec btns" style="border-top:none;padding-top:8px"><button class="act" id="btn-close">Close</button></div>
  </div>
 </div>
@@ -780,10 +780,33 @@ def main() -> None:
    wave_merges: applied.wave_merges || {},
  });
  function setHint(t) { $('fixhint').textContent = t; }
+ // Which group is the dropdown pointing at, when it differs from the
+ // selection's CURRENT group? That difference is what a Move/Merge would
+ // change — so it's exactly what the yellow preview must show.
+ function previewWave() {
+   if (!sel) return null;
+   const v = parseInt($('selwave').value, 10);
+   return Number.isFinite(v) && v !== waveOf(sel) ? v : null;
+ }
+ function previewFlower() {
+   if (!sel) return null;
+   const v = parseInt($('selflower').value, 10);
+   return Number.isFinite(v) && v !== flowerOfShape(sel) ? v : null;
+ }
  function drawMarks() {
    let m = '';
    if (sel) {
      const w = waveOf(sel);
+     // Yellow first (underneath): the destination group picked in a dropdown
+     // — what pressing Move/Merge would combine the selection with.
+     const pw = previewWave(), pf = previewFlower();
+     const gold = s => '<circle cx="' + s.x + '" cy="' + s.y + '" r="9" fill="#F2B705" fill-opacity="0.9" stroke="#7A5C00" stroke-width="1.5"/>';
+     if (pw !== null)
+       for (const s of shapes)
+         if (waveOf(s) === pw) m += gold(s);
+     if (pf !== null && pf !== 0)
+       for (const s of shapes)
+         if (flowerOfShape(s) === pf && waveOf(s) !== pw) m += gold(s);
      for (const s of shapes)
        if (s.id !== sel.id && waveOf(s) === w)
          m += '<circle cx="' + s.x + '" cy="' + s.y + '" r="6" fill="#1b6ca8" fill-opacity="0.85"/>';
@@ -808,7 +831,7 @@ def main() -> None:
    sel = s;
    const w = waveOf(s), f = flowerOfShape(s), wi = waveInfo[w];
    $('p-title').textContent = 'Shape #' + s.id;
-   $('p-desc').textContent = 'A ' + s.c + ' shape. The blue dots are the other shapes in its wave.';
+   $('p-desc').textContent = 'A ' + s.c + ' shape. Blue dots = the other shapes in its wave. Pick a different group below and it lights up yellow.';
    $('p-wave').innerHTML = '<b>Its wave:</b> Wave ' + w + ' — ' + wi.count + ' ' + wi.color +
      ' shapes ' + wi.where + ' <a href="#" id="see-wave">see it</a>';
    $('p-flower').innerHTML = '<b>Its flower:</b> ' + flowerLabel(f) +
@@ -899,6 +922,24 @@ def main() -> None:
    const w = waveOf(sel);
    fixes.wave_flowers[w] = 0;
    afterEdit('Took wave ' + w + ' (everything like it) out of its flower.');
+ });
+ // Live preview: changing a dropdown lights the destination group yellow on
+ // the picture BEFORE any button is pressed, so the owner sees what a
+ // move/merge will combine (owner ask 2026-06-11: "when I switch wave, why
+ // don't i see what it will be merged with?").
+ $('selwave').addEventListener('change', () => {
+   drawMarks();
+   const pw = previewWave();
+   setHint(pw !== null
+     ? 'Yellow = wave ' + pw + ' — that is what "Move" will combine your pick with.'
+     : 'That is already its wave.');
+ });
+ $('selflower').addEventListener('change', () => {
+   drawMarks();
+   const pf = previewFlower();
+   if (pf === null) setHint('That is already its flower.');
+   else if (pf === 0) setHint('No flower — "Move" / "Take out" sets it on its own.');
+   else setHint('Yellow = ' + flowerLabel(pf) + ' — that is where "Move" will put your pick.');
  });
  $('btn-close').addEventListener('click', () => {
    sel = null; $('panel').hidden = true; drawMarks();
