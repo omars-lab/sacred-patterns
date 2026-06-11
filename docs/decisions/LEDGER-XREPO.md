@@ -60,6 +60,7 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `petal-ring-class` | qiyas | qiyas/docs/decisions/2026-05-07-petal-6-full-asymmetric-granularity.md | SUPERSEDED | β | — |
 | `petal-ring-class` | qiyas | qiyas/docs/decisions/2026-05-07-petal-6-full-empty-provenance-collapse.md | ACCEPTED | γ-narrow+α | ★ |
 | `rasterizer-fidelity` | bikar | bikar/docs/decisions/2026-05-13-gt-json-image-dims-rasterizer-fidelity.md | ACCEPTED | A | ★ |
+| `scale-invariant-matching` | qiyas | qiyas/docs/decisions/2026-06-10-scale-invariant-param-drift.md | ACCEPTED | B | ★ |
 | `scope-rescope` | qiyas | qiyas/docs/decisions/2026-05-12-i1-cascade-closeout.md | PENDING | — | — |
 | `scope-rescope` | qiyas | qiyas/docs/decisions/2026-05-22-138-rescope-after-empirical-delta.md | ACCEPTED | G | ★ |
 | `serialization-d4` | qiyas | qiyas/docs/decisions/2026-05-23-362-phase-1-d4-cutover-serialization.md | PENDING | — | — |
