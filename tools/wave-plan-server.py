@@ -153,8 +153,19 @@ PALETTE_HTML = """<!DOCTYPE html>
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("session_dir", type=Path)
-    ap.add_argument("--center", nargs=2, type=float, required=True)
-    ap.add_argument("--diameter", type=float, required=True)
+    ap.add_argument(
+        "--center",
+        nargs=2,
+        type=float,
+        default=None,
+        help="override the planner's auto-detected medallion center",
+    )
+    ap.add_argument(
+        "--diameter",
+        type=float,
+        default=None,
+        help="override the planner's auto-detected medallion diameter",
+    )
     ap.add_argument("--port", type=int, default=8765)
     args = ap.parse_args()
 
@@ -166,22 +177,16 @@ def main() -> None:
     tools_dir = Path(__file__).resolve().parent
 
     def regen() -> None:
-        # Re-run the planner with the SAME center/diameter; it auto-loads
+        # Re-run the planner with the SAME center/diameter (or let it
+        # auto-detect, same as the first run); it auto-loads
         # wave-plan-overrides.json from plan_dir, so owner fixes flow through
         # grouping, flower seating, validation, and every picture.
-        subprocess.run(
-            [
-                sys.executable,
-                str(tools_dir / "plan-waves.py"),
-                str(session_dir),
-                "--center",
-                str(args.center[0]),
-                str(args.center[1]),
-                "--diameter",
-                str(args.diameter),
-            ],
-            check=True,
-        )
+        cmd = [sys.executable, str(tools_dir / "plan-waves.py"), str(session_dir)]
+        if args.center is not None:
+            cmd += ["--center", str(args.center[0]), str(args.center[1])]
+        if args.diameter is not None:
+            cmd += ["--diameter", str(args.diameter)]
+        subprocess.run(cmd, check=True)
 
     def session() -> dict:
         return json.loads(session_json.read_text())

@@ -15,8 +15,13 @@ reports the coverage number so the claim is checkable, not vibes.
 
 Usage:
     /Users/omareid/Workspace/git/qiyas/.venv/bin/python tools/plan-waves.py \
-        /Users/omareid/Dropbox/Data/sacred-patterns/bikar-medallion-10 \
-        --center 386 361 --diameter 738
+        /Users/omareid/Dropbox/Data/sacred-patterns/bikar-medallion-10
+
+    --center X Y / --diameter D are optional overrides; when omitted, both
+    are auto-detected from the medallion mask (mass center; larger bbox
+    extent) and printed for the owner to confirm in the studio.
+    For a brand-new image, tools/start-session.py is the one-command front
+    door (session folder + this plan + the studio server).
 
 Outputs (under <session>/input/reference-analysis/wave-plan/):
     wave-plan.json   waves -> shapes (centroid, r_frac, theta, area, color)
@@ -108,8 +113,21 @@ def load_analyze_reference(tools_dir: Path):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("session_dir", type=Path)
-    ap.add_argument("--center", nargs=2, type=float, required=True)
-    ap.add_argument("--diameter", type=float, required=True)
+    ap.add_argument(
+        "--center",
+        nargs=2,
+        type=float,
+        default=None,
+        help="override the auto-detected medallion center "
+        "(default: mass center of the medallion mask)",
+    )
+    ap.add_argument(
+        "--diameter",
+        type=float,
+        default=None,
+        help="override the auto-detected medallion diameter "
+        "(default: larger bbox extent of the medallion mask)",
+    )
     ap.add_argument("--reference", default="input/reference.jpg")
     ap.add_argument(
         "--seat",
@@ -161,6 +179,26 @@ def main() -> None:
     _, (iy, ix) = ndimage.distance_transform_edt(seed_labels == 0, return_indices=True)
     labels = np.where(tiles, seed_labels[iy, ix], 0)
     print(f"{n} connected shapes in the tile mask (after {ERODE_ITERS}px bridge-snap)")
+
+    if args.center is None or args.diameter is None:
+        # Auto-detect so a brand-new image needs no hand measuring: center is
+        # the mask's mass center; diameter is the LARGER bbox extent, because
+        # a medallion clipped by the photo frame on one axis keeps its true
+        # diameter on the other (medallion-10 witness: 739 detected vs 738
+        # hand-measured, with the vertical extent frame-clipped at 722).
+        # The owner confirms with one look at the studio's marked-up picture;
+        # the flags stay available as overrides.
+        ys_m, xs_m = np.nonzero(medallion)
+        if args.center is None:
+            args.center = (float(xs_m.mean()), float(ys_m.mean()))
+        if args.diameter is None:
+            args.diameter = float(
+                max(xs_m.max() - xs_m.min() + 1, ys_m.max() - ys_m.min() + 1)
+            )
+        print(
+            f"auto-detected center ({args.center[0]:.0f}, {args.center[1]:.0f}), "
+            f"diameter {args.diameter:.0f}px — pass --center/--diameter to override"
+        )
 
     cx, cy = args.center
     radius = args.diameter / 2.0

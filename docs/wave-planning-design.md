@@ -8,12 +8,25 @@ construction starts; iteration then walks the plan inside-out, one wave at a
 time, with each wave's diff cropped to its own region. The whole-image diff is
 a trend log, never the steering signal.
 
-Tools (both run under the qiyas venv,
+Tools (all run under the qiyas venv,
 `/Users/omareid/Workspace/git/qiyas/.venv/bin/python`):
-- `tools/plan-waves.py <session-dir> --center X Y --diameter D [--seat W=F]`
+- `tools/start-session.py <photo> [--name slug]` — **the one-command front
+  door for a NEW image** (owner ask 2026-06-11: "do we have a clean cli
+  command … when we start with a new image and want to recreate it?").
+  Builds the session folder, copies the photo to `input/reference.jpg`
+  (JPEGs verbatim — a PIL re-encode's generation loss split a 39-shape wave
+  34+5 in testing), writes the stage-gate `session.json` skeleton,
+  edge-extracts `reference-structure.png` + runs analyze-reference.py for
+  the colour gate, runs plan-waves.py with auto-detected center/diameter,
+  and starts the studio server. Re-run-safe: existing artifacts are kept.
+- `tools/plan-waves.py <session-dir> [--center X Y --diameter D] [--seat W=F]`
   — builds the plan + all visuals; auto-loads owner fixes from
-  `wave-plan-overrides.json` if present.
-- `tools/wave-plan-server.py <session-dir> --center X Y --diameter D
+  `wave-plan-overrides.json` if present. Center/diameter are auto-detected
+  from the medallion mask when omitted (mass center; larger bbox extent —
+  the frame may clip one axis; medallion-10 witness: detected (386, 361) /
+  739 vs hand-measured (386, 361) / 738) and printed for the owner to
+  confirm on the studio's marked-up picture.
+- `tools/wave-plan-server.py <session-dir> [--center X Y --diameter D]
   [--port 8765]` — the REVIEW HUB + wave-plan STUDIO: `/` is the front door
   (reads session.json stage_gates, lists what needs the owner's eyes),
   `/plan` is the studio (review AND fix groupings, record the plan

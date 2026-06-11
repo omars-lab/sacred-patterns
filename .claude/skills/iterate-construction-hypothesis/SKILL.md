@@ -207,6 +207,10 @@ The `.bkr` statement vocabulary partitions natively by stage:
   rsvg-convert — ImageMagick's MSVG silently drops stroked paths),
   `tools/analyze-reference.py` (line/fill separation, standardized palette,
   swatch sheet — runs under the qiyas venv python),
+  `tools/start-session.py` (the ONE-COMMAND front door for a NEW image:
+  photo in → session folder + stage-gate session.json + edge map + swatch
+  sheet + auto-detected wave plan + the studio server, all in one run —
+  start here when recreating a new reference),
   `tools/plan-waves.py` (the wave plan below — runs under the qiyas venv),
   `tools/wave-plan-server.py` (the REVIEW HUB + wave-plan STUDIO: `/` reads
   session.json stage_gates and lists what needs the owner's eyes; `/plan` is
@@ -225,7 +229,12 @@ matches, then wave 2, etc. A whole-image structure diff mixes every wave's
 divergence into one number and hides which ring is wrong; it is a tracking
 metric only, never the steering signal (owner directive, 2026-06-11).
 
-The protocol (`tools/plan-waves.py <session-dir> --center X Y --diameter D`):
+The protocol — for a NEW image the whole thing is ONE command (qiyas venv):
+`tools/start-session.py <photo> --name <slug>` builds the session folder,
+runs every step below with an auto-detected center/diameter, and starts the
+studio. The pieces stay individually runnable: `tools/plan-waves.py
+<session-dir>` (`--center X Y --diameter D` are optional overrides — when
+omitted they are detected from the medallion mask and printed to confirm):
 
 1. **Validate the center** — auto-detect the medallion center (mass center of
    the medallion mask); the owner confirms it with one look at the studio's
@@ -261,8 +270,10 @@ The protocol (`tools/plan-waves.py <session-dir> --center X Y --diameter D`):
    `rotate` fold times. Full algorithm, thresholds, and witnessed dead
    ends: `docs/wave-planning-design.md`.
 5. **Owner gates the plan in the wave-plan STUDIO** — run
-   `tools/wave-plan-server.py <session-dir> --center X Y --diameter D`
-   (qiyas venv) and send the owner the printed localhost URL. The page has
+   `tools/wave-plan-server.py <session-dir>` (qiyas venv;
+   `--center`/`--diameter` optional overrides, auto-detected otherwise;
+   `start-session.py` launches this for you on a new image) and send the
+   owner the printed localhost URL. The page has
    the flip-through (flowers row + waves row, one group bright per frame,
    colored maps) AND an inspector: click any shape → see its wave + flower
    in plain language → move it to a different wave/flower (or its whole
