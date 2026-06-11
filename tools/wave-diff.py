@@ -40,6 +40,18 @@ center + larger bbox extent); the render is scaled so its medallion
 diameter matches the reference's and translated so the centers coincide.
 No rotation — both are upright by construction (Tenet 8: deterministic
 renders).
+
+Rasterization: pass --render the SVG, not a pre-made PNG. Comparisons are
+only valid when every render goes through ONE rasterization path (Tenet 11
+at the raster layer): iter-49 (2026-06-11) showed that an iter-48 PNG made
+by a softer rasterizer produced phantom hold-drift (wave-1 coverage -7.5,
+wave-2 iou +9.5) at ALL radii versus a cairosvg raster of the same
+geometry; re-rastering both SVGs through cairosvg collapsed the drift to
+bit-identical. So when --render ends in .svg this tool rasterizes it
+itself via the canonical path — cairosvg, output_height=1024 — to a
+sibling <name>.cairo.png (overwritten each run). PNG input is still
+accepted for legacy comparisons, but cross-iteration numbers are only
+comparable if both sides used this tool's own raster path.
 """
 
 from __future__ import annotations
@@ -61,6 +73,27 @@ def load_tool(tools_dir: Path, name: str):
     return mod
 
 
+# The one canonical rasterization (Tenet 11): every SVG compared by this tool
+# goes through cairosvg at this height. Changing either silently invalidates
+# every prior wave-diff number — re-baseline if you must change them.
+CANONICAL_RASTER_HEIGHT = 1024
+
+
+def rasterize_svg(svg_path: Path) -> Path:
+    """Rasterize an SVG via the canonical path; returns the PNG path.
+
+    Example: rasterize_svg(Path("iterations/49/render.svg")) writes
+    iterations/49/render.cairo.png at height 1024 (width follows the SVG's
+    aspect ratio — 1010x1024 for the medallion-10 viewBox) and returns it.
+    """
+    import cairosvg
+
+    png_path = svg_path.with_suffix(".cairo.png")
+    cairosvg.svg2png(url=str(svg_path), write_to=str(png_path),
+                     output_height=CANONICAL_RASTER_HEIGHT)
+    return png_path
+
+
 def detect_medallion(a: np.ndarray, ar) -> tuple[np.ndarray, float, float, float]:
     """Medallion mask + (cx, cy, diameter) — the planner's detection, reused.
 
@@ -79,7 +112,9 @@ def main() -> None:
     ap.add_argument("session_dir", type=Path)
     ap.add_argument("wave", type=int, help="1-based wave number from the agreed plan")
     ap.add_argument("--render", type=Path, required=True,
-                    help="our render (PNG/JPG, white background), relative to session dir or absolute")
+                    help="our render (SVG preferred — rasterized via the canonical "
+                         "cairosvg path; PNG/JPG accepted for legacy comparisons), "
+                         "relative to session dir or absolute")
     ap.add_argument("--pad", type=int, default=24, help="crop padding around the wave bbox, px")
     args = ap.parse_args()
 
@@ -122,6 +157,9 @@ def main() -> None:
     # --- render side: same detection, then scale + translate onto the
     # reference frame (no rotation — both upright by construction).
     render_path = args.render if args.render.is_absolute() else args.session_dir / args.render
+    render_source = render_path
+    if render_path.suffix.lower() == ".svg":
+        render_path = rasterize_svg(render_path)
     rnd_img = Image.open(render_path).convert("RGB")
     rnd = np.asarray(rnd_img)
     _, rcx, rcy, rnd_d = detect_medallion(rnd, ar)
@@ -177,7 +215,8 @@ def main() -> None:
         "shape_count": wave["shape_count"],
         "coverage": round(coverage, 4),
         "iou": round(iou, 4),
-        "render": str(render_path),
+        "render": str(render_source),
+        "render_raster": str(render_path),
         "registration": {
             "ref_center": [round(ref_c[0], 1), round(ref_c[1], 1)],
             "ref_diameter": ref_d,
