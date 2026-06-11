@@ -14,10 +14,13 @@ Tools (both run under the qiyas venv,
   — builds the plan + all visuals; auto-loads owner fixes from
   `wave-plan-overrides.json` if present.
 - `tools/wave-plan-server.py <session-dir> --center X Y --diameter D
-  [--port 8765]` — the wave-plan STUDIO: serves the plan on localhost so the
-  owner can review AND fix it in the browser (owner directive 2026-06-11:
-  "this should not be static html, but rather cli commands that runs
-  localhost").
+  [--port 8765]` — the REVIEW HUB + wave-plan STUDIO: `/` is the front door
+  (reads session.json stage_gates, lists what needs the owner's eyes),
+  `/plan` is the studio (review AND fix groupings, record the plan
+  agreement), `/palette` is the colour gate (swatch sheet, agree button,
+  auto-saved note box). Owner directive 2026-06-11: "this should not be
+  static html, but rather cli commands that runs localhost"; hub per
+  `docs/review-experience-audit.md`.
 Protocol home: `.claude/skills/iterate-construction-hypothesis/SKILL.md` →
 "Stage 1 is wave-based". First execution: bikar-medallion-10, 2026-06-11.
 
@@ -37,8 +40,10 @@ Protocol home: `.claude/skills/iterate-construction-hypothesis/SKILL.md` →
 ## Pipeline
 
 1. **Validate the center.** Auto-detect (mass center of the medallion mask),
-   owner confirms/adjusts with one click (`review/structure-priorities.html`
-   Step 1). Every radius and angle is measured from this point.
+   owner confirms with one look at the studio's marked-up picture (the
+   legacy `review/structure-priorities.html` annotator is retired — see
+   `docs/review-experience-audit.md`). Every radius and angle is measured
+   from this point.
 
 2. **Exhaust the shapes (bridge-snap segmentation).** Tiles = medallion mask
    minus near-white (all channels ≥ 200). JPEG softening leaves 1–3px
@@ -86,10 +91,17 @@ Protocol home: `.claude/skills/iterate-construction-hypothesis/SKILL.md` →
    "Apply my fixes" POSTs to `/api/overrides`; the server writes
    `wave-plan-overrides.json` next to the plan and re-runs plan-waves.py,
    so every picture, count, and multiset validation regenerates with the
-   fixes baked in. The overrides schema (all ids/numbers 1-based, flower 0 =
-   "no flower"): `{"shape_waves": {id: wave}, "shape_flowers": {id: flower},
-   "wave_flowers": {wave: flower}}` — `shape_flowers` rides on top of the
-   wave's seat, so one shape can leave its flower without leaving its wave.
+   fixes baked in. Every fix comes in a shape-level and a wave-level form —
+   paired buttons ("Move shape" / "Move wave", "Take shape out" / "Take wave
+   out") so one click can correct one shape or everything like it. The
+   overrides schema (all ids/numbers 1-based, flower 0 = "no flower"):
+   `{"shape_waves": {id: wave}, "shape_flowers": {id: flower},
+   "wave_flowers": {wave: flower}, "wave_merges": {src_wave: dst_wave}}` —
+   `shape_flowers` rides on top of the wave's seat, so one shape can leave
+   its flower without leaving its wave; `wave_merges` folds a whole wave
+   into another (applied first, so a shape-level move still wins over its
+   wave's merge); `wave_flowers: {w: 0}` takes the whole wave out of any
+   flower.
    plan-waves.py auto-loads the file on every run (fixes survive
    re-planning) and records them in the JSON as `owner_fixes_applied`.
    The legacy `--seat WAVE=FLOWER` flag still works for scripted re-seats.

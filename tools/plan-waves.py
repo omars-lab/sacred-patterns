@@ -114,10 +114,11 @@ def main() -> None:
         "--overrides",
         type=Path,
         default=None,
-        help="wave-plan-overrides.json saved from the page's 'Fix the groups' "
-        "mode ({shape_waves: {id: wave}, wave_flowers: {wave: flower}}, all "
-        "1-based). When omitted, <out>/wave-plan-overrides.json is auto-loaded "
-        "if present, so the owner's saved fixes survive every re-run.",
+        help="wave-plan-overrides.json saved from the wave-plan studio "
+        "({shape_waves: {id: wave}, shape_flowers: {id: flower}, wave_flowers:"
+        " {wave: flower}, wave_merges: {wave: wave}}, all 1-based, flower 0 = "
+        "no flower). When omitted, <out>/wave-plan-overrides.json is "
+        "auto-loaded if present, so the owner's saved fixes survive re-runs.",
     )
     args = ap.parse_args()
 
@@ -132,6 +133,7 @@ def main() -> None:
         print(
             f"applying owner fixes from {ov_path}: "
             f"{len(overrides.get('shape_waves', {}))} shape move(s), "
+            f"{len(overrides.get('wave_merges', {}))} wave merge(s), "
             f"{len(overrides.get('wave_flowers', {}))} wave re-seat(s)"
         )
 
@@ -257,6 +259,10 @@ def main() -> None:
     # Owner shape moves (from the page's "Fix the groups" mode) land HERE —
     # before flower seating, instance splitting, validation, and visuals — so
     # one saved overrides file flows through every downstream artifact.
+    # Merges first, single-shape moves second: a shape-level move must win
+    # over its wave's merge (the owner singled that shape out).
+    for src, dst in overrides.get("wave_merges", {}).items():
+        wave_of[wave_of == int(src) - 1] = int(dst) - 1
     for sid, wv in overrides.get("shape_waves", {}).items():
         wave_of[int(sid) - 1] = int(wv) - 1
     # Per-wave real membership recomputed AFTER the moves; every consumer
@@ -616,34 +622,76 @@ def main() -> None:
     html = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><title>The plan: copy the pattern in waves</title>
 <style>
- body {{ font-family: -apple-system, sans-serif; margin: 0; background: #f5f3ee; color: #222; }}
- header {{ padding: 14px 20px; background: #fff; border-bottom: 1px solid #ddd; }}
- h1 {{ font-size: 20px; margin: 0 0 6px; }} p {{ margin: 4px 0; }}
- #caption {{ font-size: 17px; }} .muted {{ color: #666; font-size: 14px; }}
- .controls {{ padding: 6px 20px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }}
- .rowlabel {{ font-size: 14px; color: #666; min-width: 60px; }}
- button {{ font-size: 16px; padding: 8px 16px; border-radius: 8px; border: 1px solid #999;
-          background: #fff; cursor: pointer; }}
- button.on {{ background: #1b6ca8; color: #fff; border-color: #1b6ca8; }}
- button.act {{ font-size: 15px; padding: 6px 12px; }}
- #applybtn {{ background: #E64A19; color: #fff; border-color: #E64A19; font-weight: 600; }}
- #fixhint {{ font-size: 15px; color: #8a3c00; }}
- #fixlist {{ padding: 0 20px 6px; }}
- #fixlist a {{ color: #1b6ca8; }}
- #main {{ display: flex; align-items: flex-start; gap: 16px; padding: 0 20px 20px; }}
+ /* One design system, shared with the hub + palette pages (wave-plan-server.py
+    HUB_CSS mirrors these tokens): warm-paper gallery look, serif display voice,
+    ONE button system (uniform height, inline-flex centering) so rows align. */
+ :root {{
+   --paper: #F6F3EC; --card: #FFFFFF; --ink: #202A36; --muted: #7A746A;
+   --line: #E4DFD3; --accent: #19599C; --accent-soft: #EAF1F8;
+   --apply: #D4501E; --agree: #1F7A45;
+   --shadow: 0 1px 2px rgba(32,42,54,.05), 0 10px 28px rgba(32,42,54,.08);
+   --serif: Charter, 'Iowan Old Style', Georgia, serif;
+ }}
+ * {{ box-sizing: border-box; }}
+ body {{ font-family: 'Avenir Next', Seravek, 'Helvetica Neue', -apple-system, sans-serif;
+        margin: 0; background: var(--paper); color: var(--ink);
+        -webkit-font-smoothing: antialiased; }}
+ header {{ padding: 18px 24px 12px; background: var(--card);
+          border-bottom: 1px solid var(--line); }}
+ h1 {{ font-family: var(--serif); font-weight: 600; font-size: 24px;
+      letter-spacing: .1px; margin: 0 0 6px; }}
+ p {{ margin: 4px 0; }}
+ #caption {{ font-size: 16px; }}
+ .muted {{ color: var(--muted); font-size: 13.5px; line-height: 1.55; }}
+ .controls {{ padding: 8px 24px 0; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }}
+ .rowlabel {{ font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase;
+             color: var(--muted); min-width: 64px; }}
+ button {{ font: inherit; font-size: 14px; font-weight: 500; color: var(--ink);
+          display: inline-flex; align-items: center; justify-content: center;
+          height: 32px; padding: 0 14px; border-radius: 999px;
+          border: 1px solid var(--line); background: var(--card); cursor: pointer;
+          transition: transform .15s ease, box-shadow .15s ease,
+                      background .15s ease, border-color .15s ease; }}
+ button:hover {{ border-color: var(--accent); box-shadow: var(--shadow);
+                transform: translateY(-1px); }}
+ button:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
+ button:disabled {{ opacity: .55; cursor: default; transform: none; box-shadow: none; }}
+ button.on {{ background: var(--accent); color: #fff; border-color: var(--accent); }}
+ button.act {{ height: 30px; padding: 0 12px; border-radius: 8px; font-size: 13.5px; }}
+ #applybtn {{ background: var(--apply); color: #fff; border-color: var(--apply); font-weight: 600; }}
+ #agreebtn {{ background: var(--agree); color: #fff; border-color: var(--agree); font-weight: 600; }}
+ #fixhint {{ font-size: 14px; color: #8a3c00; }}
+ #fixlist {{ padding: 6px 24px 0; font-size: 13.5px; }}
+ #fixlist .fix {{ display: inline-flex; align-items: center; gap: 6px;
+                 background: var(--accent-soft); border: 1px solid var(--line);
+                 border-radius: 999px; padding: 3px 11px; margin: 2px 6px 2px 0; }}
+ #fixlist a {{ color: var(--accent); }}
+ #main {{ display: flex; align-items: flex-start; gap: 18px; padding: 10px 24px 24px; }}
  /* The marks overlay (inset:0) and the image must share ONE box, or every
     selection ring lands offset from its shape: width 100% makes the image
-    fill the flex column so the absolute SVG maps 1:1 onto the pixels. */
- #imgwrap {{ position: relative; flex: 1 1 auto; min-width: 0; cursor: pointer; }}
+    fill the wrapper so the absolute SVG maps 1:1 onto the pixels. The
+    wrapper width is capped so the WHOLE picture fits the window height
+    (owner, 2026-06-11: full-width image ate the screen) — the cap is the
+    viewport height times the image's aspect ratio. */
+ #imgwrap {{ position: relative; flex: 0 1 auto; min-width: 0; cursor: pointer;
+            margin: 0 auto;
+            width: min(100%, calc((100vh - 250px) * {img_w / img_h:.4f}));
+            border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }}
  #imgwrap img {{ display: block; width: 100%; height: auto; }}
  #marks {{ position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }}
- #panel {{ flex: 0 0 330px; position: sticky; top: 10px; background: #fff;
-          border: 1px solid #ddd; border-radius: 12px; padding: 14px 16px;
-          box-shadow: 0 2px 10px rgba(0,0,0,.08); font-size: 15px; }}
- #panel h3 {{ margin: 0 0 4px; font-size: 17px; }}
- #panel select {{ font-size: 15px; max-width: 100%; margin: 4px 0; }}
- #panel .row {{ margin: 10px 0; }}
- #panel a {{ color: #1b6ca8; }}
+ #panel {{ flex: 0 0 340px; position: sticky; top: 12px; background: var(--card);
+          border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px;
+          box-shadow: var(--shadow); font-size: 14.5px; }}
+ #panel h3 {{ margin: 0 0 2px; font-family: var(--serif); font-size: 19px; }}
+ #panel .sec {{ margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--line); }}
+ #panel .seclabel {{ font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase;
+                    color: var(--muted); margin: 0 0 4px; }}
+ #panel .row {{ margin: 8px 0; }}
+ #panel select {{ font: inherit; font-size: 13.5px; width: 100%; height: 32px;
+                 padding: 0 8px; margin: 4px 0 8px; border: 1px solid var(--line);
+                 border-radius: 8px; background: var(--card); color: var(--ink); }}
+ #panel .btns {{ display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 4px; }}
+ #panel a {{ color: var(--accent); }}
 </style></head><body>
 <header>
  <h1>The plan: a few flowers, copied in waves, middle first</h1>
@@ -653,12 +701,14 @@ def main() -> None:
    wave is one kind of simple shape. {plan['real_shapes']} shapes,
    {coverage:.0%} of the colored area covered; every shape belongs to exactly
    one wave and one flower. <b>Click any shape on the picture</b> to see its
-   groups and fix them — we don't start building until you agree.</p>
+   groups and fix them — we don't start building until you agree.
+   <a href="/" id="hublink" hidden>&larr; Back to your review list</a></p>
 </header>
 <div class="controls"><span class="rowlabel">Flowers:</span>{flower_buttons}</div>
 <div class="controls"><span class="rowlabel">Waves:</span>{wave_buttons}</div>
 <div class="controls"><span class="rowlabel"></span>
  <button id="applybtn" style="display:none"></button>
+ <button id="agreebtn" style="display:none">The plan looks right — start building</button>
  <span id="fixhint"></span></div>
 <div id="fixlist" class="muted"></div>
 <div id="main">
@@ -669,15 +719,22 @@ def main() -> None:
   <p id="p-desc" class="muted"></p>
   <p class="row" id="p-wave"></p>
   <p class="row" id="p-flower"></p>
-  <hr style="border:none;border-top:1px solid #eee">
-  <p class="row"><b>Fix it:</b></p>
-  <div class="row">Move it to a different wave:<br>
-   <select id="selwave"></select> <button class="act" id="btn-wave">Move</button></div>
-  <div class="row">Move it to a different flower:<br>
-   <select id="selflower"></select> <button class="act" id="btn-flower">Move</button><br>
-   <label class="muted"><input type="checkbox" id="wholewave"> move its whole wave (everything like it)</label></div>
-  <div class="row"><button class="act" id="btn-noflower">Take it out of its flower</button></div>
-  <div class="row"><button class="act" id="btn-close">Close</button></div>
+  <div class="sec"><p class="seclabel">Fix its wave</p>
+   <select id="selwave"></select>
+   <div class="btns">
+    <button class="act" id="btn-wave-shape">Move shape</button>
+    <button class="act" id="btn-wave-wave">Move wave</button></div>
+   <p class="muted">"Move wave" merges its whole wave — everything like it — into the one you picked.</p></div>
+  <div class="sec"><p class="seclabel">Fix its flower</p>
+   <select id="selflower"></select>
+   <div class="btns">
+    <button class="act" id="btn-flower-shape">Move shape</button>
+    <button class="act" id="btn-flower-wave">Move wave</button></div>
+   <div class="btns">
+    <button class="act" id="btn-noflower">Take shape out</button>
+    <button class="act" id="btn-noflower-wave">Take wave out</button></div>
+   <p class="muted">"Take out" leaves it on its own, outside any flower.</p></div>
+  <div class="sec btns" style="border-top:none;padding-top:8px"><button class="act" id="btn-close">Close</button></div>
  </div>
 </div>
 <script>
@@ -706,11 +763,13 @@ def main() -> None:
    shape_waves: Object.assign({}, applied.shape_waves || {}),
    shape_flowers: Object.assign({}, applied.shape_flowers || {}),
    wave_flowers: Object.assign({}, applied.wave_flowers || {}),
+   wave_merges: Object.assign({}, applied.wave_merges || {}),
  };
  let sel = null;
  const $ = id => document.getElementById(id);
  const fl = n => String.fromCharCode(64 + n);
- const waveOf = s => fixes.shape_waves[s.id] ?? s.w;
+ // A shape's own move wins; otherwise its whole wave may have been merged.
+ const waveOf = s => fixes.shape_waves[s.id] ?? fixes.wave_merges[s.w] ?? s.w;
  const flowerOfWave = w => fixes.wave_flowers[w] ?? (waveInfo[w] ? waveInfo[w].flower : 0);
  const flowerOfShape = s => fixes.shape_flowers[s.id] ?? flowerOfWave(waveOf(s));
  const flowerLabel = f => f ? 'Flower ' + fl(f) + ' — ' + flowers[f - 1].name : 'no flower (on its own)';
@@ -718,6 +777,7 @@ def main() -> None:
    shape_waves: applied.shape_waves || {},
    shape_flowers: applied.shape_flowers || {},
    wave_flowers: applied.wave_flowers || {},
+   wave_merges: applied.wave_merges || {},
  });
  function setHint(t) { $('fixhint').textContent = t; }
  function drawMarks() {
@@ -768,16 +828,19 @@ def main() -> None:
  }
  function renderFixes() {
    const L = [];
+   const chip = (txt, k, id) => L.push('<span class="fix">' + txt +
+     ' <a href="#" data-k="' + k + '" data-id="' + id + '">undo</a></span>');
    for (const id in fixes.shape_waves)
-     L.push('shape #' + id + ' &rarr; wave ' + fixes.shape_waves[id] +
-       ' <a href="#" data-k="shape_waves" data-id="' + id + '">undo</a>');
+     chip('shape #' + id + ' &rarr; wave ' + fixes.shape_waves[id], 'shape_waves', id);
    for (const id in fixes.shape_flowers)
-     L.push('shape #' + id + ' &rarr; ' + (fixes.shape_flowers[id] ? 'flower ' + fl(fixes.shape_flowers[id]) : 'no flower') +
-       ' <a href="#" data-k="shape_flowers" data-id="' + id + '">undo</a>');
+     chip('shape #' + id + ' &rarr; ' + (fixes.shape_flowers[id] ? 'flower ' + fl(fixes.shape_flowers[id]) : 'no flower'),
+       'shape_flowers', id);
    for (const w in fixes.wave_flowers)
-     L.push('wave ' + w + ' &rarr; ' + (fixes.wave_flowers[w] ? 'flower ' + fl(fixes.wave_flowers[w]) : 'no flower') +
-       ' <a href="#" data-k="wave_flowers" data-id="' + w + '">undo</a>');
-   $('fixlist').innerHTML = L.length ? 'Your fixes: ' + L.join(' &middot; ') : '';
+     chip('wave ' + w + ' &rarr; ' + (fixes.wave_flowers[w] ? 'flower ' + fl(fixes.wave_flowers[w]) : 'no flower'),
+       'wave_flowers', w);
+   for (const w in fixes.wave_merges)
+     chip('wave ' + w + ' merged into wave ' + fixes.wave_merges[w], 'wave_merges', w);
+   $('fixlist').innerHTML = L.length ? '<span class="muted">Your fixes:</span> ' + L.join(' ') : '';
    const d = dirty();
    $('applybtn').style.display = d ? '' : 'none';
    $('applybtn').textContent = SERVER ? 'Apply my fixes and redraw the pictures' : 'Save my fixes';
@@ -801,31 +864,64 @@ def main() -> None:
    if (!best || bd > Math.max(30, 2 * Math.sqrt(best.a / Math.PI))) return;
    openPanel(best);
  });
- $('btn-wave').addEventListener('click', () => {
+ $('btn-wave-shape').addEventListener('click', () => {
    if (!sel) return;
    const w = parseInt($('selwave').value, 10);
    if (w === sel.w) delete fixes.shape_waves[sel.id]; else fixes.shape_waves[sel.id] = w;
    afterEdit('Moved shape #' + sel.id + ' to wave ' + w + '.');
  });
- $('btn-flower').addEventListener('click', () => {
+ $('btn-wave-wave').addEventListener('click', () => {
+   if (!sel) return;
+   const src = waveOf(sel), dst = parseInt($('selwave').value, 10);
+   if (src === dst) { setHint('That is already its wave — pick a different one to merge into.'); return; }
+   fixes.wave_merges[src] = dst;
+   afterEdit('Merged wave ' + src + ' (everything like it) into wave ' + dst + '.');
+ });
+ $('btn-flower-shape').addEventListener('click', () => {
    if (!sel) return;
    const f = parseInt($('selflower').value, 10);
-   if ($('wholewave').checked) {
-     fixes.wave_flowers[waveOf(sel)] = f;
-     afterEdit('Moved wave ' + waveOf(sel) + ' (the whole kind) to ' + flowerLabel(f) + '.');
-   } else {
-     fixes.shape_flowers[sel.id] = f;
-     afterEdit('Moved shape #' + sel.id + ' to ' + flowerLabel(f) + '.');
-   }
+   fixes.shape_flowers[sel.id] = f;
+   afterEdit('Moved shape #' + sel.id + ' to ' + flowerLabel(f) + '.');
+ });
+ $('btn-flower-wave').addEventListener('click', () => {
+   if (!sel) return;
+   const f = parseInt($('selflower').value, 10);
+   fixes.wave_flowers[waveOf(sel)] = f;
+   afterEdit('Moved wave ' + waveOf(sel) + ' (everything like it) to ' + flowerLabel(f) + '.');
  });
  $('btn-noflower').addEventListener('click', () => {
    if (!sel) return;
    fixes.shape_flowers[sel.id] = 0;
    afterEdit('Took shape #' + sel.id + ' out of its flower.');
  });
+ $('btn-noflower-wave').addEventListener('click', () => {
+   if (!sel) return;
+   const w = waveOf(sel);
+   fixes.wave_flowers[w] = 0;
+   afterEdit('Took wave ' + w + ' (everything like it) out of its flower.');
+ });
  $('btn-close').addEventListener('click', () => {
    sel = null; $('panel').hidden = true; drawMarks();
  });
+ // Server mode: the gate verdict is recorded HERE (session.json via the
+ // server), not transcribed from chat — the page that shows the plan is the
+ // page that records the agreement.
+ if (SERVER) {
+   $('hublink').hidden = false;
+   $('agreebtn').style.display = '';
+   $('agreebtn').addEventListener('click', async () => {
+     if (dirty()) { setHint('You have unapplied fixes — press the apply button first, then agree.'); return; }
+     $('agreebtn').disabled = true;
+     try {
+       const r = await fetch('/api/agree', { method: 'POST' });
+       if (!r.ok) throw new Error(await r.text());
+       $('agreebtn').textContent = 'Recorded ✓ — we will start building';
+     } catch (err) {
+       $('agreebtn').disabled = false;
+       setHint('Could not record the agreement — tell me and I will look: ' + err.message);
+     }
+   });
+ }
  $('applybtn').addEventListener('click', async () => {
    if (SERVER) {
      setHint('Redrawing the pictures with your fixes\u2026 this takes a few seconds.');

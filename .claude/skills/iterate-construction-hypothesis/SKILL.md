@@ -191,8 +191,11 @@ The `.bkr` statement vocabulary partitions natively by stage:
     "weave":     {"approved_at_iter": null, "approved_date": null}
   }
   ```
-  v1 records the owner's chat agreement; the portal-native upgrade path is
-  qiyas annotation kinds Q12/Q9/Q11 with `verdict: "right"` (already
+  Gate verdicts are recorded IN the review surfaces, never transcribed from
+  chat: the studio's "The plan looks right" button (`POST /api/agree` →
+  `wave_plan.agreed`) and the palette page's "These colours are right"
+  (`POST /api/palette-agree` → `palette_agreed`). The portal-native upgrade
+  path is qiyas annotation kinds Q12/Q9/Q11 with `verdict: "right"` (already
   supported in `qiyas/src/qiyas/review/state.py`) — wire later if wanted.
 - **Stage entry gates:** Stage 2 opens only after BOTH the structure gate
   AND the owner's palette-swatch agreement (`tools/analyze-reference.py`
@@ -205,9 +208,12 @@ The `.bkr` statement vocabulary partitions natively by stage:
   `tools/analyze-reference.py` (line/fill separation, standardized palette,
   swatch sheet — runs under the qiyas venv python),
   `tools/plan-waves.py` (the wave plan below — runs under the qiyas venv),
-  `tools/wave-plan-server.py` (the wave-plan STUDIO: serves the plan on
-  localhost; owner clicks any shape, fixes its wave/flower, Apply re-plans
-  with the fixes persisted in wave-plan-overrides.json).
+  `tools/wave-plan-server.py` (the REVIEW HUB + wave-plan STUDIO: `/` reads
+  session.json stage_gates and lists what needs the owner's eyes; `/plan` is
+  the studio — owner clicks any shape, fixes its wave/flower with paired
+  shape-level/wave-level buttons, Apply re-plans with the fixes persisted in
+  wave-plan-overrides.json, the agree button records the gate; `/palette`
+  is the colour gate).
 
 ### Stage 1 is wave-based — plan the waves FIRST, never steer by one-shot whole-image diff
 
@@ -222,9 +228,10 @@ metric only, never the steering signal (owner directive, 2026-06-11).
 The protocol (`tools/plan-waves.py <session-dir> --center X Y --diameter D`):
 
 1. **Validate the center** — auto-detect the medallion center (mass center of
-   the medallion mask); the owner confirms/adjusts it with one click
-   (`review/structure-priorities.html` Step 1). Every wave is measured from
-   this point.
+   the medallion mask); the owner confirms it with one look at the studio's
+   marked-up picture (the legacy `review/structure-priorities.html` annotator
+   is retired — `docs/review-experience-audit.md`). Every wave is measured
+   from this point.
 2. **Exhaust the shapes** — every lattice-separated colored tile becomes a
    labelled shape (erode to snap JPEG-soft lattice bridges, label the cores,
    grow labels back = 100% coverage). The JSON reports
