@@ -51,11 +51,21 @@ semgrep:
 # Strict (no `-` prefix): src/ts + tools/ + docs were triaged to 0 at baseline
 # by fixing src/ts/index.ts:60 (shfit → shift). `ans` is a legitimate variable
 # name (user-answer prompt) in tools/auto-iterate*.py; codespell flags it as
-# "and" — suppressed via -L ans. src/js/ is gitignored TypeScript build output
-# (mirrors eslint config ignore). Mirrors qiyas local.spelling + bikar wiring.
-# Install: pip install codespell
+# "and" — suppressed via -L ans. Other suppressions, all legitimate words
+# codespell misreads: `Couter` (DSL circle identifier C-outer quoted in
+# decision docs), `SME` (subject-matter expert, tenet text), `pre-selected`
+# (valid hyphenation, tenet + picker text). src/js/ is gitignored TypeScript
+# build output (mirrors eslint config ignore). Mirrors qiyas local.spelling
+# + bikar wiring. Install: pip install codespell
 spelling:
-	codespell -L ans --skip="src/js,node_modules,site" src tools .claude docs CLAUDE.md README.md REFERENCES.md
+	codespell -L ans,couter,sme,pre-selected --skip="src/js,node_modules,site" src tools .claude docs CLAUDE.md README.md REFERENCES.md
+
+# tools/ test harness — stdlib unittest, not pytest: the system python3 these
+# tools run under has no pytest, and the tools themselves are stdlib-only by
+# convention (see tools/portal_verdict.py docstring). The cross-repo end-to-end
+# test self-skips when uv or the qiyas repo is absent.
+tool-tests:
+	python3 -m unittest discover -s tools/tests -v
 
 INTERPRET_TEMPLATE := ${ROOT_DIR}/.claude/skills/interpret-pattern/templates/pattern-interpretation.html
 
