@@ -22,8 +22,9 @@ Outputs (under <session>/input/reference-analysis/wave-plan/):
     wave-plan.json   waves -> shapes (centroid, r_frac, theta, area, color)
     wave-<k>.png     wave k in full color over a dimmed grayscale reference
     waves-map.png    every shape tinted by its wave (distinct colors, Tenet 24)
-    flower-<f>.png   composite flower f: one instance bright, its rotated
-                     twins half-bright, everything else pale
+    flower-<f>.png   composite flower f: the repeated unit ringed in gold,
+                     a dotted orbit through its rotated twins (half-bright),
+                     everything else pale — build once, spin fold times
     flowers-map.png  every shape tinted by its composite flower
     wave-plan.html   the flip-through planning experience (plain language)
 
@@ -47,7 +48,7 @@ import json
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 from scipy import ndimage
 
 # Same near-white threshold as analyze-reference.py so "tile" means the same
@@ -471,13 +472,53 @@ def main() -> None:
 
     # Flower frames: ONE instance full color, its rotated twins half-bright
     # (so the eye can confirm "same flower, turned"), everything else pale.
+    # The repeated unit is CALLED OUT explicitly, not just brighter (owner
+    # 2026-06-11: "per flower, are we highlighting the main repeated
+    # pattern? ... that is repeated across origin?"): a gold ring circles
+    # the one flower we build, and a dotted orbit through the twins' centers
+    # shows the path it is turned along — build once, spin fold times.
     for f in range(len(rings)):
         frame = dim_rgb.copy()
         sib = np.isin(labels, idx[(fam_of == f) & (inst_of != 0)])
         frame[sib] = (0.55 * a[sib] + 0.45 * frame[sib]).astype(np.uint8)
         bright = np.isin(labels, idx[(fam_of == f) & (inst_of == 0)])
         frame[bright] = a[bright]
-        Image.fromarray(frame).save(out_dir / f"flower-{f + 1}.png")
+        im = Image.fromarray(frame)
+        n_inst = motifs[f]["n_instances"] if f < len(motifs) else 1
+        if n_inst > 1:
+            d = ImageDraw.Draw(im)
+            inst_cx, inst_cy = [], []
+            for i in range(n_inst):
+                m = (fam_of == f) & (inst_of == i)
+                if not m.any():
+                    continue
+                wts = areas[m]
+                inst_cx.append(float((cxs[m] * wts).sum() / wts.sum()))
+                inst_cy.append(float((cys[m] * wts).sum() / wts.sum()))
+            # Dotted orbit first (under the ring): circle through the
+            # instance centers, centered on the validated pattern center.
+            # Gold like the unit ring (one visual story: the ringed flower
+            # travels this path), over a white halo so the dashes survive
+            # both the pale background and the half-bright navy twins.
+            orad = float(np.mean(np.hypot(np.array(inst_cx) - cx, np.array(inst_cy) - cy)))
+            box = [cx - orad, cy - orad, cx + orad, cy + orad]
+            for adeg in range(0, 360, 8):
+                d.arc(box, adeg, adeg + 4, fill=(255, 255, 255), width=6)
+            for adeg in range(0, 360, 8):
+                d.arc(box, adeg, adeg + 4, fill=(193, 128, 10), width=3)
+            # Gold ring around the unit we build — big enough to cover its
+            # farthest member shape (centroid distance + that shape's own
+            # radius from its area) plus a little breathing room.
+            m0 = (fam_of == f) & (inst_of == 0)
+            rr = float(np.max(
+                np.hypot(cxs[m0] - inst_cx[0], cys[m0] - inst_cy[0])
+                + np.sqrt(areas[m0] / np.pi)
+            )) + 6
+            d.ellipse(
+                [inst_cx[0] - rr, inst_cy[0] - rr, inst_cx[0] + rr, inst_cy[0] + rr],
+                outline=(212, 146, 10), width=4,
+            )
+        im.save(out_dir / f"flower-{f + 1}.png")
 
     flower_map = dim_rgb.copy()
     for f in range(len(rings)):
@@ -520,10 +561,10 @@ def main() -> None:
         if m["n_instances"] > 1:
             cap = (
                 f"{nm.capitalize()} — one whole flower made of "
-                f"{m['shapes_per_instance']} shapes (from {len(m['waves'])} waves), "
-                f"repeated {m['n_instances']} times around the center. The bright "
-                f"one is a single flower; its paler twins are the same flower, "
-                f"turned. We build it once and spin it."
+                f"{m['shapes_per_instance']} shapes (from {len(m['waves'])} waves). "
+                f"The gold ring marks the one we build; the dotted circle is the "
+                f"path it repeats along — the same flower, turned around the "
+                f"center {m['n_instances']} times. Build once, spin {m['n_instances']} times."
             )
         else:
             cap = (

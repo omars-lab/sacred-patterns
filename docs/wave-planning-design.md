@@ -80,6 +80,10 @@ Protocol home: `.claude/skills/iterate-construction-hypothesis/SKILL.md` →
    family must hold the same wave-multiset.** Deviations are reported, not
    hidden.
    A flower is the DSL-native unit: build one instance, `rotate` fold times.
+   The flower views call this out explicitly (owner ask 2026-06-11: "per
+   flower, are we highlighting the main repeated pattern?"): the repeated
+   unit is circled in gold, and a gold dotted orbit through the twins'
+   centers shows the path it turns along — build once, spin fold times.
 
 5. **Owner gates the plan in the STUDIO (review + fix in one place).**
    `wave-plan-server.py` serves `wave-plan.html` on localhost: flowers row +
@@ -144,3 +148,15 @@ seats "outer" but the owner's list skipped it.
   covers the anchor-seeded rotational case only.
 - Per-wave diff cropping tooling (lands with the first wave-1 structure
   iteration).
+- **Overlapping motifs — the "cropping" effect (owner observation,
+  2026-06-11, recorded as something to consider, not yet actioned):** in the
+  flower views, flower B (the inner flowers) appears CROPPED by flower C —
+  where the two rings meet, one family's ideal rosette is truncated because
+  the plan partitions every shape into exactly ONE flower. Real girih motifs
+  interpenetrate: boundary shapes can legitimately belong to two overlapping
+  rosettes. The hard partition is right for build order (each shape is built
+  once), but construction may want to treat a flower as the FULL ideal motif
+  with the overlap resolved at the seam (draw order / shared shapes), and the
+  plan could mark boundary shapes "shared between B and C" instead of
+  coin-flipping their seat. Companion concern to generalized composite-repeat
+  detection (bikar task #39).
