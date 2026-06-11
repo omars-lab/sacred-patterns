@@ -20,7 +20,8 @@ Usage:
 
 Outputs (under <session>/input/reference-analysis/wave-plan/):
     wave-plan.json   waves -> shapes (centroid, r_frac, theta, area, color)
-    wave-<k>.png     wave k in full color over a dimmed grayscale reference
+    wave-<k>.png     wave k in full color over a dimmed grayscale reference,
+                     with the wave's ring dashed through its midpoints
     waves-map.png    every shape tinted by its wave (distinct colors, Tenet 24)
     flower-<f>.png   composite flower f: the repeated unit ringed in gold,
                      a dotted orbit through its rotated twins (half-bright),
@@ -457,11 +458,34 @@ def main() -> None:
     dim = (255 - (255 - gray) * 0.18).astype(np.uint8)
     dim_rgb = np.stack([dim] * 3, axis=2)
 
+    def dash_circle(draw, radius):
+        # Gold dashes over a white halo, centered on the validated center —
+        # the one visual vocabulary for "this is a ring around the middle"
+        # (used by both the wave rings and the flower orbit). The halo keeps
+        # the dashes readable on the pale background AND on navy tiles.
+        box = [cx - radius, cy - radius, cx + radius, cy + radius]
+        for adeg in range(0, 360, 8):
+            draw.arc(box, adeg, adeg + 4, fill=(255, 255, 255), width=6)
+        for adeg in range(0, 360, 8):
+            draw.arc(box, adeg, adeg + 4, fill=(193, 128, 10), width=3)
+
+    # A wave IS a ring — midpoints equidistant from the center is the
+    # grouping rule, so draw that circle through the members' midpoints
+    # (owner ask 2026-06-11: "when we see a wave, why don't we see a circle
+    # going through the midpoint of all shapes in the wave"). The center
+    # wave (single shape at radius ~0) gets no ring.
+    wave_ringed = []
     for w in range(n_waves):
         frame = dim_rgb.copy()
         sel_mask = np.isin(labels, idx[wave_of == w])
         frame[sel_mask] = a[sel_mask]
-        Image.fromarray(frame).save(out_dir / f"wave-{w + 1}.png")
+        im = Image.fromarray(frame)
+        mem = (wave_of == w) & real
+        orad = float(np.hypot(cxs[mem] - cx, cys[mem] - cy).mean()) if mem.any() else 0.0
+        if orad > 15:
+            dash_circle(ImageDraw.Draw(im), orad)
+        wave_ringed.append(orad > 15)
+        im.save(out_dir / f"wave-{w + 1}.png")
 
     wave_map = dim_rgb.copy()
     for w in range(n_waves):
@@ -496,16 +520,9 @@ def main() -> None:
                 inst_cx.append(float((cxs[m] * wts).sum() / wts.sum()))
                 inst_cy.append(float((cys[m] * wts).sum() / wts.sum()))
             # Dotted orbit first (under the ring): circle through the
-            # instance centers, centered on the validated pattern center.
-            # Gold like the unit ring (one visual story: the ringed flower
-            # travels this path), over a white halo so the dashes survive
-            # both the pale background and the half-bright navy twins.
+            # instance centers — the path the gold-ringed unit turns along.
             orad = float(np.mean(np.hypot(np.array(inst_cx) - cx, np.array(inst_cy) - cy)))
-            box = [cx - orad, cy - orad, cx + orad, cy + orad]
-            for adeg in range(0, 360, 8):
-                d.arc(box, adeg, adeg + 4, fill=(255, 255, 255), width=6)
-            for adeg in range(0, 360, 8):
-                d.arc(box, adeg, adeg + 4, fill=(193, 128, 10), width=3)
+            dash_circle(d, orad)
             # Gold ring around the unit we build — big enough to cover its
             # farthest member shape (centroid distance + that shape's own
             # radius from its area) plus a little breathing room.
@@ -601,6 +618,12 @@ def main() -> None:
                 "cap": f"Wave {w['wave']} — {w['real_shape_count']} "
                 f"{FRIENDLY.get(w['color'], w['color'])} shapes, all the same kind, "
                 f"{w['where']} ({w['area_share']:.0%} of the pattern). "
+                + (
+                    "The dotted ring runs through all their midpoints — "
+                    "that ring is the wave. "
+                    if wave_ringed[w["wave"] - 1]
+                    else ""
+                )
                 + (
                     "We copy these first."
                     if w["wave"] == 1
