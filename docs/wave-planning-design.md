@@ -159,8 +159,16 @@ seats "outer" but the owner's list skipped it.
   border motif that also appears in an interstitial zone). A confirmed repeat
   becomes a motif: build once, stamp everywhere. The current implementation
   covers the anchor-seeded rotational case only.
-- Per-wave diff cropping tooling (lands with the first wave-1 structure
-  iteration).
+- ~~Per-wave diff cropping tooling~~ — SHIPPED with the first wave-1
+  structure iteration (2026-06-11): `tools/wave-diff.py <session-dir> <wave>
+  --render <png>` registers our render onto the reference (the planner's
+  medallion detection run on both sides, scale + translate, no rotation),
+  masks the comparison to the wave's shapes, and emits the gate visual
+  (`sbs.png`: reference wave bright + gold target outline | our render under
+  the same outline) plus two trend numbers (`coverage` = wave tile pixels we
+  ink; `iou` adds a penalty for ink next to the shapes). First witness:
+  wave 1 vs iter-39 → coverage 60.4%, iou 42.2%, sbs showing our center
+  star undersized vs the reference footprint.
 - **Overlapping motifs — the "cropping" effect (owner observation,
   2026-06-11, recorded as something to consider, not yet actioned):** in the
   flower views, flower B (the inner flowers) appears CROPPED by flower C —
