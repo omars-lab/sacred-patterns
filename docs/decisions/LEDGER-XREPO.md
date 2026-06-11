@@ -27,8 +27,10 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `critical-path-workstream` | sacred-patterns | sacred-patterns/docs/decisions/2026-05-23-unblock-critical-path-workstream.md | ACCEPTED | B | ★ |
 | `decision-hygiene` | qiyas | qiyas/docs/decisions/2026-06-07-decision-memory-hardening.md | ACCEPTED | C | ★ |
 | `derived-shape-naming` | bikar | bikar/docs/decisions/2026-05-27-derived-shape-naming-convention.md | PENDING | — | — |
+| `diff-alignment-path` | qiyas | qiyas/docs/decisions/2026-06-10-shape-diff-canonical-path.md | ACCEPTED | A | ★ |
 | `dominant-arc-resolver` | bikar | bikar/docs/decisions/2026-05-10-dominant-arc-resolver-source-primitives.md | ACCEPTED | α | ★ |
 | `dsl-tagging` | sacred-patterns | sacred-patterns/docs/decisions/2026-05-20-universal-dsl-tagging.md | ACCEPTED | A | ★ |
+| `encode-scoreability` | qiyas | qiyas/docs/decisions/2026-06-10-encode-time-scoreability.md | ACCEPTED | B | ★ |
 | `extend-mechanism` | bikar | bikar/docs/decisions/2026-05-10-extend-virtual-radius-mechanism.md | ACCEPTED | A | ★ |
 | `f1-class-selector` | qiyas | qiyas/docs/decisions/2026-05-06-iter-8-face-class-vs-multiset.md | ACCEPTED | A | ★ |
 | `f2-validation-scope` | qiyas | qiyas/docs/decisions/2026-05-28-f2-cross-construction-validation-scope.md | ACCEPTED | B | ★ |
