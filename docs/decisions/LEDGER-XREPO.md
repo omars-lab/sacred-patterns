@@ -59,6 +59,7 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `petal-ring-class` | bikar | bikar/docs/decisions/2026-05-15-bikar-petal-n-ring-class-assignment.md | ACCEPTED | B | ★ |
 | `petal-ring-class` | qiyas | qiyas/docs/decisions/2026-05-07-petal-6-full-asymmetric-granularity.md | SUPERSEDED | β | — |
 | `petal-ring-class` | qiyas | qiyas/docs/decisions/2026-05-07-petal-6-full-empty-provenance-collapse.md | ACCEPTED | γ-narrow+α | ★ |
+| `portal-hypothesis-handoff` | sacred-patterns | sacred-patterns/docs/decisions/2026-06-10-portal-hypothesis-handoff.md | ACCEPTED | A | ★ |
 | `rasterizer-fidelity` | bikar | bikar/docs/decisions/2026-05-13-gt-json-image-dims-rasterizer-fidelity.md | ACCEPTED | A | ★ |
 | `scale-invariant-matching` | qiyas | qiyas/docs/decisions/2026-06-10-scale-invariant-param-drift.md | ACCEPTED | B | ★ |
 | `scope-rescope` | qiyas | qiyas/docs/decisions/2026-05-12-i1-cascade-closeout.md | PENDING | — | — |

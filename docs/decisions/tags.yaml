@@ -28,3 +28,4 @@ loop-terminal-condition: What "done" means for the autonomous iteration / learn-
 
 # --- Decision-memory layer (shared dogfood tag) ---
 decision-hygiene: The decision-memory layer itself — ledger, coherence checker, frontmatter schema, tenet/skill guards.
+portal-hypothesis-handoff: The annotations → hypothesis.md handoff — the qiyas review-verdict.json contract, seed/judgment split, and the loop's portal_verdict_recorded conjunct.

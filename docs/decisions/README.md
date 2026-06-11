@@ -13,3 +13,4 @@ drift from the doc. For the "authoritative-per-tag / dead-ends" view see
 | 2026-05-20 — [universal-dsl-tagging](2026-05-20-universal-dsl-tagging.md) | ACCEPTED | A | `dsl-tagging` |
 | 2026-05-23 — [unblock-critical-path-workstream](2026-05-23-unblock-critical-path-workstream.md) | ACCEPTED | B | `critical-path-workstream` |
 | 2026-06-07 — [loop-terminal-condition](2026-06-07-loop-terminal-condition.md) | ACCEPTED | C | `loop-terminal-condition` |
+| 2026-06-10 — [portal-hypothesis-handoff](2026-06-10-portal-hypothesis-handoff.md) | ACCEPTED | A | `portal-hypothesis-handoff` |
