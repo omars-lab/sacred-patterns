@@ -204,7 +204,10 @@ The `.bkr` statement vocabulary partitions natively by stage:
   rsvg-convert — ImageMagick's MSVG silently drops stroked paths),
   `tools/analyze-reference.py` (line/fill separation, standardized palette,
   swatch sheet — runs under the qiyas venv python),
-  `tools/plan-waves.py` (the wave plan below — runs under the qiyas venv).
+  `tools/plan-waves.py` (the wave plan below — runs under the qiyas venv),
+  `tools/wave-plan-server.py` (the wave-plan STUDIO: serves the plan on
+  localhost; owner clicks any shape, fixes its wave/flower, Apply re-plans
+  with the fixes persisted in wave-plan-overrides.json).
 
 ### Stage 1 is wave-based — plan the waves FIRST, never steer by one-shot whole-image diff
 
@@ -248,13 +251,21 @@ The protocol (`tools/plan-waves.py <session-dir> --center X Y --diameter D`):
    hold the same wave-multiset** (medallion-10: middle flower 21 shapes,
    inner ×10 @ 15, outer ×10 @ 21 — the owner's "similar to the middle"
    confirmed by count). A flower is the DSL-native unit: build it once,
-   `rotate` fold times. The owner re-seats a wave from the gate with
-   `--seat WAVE=FLOWER` — no code change. Full algorithm, thresholds, and
-   witnessed dead ends: `docs/wave-planning-design.md`.
-5. **Owner gates the wave plan** — the flip-through (`wave-plan.html`:
-   flowers row + waves row, one group bright per frame, colored maps) goes
-   to the owner; construction starts only after "waves agreed". Recorded in
-   `session.json` → `stage_gates.structure.wave_plan.agreed`.
+   `rotate` fold times. Full algorithm, thresholds, and witnessed dead
+   ends: `docs/wave-planning-design.md`.
+5. **Owner gates the plan in the wave-plan STUDIO** — run
+   `tools/wave-plan-server.py <session-dir> --center X Y --diameter D`
+   (qiyas venv) and send the owner the printed localhost URL. The page has
+   the flip-through (flowers row + waves row, one group bright per frame,
+   colored maps) AND an inspector: click any shape → see its wave + flower
+   in plain language → move it to a different wave/flower (or its whole
+   wave; or take it out of its flower entirely). "Apply my fixes" POSTs to
+   the server, which writes `wave-plan-overrides.json` next to the plan and
+   re-runs plan-waves.py so every picture, count, and multiset validation
+   regenerates with the fixes baked in (the planner auto-loads that file on
+   every run, so fixes survive re-planning). Construction starts only after
+   "waves agreed", recorded in `session.json` →
+   `stage_gates.structure.wave_plan.agreed`.
 6. **Iterate flower-by-flower, wave-by-wave** — each `stage: structure`
    iteration targets the lowest unmatched wave; its gate visual and diff are
    CROPPED/MASKED to that wave's region. Wave N must pass its visual check

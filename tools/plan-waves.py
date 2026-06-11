@@ -110,10 +110,30 @@ def main() -> None:
         help="Owner re-seat from the gate, e.g. --seat 13=3 moves wave 13 "
         "into flower family 3 (both 1-based) without a code change.",
     )
+    ap.add_argument(
+        "--overrides",
+        type=Path,
+        default=None,
+        help="wave-plan-overrides.json saved from the page's 'Fix the groups' "
+        "mode ({shape_waves: {id: wave}, wave_flowers: {wave: flower}}, all "
+        "1-based). When omitted, <out>/wave-plan-overrides.json is auto-loaded "
+        "if present, so the owner's saved fixes survive every re-run.",
+    )
     args = ap.parse_args()
 
     tools_dir = Path(__file__).resolve().parent
     ar = load_analyze_reference(tools_dir)
+
+    out_dir = args.session_dir / "input" / "reference-analysis" / "wave-plan"
+    ov_path = args.overrides or (out_dir / "wave-plan-overrides.json")
+    overrides: dict = {}
+    if ov_path.exists():
+        overrides = json.loads(ov_path.read_text())
+        print(
+            f"applying owner fixes from {ov_path}: "
+            f"{len(overrides.get('shape_waves', {}))} shape move(s), "
+            f"{len(overrides.get('wave_flowers', {}))} wave re-seat(s)"
+        )
 
     img = Image.open(args.session_dir / args.reference).convert("RGB")
     a = np.asarray(img)
@@ -234,6 +254,15 @@ def main() -> None:
     print(f"{n_waves} same-kind waves; counts: "
           + ", ".join(str(len(kind_members[k])) for k in order))
 
+    # Owner shape moves (from the page's "Fix the groups" mode) land HERE —
+    # before flower seating, instance splitting, validation, and visuals — so
+    # one saved overrides file flows through every downstream artifact.
+    for sid, wv in overrides.get("shape_waves", {}).items():
+        wave_of[int(sid) - 1] = int(wv) - 1
+    # Per-wave real membership recomputed AFTER the moves; every consumer
+    # below (family vote, JSON stats) reads this, never kind_members again.
+    wave_members = [np.nonzero((wave_of == w) & real)[0] for w in range(n_waves)]
+
     # --- group kinds into composite flowers (motifs) -------------------------
     # Owner (2026-06-11): "there is a shape similar to our middle one that
     # revolves around the origin — a mix of several waves." A MOTIF is that
@@ -255,12 +284,21 @@ def main() -> None:
     fam_vote = a_fam[np.argmin(d2a, axis=1)]
     wave_fam = np.zeros(n_waves, dtype=int)
     for w in range(n_waves):
-        vals, cnts = np.unique(fam_vote[kind_members[order[w]]], return_counts=True)
+        if not len(wave_members[w]):
+            continue  # wave emptied by owner moves; its shapes live elsewhere
+        vals, cnts = np.unique(fam_vote[wave_members[w]], return_counts=True)
         wave_fam[w] = int(vals[np.argmax(cnts)])
     for ov in args.seat:
         wv, fm = (int(t) for t in ov.split("="))
         wave_fam[wv - 1] = fm - 1
+    for wv, fm in overrides.get("wave_flowers", {}).items():
+        wave_fam[int(wv) - 1] = int(fm) - 1  # 0 -> -1 = taken out of any flower
     fam_of = wave_fam[wave_of]
+    # Per-shape flower fixes ride on TOP of the wave's seat: the owner can pull
+    # one shape out of a flower (0) or force it into one without moving its
+    # wave (the "remove from flower" button on the inspector panel).
+    for sid, fm in overrides.get("shape_flowers", {}).items():
+        fam_of[int(sid) - 1] = int(fm) - 1
     inst_of = np.zeros(n, dtype=int)
     for f, ring in enumerate(rings):
         if len(ring) < 2:
@@ -368,7 +406,9 @@ def main() -> None:
     waves = []
     for w in range(n_waves):
         sel = wave_of == w
-        members = kind_members[order[w]]
+        members = wave_members[w]
+        if not len(members):
+            continue  # emptied by owner moves — nothing left to plan here
         shapes = [
             {
                 "id": int(i + 1),
@@ -403,7 +443,6 @@ def main() -> None:
             }
         )
 
-    out_dir = args.session_dir / "input" / "reference-analysis" / "wave-plan"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # --- visuals: dimmed grayscale base, full-color current wave -------------
@@ -454,6 +493,7 @@ def main() -> None:
         "coverage_of_tile_area": round(coverage, 4),
         "agreed": False,
         "seat_overrides": list(args.seat),
+        "owner_fixes_applied": overrides if overrides else None,
         "motifs": motifs,
         "waves": [{k: v for k, v in w.items() if k != "shapes"} for w in waves],
     }
@@ -538,6 +578,41 @@ def main() -> None:
         for i, v in enumerate(views[n_flower_views:], start=n_flower_views)
     )
     views_js = json.dumps([{"src": v["src"], "cap": v["cap"]} for v in views])
+    # The inspector ("click any shape") needs every shape's centroid + current
+    # group client-side so a click can hit-test the nearest shape and show its
+    # wave + flower with fix actions. Fixes accumulate as an overrides object
+    # ({shape_waves, shape_flowers, wave_flowers}); served by
+    # wave-plan-server.py they POST back and this tool re-runs with them, so
+    # the owner's corrections survive every regeneration.
+    img_w, img_h = img.size
+    shapes_js = json.dumps(
+        [
+            {"id": s["id"], "x": s["x"], "y": s["y"], "a": s["area_px"],
+             "w": wv["wave"], "c": FRIENDLY.get(s["color"], s["color"])}
+            for wv in waves
+            for s in wv["shapes"]
+        ]
+    )
+    wave_info_js = json.dumps(
+        {
+            str(wv["wave"]): {
+                "flower": wv["flower"],
+                "count": wv["real_shape_count"],
+                "color": FRIENDLY.get(wv["color"], wv["color"]),
+                "where": wv["where"],
+                "view": n_flower_views + i,
+            }
+            for i, wv in enumerate(waves)
+        }
+    )
+    flowers_js = json.dumps(
+        [
+            {"motif": m["motif"], "name": m["name"], "n": m["n_instances"],
+             "view": m["motif"] - 1}
+            for m in motifs
+        ]
+    )
+    applied_js = json.dumps(overrides if overrides else {})
     html = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><title>The plan: copy the pattern in waves</title>
 <style>
@@ -550,7 +625,25 @@ def main() -> None:
  button {{ font-size: 16px; padding: 8px 16px; border-radius: 8px; border: 1px solid #999;
           background: #fff; cursor: pointer; }}
  button.on {{ background: #1b6ca8; color: #fff; border-color: #1b6ca8; }}
- img {{ display: block; margin: 0 20px 20px; max-width: calc(100% - 40px); }}
+ button.act {{ font-size: 15px; padding: 6px 12px; }}
+ #applybtn {{ background: #E64A19; color: #fff; border-color: #E64A19; font-weight: 600; }}
+ #fixhint {{ font-size: 15px; color: #8a3c00; }}
+ #fixlist {{ padding: 0 20px 6px; }}
+ #fixlist a {{ color: #1b6ca8; }}
+ #main {{ display: flex; align-items: flex-start; gap: 16px; padding: 0 20px 20px; }}
+ /* The marks overlay (inset:0) and the image must share ONE box, or every
+    selection ring lands offset from its shape: width 100% makes the image
+    fill the flex column so the absolute SVG maps 1:1 onto the pixels. */
+ #imgwrap {{ position: relative; flex: 1 1 auto; min-width: 0; cursor: pointer; }}
+ #imgwrap img {{ display: block; width: 100%; height: auto; }}
+ #marks {{ position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }}
+ #panel {{ flex: 0 0 330px; position: sticky; top: 10px; background: #fff;
+          border: 1px solid #ddd; border-radius: 12px; padding: 14px 16px;
+          box-shadow: 0 2px 10px rgba(0,0,0,.08); font-size: 15px; }}
+ #panel h3 {{ margin: 0 0 4px; font-size: 17px; }}
+ #panel select {{ font-size: 15px; max-width: 100%; margin: 4px 0; }}
+ #panel .row {{ margin: 10px 0; }}
+ #panel a {{ color: #1b6ca8; }}
 </style></head><body>
 <header>
  <h1>The plan: a few flowers, copied in waves, middle first</h1>
@@ -559,24 +652,213 @@ def main() -> None:
    repeat around the center — and every flower is built from WAVES, where one
    wave is one kind of simple shape. {plan['real_shapes']} shapes,
    {coverage:.0%} of the colored area covered; every shape belongs to exactly
-   one wave and one flower. Bright shapes are what's being shown; pale ones
-   come later. If anything looks wrong (a shape in the wrong group, a flower
-   missing a petal), say so — we don't start building until you agree.</p>
+   one wave and one flower. <b>Click any shape on the picture</b> to see its
+   groups and fix them — we don't start building until you agree.</p>
 </header>
 <div class="controls"><span class="rowlabel">Flowers:</span>{flower_buttons}</div>
 <div class="controls"><span class="rowlabel">Waves:</span>{wave_buttons}</div>
-<img id="view" src="{views[0]['src']}">
+<div class="controls"><span class="rowlabel"></span>
+ <button id="applybtn" style="display:none"></button>
+ <span id="fixhint"></span></div>
+<div id="fixlist" class="muted"></div>
+<div id="main">
+ <div id="imgwrap"><img id="view" src="{views[0]['src']}">
+  <svg id="marks" viewBox="0 0 {img_w} {img_h}" preserveAspectRatio="none"></svg></div>
+ <div id="panel" hidden>
+  <h3 id="p-title"></h3>
+  <p id="p-desc" class="muted"></p>
+  <p class="row" id="p-wave"></p>
+  <p class="row" id="p-flower"></p>
+  <hr style="border:none;border-top:1px solid #eee">
+  <p class="row"><b>Fix it:</b></p>
+  <div class="row">Move it to a different wave:<br>
+   <select id="selwave"></select> <button class="act" id="btn-wave">Move</button></div>
+  <div class="row">Move it to a different flower:<br>
+   <select id="selflower"></select> <button class="act" id="btn-flower">Move</button><br>
+   <label class="muted"><input type="checkbox" id="wholewave"> move its whole wave (everything like it)</label></div>
+  <div class="row"><button class="act" id="btn-noflower">Take it out of its flower</button></div>
+  <div class="row"><button class="act" id="btn-close">Close</button></div>
+ </div>
+</div>
 <script>
  const views = {views_js};
  function show(i) {{
-   document.querySelectorAll('button').forEach(b => b.classList.remove('on'));
-   document.getElementById('v' + i).classList.add('on');
+   document.querySelectorAll('[id^="v"].on').forEach(b => b.classList.remove('on'));
+   const btn = document.getElementById('v' + i);
+   if (btn) btn.classList.add('on');
    document.getElementById('view').src = views[i].src;
    document.getElementById('caption').textContent = views[i].cap;
  }}
  show(0);
-</script></body></html>
+</script>
+<script>__EDIT_JS__</script></body></html>
 """
+    edit_js = """
+ const shapes = __SHAPES__;
+ const waveInfo = __WAVE_INFO__;
+ const flowers = __FLOWERS__;
+ const IMG_W = __IMG_W__, IMG_H = __IMG_H__;
+ // Served over http (wave-plan-server.py): fixes POST back and the plan
+ // regenerates server-side. Opened as a file: fixes download as JSON instead.
+ const SERVER = location.protocol.startsWith('http');
+ const applied = __APPLIED__;
+ const fixes = {
+   shape_waves: Object.assign({}, applied.shape_waves || {}),
+   shape_flowers: Object.assign({}, applied.shape_flowers || {}),
+   wave_flowers: Object.assign({}, applied.wave_flowers || {}),
+ };
+ let sel = null;
+ const $ = id => document.getElementById(id);
+ const fl = n => String.fromCharCode(64 + n);
+ const waveOf = s => fixes.shape_waves[s.id] ?? s.w;
+ const flowerOfWave = w => fixes.wave_flowers[w] ?? (waveInfo[w] ? waveInfo[w].flower : 0);
+ const flowerOfShape = s => fixes.shape_flowers[s.id] ?? flowerOfWave(waveOf(s));
+ const flowerLabel = f => f ? 'Flower ' + fl(f) + ' — ' + flowers[f - 1].name : 'no flower (on its own)';
+ const dirty = () => JSON.stringify(fixes) !== JSON.stringify({
+   shape_waves: applied.shape_waves || {},
+   shape_flowers: applied.shape_flowers || {},
+   wave_flowers: applied.wave_flowers || {},
+ });
+ function setHint(t) { $('fixhint').textContent = t; }
+ function drawMarks() {
+   let m = '';
+   if (sel) {
+     const w = waveOf(sel);
+     for (const s of shapes)
+       if (s.id !== sel.id && waveOf(s) === w)
+         m += '<circle cx="' + s.x + '" cy="' + s.y + '" r="6" fill="#1b6ca8" fill-opacity="0.85"/>';
+     m += '<circle cx="' + sel.x + '" cy="' + sel.y + '" r="15" fill="none" stroke="#E64A19" stroke-width="4"/>';
+   }
+   $('marks').innerHTML = m;
+ }
+ function options() {
+   let ws = '';
+   for (const w in waveInfo) {
+     const i = waveInfo[w];
+     ws += '<option value="' + w + '">Wave ' + w + ' — ' + i.count + ' ' + i.color + ' shapes ' + i.where + '</option>';
+   }
+   $('selwave').innerHTML = ws;
+   let fs = '';
+   for (const f of flowers)
+     fs += '<option value="' + f.motif + '">Flower ' + fl(f.motif) + ' — ' + f.name + '</option>';
+   fs += '<option value="0">No flower — keep it on its own</option>';
+   $('selflower').innerHTML = fs;
+ }
+ function openPanel(s) {
+   sel = s;
+   const w = waveOf(s), f = flowerOfShape(s), wi = waveInfo[w];
+   $('p-title').textContent = 'Shape #' + s.id;
+   $('p-desc').textContent = 'A ' + s.c + ' shape. The blue dots are the other shapes in its wave.';
+   $('p-wave').innerHTML = '<b>Its wave:</b> Wave ' + w + ' — ' + wi.count + ' ' + wi.color +
+     ' shapes ' + wi.where + ' <a href="#" id="see-wave">see it</a>';
+   $('p-flower').innerHTML = '<b>Its flower:</b> ' + flowerLabel(f) +
+     (f && flowers[f - 1] ? ' <a href="#" id="see-flower">see it</a>' : '');
+   $('see-wave').onclick = e => { e.preventDefault(); show(wi.view); };
+   const sf = $('see-flower');
+   if (sf) sf.onclick = e => { e.preventDefault(); show(flowers[f - 1].view); };
+   $('selwave').value = String(w);
+   $('selflower').value = String(f);
+   $('panel').hidden = false;
+   drawMarks();
+ }
+ function afterEdit(msg) {
+   renderFixes();
+   if (sel) openPanel(sel);
+   setHint(msg);
+ }
+ function renderFixes() {
+   const L = [];
+   for (const id in fixes.shape_waves)
+     L.push('shape #' + id + ' &rarr; wave ' + fixes.shape_waves[id] +
+       ' <a href="#" data-k="shape_waves" data-id="' + id + '">undo</a>');
+   for (const id in fixes.shape_flowers)
+     L.push('shape #' + id + ' &rarr; ' + (fixes.shape_flowers[id] ? 'flower ' + fl(fixes.shape_flowers[id]) : 'no flower') +
+       ' <a href="#" data-k="shape_flowers" data-id="' + id + '">undo</a>');
+   for (const w in fixes.wave_flowers)
+     L.push('wave ' + w + ' &rarr; ' + (fixes.wave_flowers[w] ? 'flower ' + fl(fixes.wave_flowers[w]) : 'no flower') +
+       ' <a href="#" data-k="wave_flowers" data-id="' + w + '">undo</a>');
+   $('fixlist').innerHTML = L.length ? 'Your fixes: ' + L.join(' &middot; ') : '';
+   const d = dirty();
+   $('applybtn').style.display = d ? '' : 'none';
+   $('applybtn').textContent = SERVER ? 'Apply my fixes and redraw the pictures' : 'Save my fixes';
+ }
+ $('fixlist').addEventListener('click', e => {
+   const a = e.target.closest('a'); if (!a) return;
+   e.preventDefault();
+   delete fixes[a.dataset.k][a.dataset.id];
+   afterEdit('Undone. (If it was already applied, press the apply button to redraw without it.)');
+   drawMarks();
+ });
+ $('imgwrap').addEventListener('click', e => {
+   const img = $('view'), r = img.getBoundingClientRect();
+   const nx = (e.clientX - r.left) * IMG_W / r.width;
+   const ny = (e.clientY - r.top) * IMG_H / r.height;
+   let best = null, bd = Infinity;
+   for (const s of shapes) {
+     const d = Math.hypot(s.x - nx, s.y - ny);
+     if (d < bd) { bd = d; best = s; }
+   }
+   if (!best || bd > Math.max(30, 2 * Math.sqrt(best.a / Math.PI))) return;
+   openPanel(best);
+ });
+ $('btn-wave').addEventListener('click', () => {
+   if (!sel) return;
+   const w = parseInt($('selwave').value, 10);
+   if (w === sel.w) delete fixes.shape_waves[sel.id]; else fixes.shape_waves[sel.id] = w;
+   afterEdit('Moved shape #' + sel.id + ' to wave ' + w + '.');
+ });
+ $('btn-flower').addEventListener('click', () => {
+   if (!sel) return;
+   const f = parseInt($('selflower').value, 10);
+   if ($('wholewave').checked) {
+     fixes.wave_flowers[waveOf(sel)] = f;
+     afterEdit('Moved wave ' + waveOf(sel) + ' (the whole kind) to ' + flowerLabel(f) + '.');
+   } else {
+     fixes.shape_flowers[sel.id] = f;
+     afterEdit('Moved shape #' + sel.id + ' to ' + flowerLabel(f) + '.');
+   }
+ });
+ $('btn-noflower').addEventListener('click', () => {
+   if (!sel) return;
+   fixes.shape_flowers[sel.id] = 0;
+   afterEdit('Took shape #' + sel.id + ' out of its flower.');
+ });
+ $('btn-close').addEventListener('click', () => {
+   sel = null; $('panel').hidden = true; drawMarks();
+ });
+ $('applybtn').addEventListener('click', async () => {
+   if (SERVER) {
+     setHint('Redrawing the pictures with your fixes\u2026 this takes a few seconds.');
+     $('applybtn').disabled = true;
+     try {
+       const r = await fetch('/api/overrides', { method: 'POST', body: JSON.stringify(fixes) });
+       if (!r.ok) throw new Error(await r.text());
+       location.reload();
+     } catch (err) {
+       $('applybtn').disabled = false;
+       setHint('Something went wrong applying the fixes \u2014 tell me and I will look: ' + err.message);
+     }
+   } else {
+     const blob = new Blob([JSON.stringify(fixes, null, 2)], { type: 'application/json' });
+     const a = document.createElement('a');
+     a.href = URL.createObjectURL(blob);
+     a.download = 'wave-plan-overrides.json';
+     a.click();
+     setHint('Saved to your Downloads. Tell me you saved it and I will redraw the pictures with your fixes.');
+   }
+ });
+ options();
+ renderFixes();
+"""
+    html = html.replace(
+        "__EDIT_JS__",
+        edit_js.replace("__SHAPES__", shapes_js)
+        .replace("__WAVE_INFO__", wave_info_js)
+        .replace("__FLOWERS__", flowers_js)
+        .replace("__APPLIED__", applied_js)
+        .replace("__IMG_W__", str(img_w))
+        .replace("__IMG_H__", str(img_h)),
+    )
     (out_dir / "wave-plan.html").write_text(html)
     print(
         f"wrote {out_dir}/wave-plan.html (+ {n_waves} wave PNGs, "

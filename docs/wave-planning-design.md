@@ -8,8 +8,16 @@ construction starts; iteration then walks the plan inside-out, one wave at a
 time, with each wave's diff cropped to its own region. The whole-image diff is
 a trend log, never the steering signal.
 
-Tool: `tools/plan-waves.py <session-dir> --center X Y --diameter D [--seat W=F]`
-(runs under the qiyas venv: `/Users/omareid/Workspace/git/qiyas/.venv/bin/python`).
+Tools (both run under the qiyas venv,
+`/Users/omareid/Workspace/git/qiyas/.venv/bin/python`):
+- `tools/plan-waves.py <session-dir> --center X Y --diameter D [--seat W=F]`
+  — builds the plan + all visuals; auto-loads owner fixes from
+  `wave-plan-overrides.json` if present.
+- `tools/wave-plan-server.py <session-dir> --center X Y --diameter D
+  [--port 8765]` — the wave-plan STUDIO: serves the plan on localhost so the
+  owner can review AND fix it in the browser (owner directive 2026-06-11:
+  "this should not be static html, but rather cli commands that runs
+  localhost").
 Protocol home: `.claude/skills/iterate-construction-hypothesis/SKILL.md` →
 "Stage 1 is wave-based". First execution: bikar-medallion-10, 2026-06-11.
 
@@ -68,12 +76,26 @@ Protocol home: `.claude/skills/iterate-construction-hypothesis/SKILL.md` →
    hidden.
    A flower is the DSL-native unit: build one instance, `rotate` fold times.
 
-5. **Owner gates the plan.** `wave-plan.html` (flowers row + waves row, one
-   group bright per frame, all-flowers / all-waves colored maps, plain
-   language only — Tenet 27). Construction starts only after "waves agreed",
-   recorded in `session.json` → `stage_gates.structure.wave_plan.agreed`.
-   Owner corrections re-seat waves via `--seat WAVE=FLOWER` (1-based), no
-   code change.
+5. **Owner gates the plan in the STUDIO (review + fix in one place).**
+   `wave-plan-server.py` serves `wave-plan.html` on localhost: flowers row +
+   waves row (one group bright per frame), all-flowers / all-waves colored
+   maps, plain language only — Tenet 27. **Click any shape** → an inspector
+   panel shows its wave and flower (with "see it" links and blue dots on its
+   wave-mates) and offers the fixes: move it to a different wave, move it
+   (or its whole wave) to a different flower, or take it out of its flower.
+   "Apply my fixes" POSTs to `/api/overrides`; the server writes
+   `wave-plan-overrides.json` next to the plan and re-runs plan-waves.py,
+   so every picture, count, and multiset validation regenerates with the
+   fixes baked in. The overrides schema (all ids/numbers 1-based, flower 0 =
+   "no flower"): `{"shape_waves": {id: wave}, "shape_flowers": {id: flower},
+   "wave_flowers": {wave: flower}}` — `shape_flowers` rides on top of the
+   wave's seat, so one shape can leave its flower without leaving its wave.
+   plan-waves.py auto-loads the file on every run (fixes survive
+   re-planning) and records them in the JSON as `owner_fixes_applied`.
+   The legacy `--seat WAVE=FLOWER` flag still works for scripted re-seats.
+   Construction starts only after "waves agreed", recorded in
+   `session.json` → `stage_gates.structure.wave_plan.agreed`. Page opened
+   via file:// falls back to downloading the overrides file (no server).
 
 6. **Iterate the radial walk.** Each `stage: structure` iteration targets the
    lowest unmatched wave; its gate visual and diff are cropped/masked to that
