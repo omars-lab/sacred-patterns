@@ -120,14 +120,24 @@ def load_iteration(session_dir: Path, n: int) -> IterationResult:
 # ============================================================
 
 def render_bkr(bkr_path: Path, svg_out: Path) -> tuple[bool, str]:
-    """Compile a .bkr to SVG via bikar's compileDSL. Returns (ok, log)."""
+    """Compile a .bkr to SVG via bikar's compileDSL. Returns (ok, log).
+
+    Why dynamic import() and not require(): bikar's built core went ESM-only
+    with the vite8 upgrade (bikar 6f3de50), so require() on the dist raises
+    ERR_REQUIRE_ESM. pathToFileURL keeps the import specifier valid even if
+    the dist path ever contains spaces or non-ASCII.
+    """
     if not COMPILE_DSL_JS.is_file():
         return False, f"bikar dist not found at {COMPILE_DSL_JS}"
     js = (
-        f"const {{compileDSL}} = require({json.dumps(str(COMPILE_DSL_JS))});\n"
         "const fs = require('fs');\n"
-        f"const src = fs.readFileSync({json.dumps(str(bkr_path))}, 'utf-8');\n"
-        f"fs.writeFileSync({json.dumps(str(svg_out))}, compileDSL(src));\n"
+        "const { pathToFileURL } = require('url');\n"
+        f"import(pathToFileURL({json.dumps(str(COMPILE_DSL_JS))}).href)\n"
+        "  .then(({ compileDSL }) => {\n"
+        f"    const src = fs.readFileSync({json.dumps(str(bkr_path))}, 'utf-8');\n"
+        f"    fs.writeFileSync({json.dumps(str(svg_out))}, compileDSL(src));\n"
+        "  })\n"
+        "  .catch((e) => { console.error(e); process.exit(1); });\n"
     )
     proc = subprocess.run(
         ["node", "-e", js],
