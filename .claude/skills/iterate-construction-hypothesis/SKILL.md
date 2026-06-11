@@ -203,7 +203,48 @@ The `.bkr` statement vocabulary partitions natively by stage:
   similarity + gate side-by-sides; skeleton SVGs must rasterize via
   rsvg-convert — ImageMagick's MSVG silently drops stroked paths),
   `tools/analyze-reference.py` (line/fill separation, standardized palette,
-  swatch sheet — runs under the qiyas venv python).
+  swatch sheet — runs under the qiyas venv python),
+  `tools/plan-waves.py` (the wave plan below — runs under the qiyas venv).
+
+### Stage 1 is wave-based — plan the waves FIRST, never steer by one-shot whole-image diff
+
+Plain English: before any structure iteration, the reference photo itself is
+decomposed into an ordered reconstruction plan — concentric **waves** of
+shapes working outward from a validated center — and the owner agrees to the
+waves before construction starts. Reconstruction then attacks wave 1 until it
+matches, then wave 2, etc. A whole-image structure diff mixes every wave's
+divergence into one number and hides which ring is wrong; it is a tracking
+metric only, never the steering signal (owner directive, 2026-06-11).
+
+The protocol (`tools/plan-waves.py <session-dir> --center X Y --diameter D`):
+
+1. **Validate the center** — auto-detect the medallion center (mass center of
+   the medallion mask); the owner confirms/adjusts it with one click
+   (`review/structure-priorities.html` Step 1). Every wave is measured from
+   this point.
+2. **Exhaust the shapes** — every lattice-separated colored tile becomes a
+   labelled shape (erode to snap JPEG-soft lattice bridges, label the cores,
+   grow labels back = 100% coverage). The JSON reports
+   `coverage_of_tile_area` so "all shapes exhausted" is checkable, not vibes.
+3. **A wave holds ONE KIND of shape** (owner criteria, 2026-06-11): midpoints
+   equidistant from the validated center, same/rotated copies of one another
+   (rotation-invariant moment match), similar area, similar color (raw RGB
+   distance, NOT palette names — names flicker at cluster boundaries). Kinds
+   are connected components of the pairwise all-four-criteria graph, ordered
+   inside-out by radius. **Validation: kind counts must respect the fold** —
+   medallion-10 gave 22 waves with counts 1/10/20/40; a count like 7 or 13
+   means the grouping is wrong. (Witnessed dead ends: raw radius bands put
+   93% of the pattern in one wave; palette-name color matching split one
+   kind 4/6.) The big rosette-center stars (top area tier) group into radial
+   rings used for plain-language "where" labels.
+4. **Owner gates the wave plan** — the flip-through (`wave-plan.html`: one
+   wave bright per frame + an all-waves colored map) goes to the owner;
+   construction starts only after "waves agreed". Recorded in
+   `session.json` → `stage_gates.structure.wave_plan.agreed`.
+5. **Iterate wave-by-wave** — each `stage: structure` iteration targets the
+   lowest unmatched wave; its gate visual and diff are CROPPED/MASKED to that
+   wave's region. Wave N must pass its visual check before wave N+1 opens —
+   the whole-image structure_similarity is logged for trend, not steered by.
 
 ## Hard prerequisites — read these BEFORE acting
 
