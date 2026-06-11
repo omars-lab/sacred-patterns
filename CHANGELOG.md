@@ -17,6 +17,95 @@ cross-repo orchestration owned by sacred-patterns.
 
 ---
 
+## 2026-06-11 — review-portal aesthetic feedback cascade (#2–#12)
+
+The portal grew from a topology checker into the owner's full feedback surface:
+plain-language guided review (grandma bar, Tenet 27), aesthetic annotation
+kinds, and a readiness gate so expert eyes are only asked for when machine
+metrics say the render is worth their time. Decision trail: qiyas
+review-portal docs + bikar 403f670.
+
+- #2  [bikar] Deco-only strapwork kernel fix (bikar#653) — shipped 403f670 (girih fields weave the decoration network only)
+- #3  [qiyas] Annotation schema for aesthetic feedback — Q9 color / Q10 shape / Q11 style kinds in state.py
+- #4  [qiyas] Review-pass iter-34, pick canonical render — SUPERSEDED, never executed: the wave-based gate flow (#37/#50) replaced the canonical-render pick; closing stale
+- #5  [qiyas] Portal UI for Q9/Q10/Q11 aesthetic kinds — shipped
+- #6  [qiyas] Grandma-mode review page — no-jargon guided review shipped
+- #7  [qiyas] Spot-the-difference structural review — bidirectional mirror + mismatch datapoint
+- #8  [qiyas] Replay ranking fix — structural stubs ranked before colour/style
+- #9  [qiyas] One-command review launch + server-origin URL fix
+- #10 [qiyas] Web compare upgrades — lens, flip/blink, hints, resume, saved dots
+- #11 [qiyas] End-to-end verify upgraded portal on iter-34 — visual check passed
+- #12 [qiyas] Review-readiness gate — CLI refuses expert review when metrics say not-converged
+
+## 2026-06-11 — annotations → hypothesis handoff cascade (#13–#19)
+
+Owner clicks in the portal now land as a seeded `hypothesis.md` in the next
+iteration directory — the loop's feedback wiring.
+
+- #13 Plan: automate annotations → hypothesis.md handoff
+- #14 [qiyas] review-verdict module + emitter (verdict.py) with tests
+- #15 [qiyas] CLI --emit hypothesis + review-path command
+- #16 [sp] portal-handoff.py + seed-hypothesis.py + tests
+- #17 [sp] auto-iterate terminal_state + SKILL seed integration
+- #18 End-to-end witness on medallion-10 + decision note
+- #19 [sp] auto-iterate render_bkr fix — require() fails on bikar's ESM dist
+
+## 2026-06-11 — medallion-10 iters 35–38 + engine-gap cascade (#20–#26, #28–#31)
+
+The pre-wave iteration era (bold straps → measured palette → pocket density →
+color-role transfer) and the engine-restraint audit that fed four bikar engine
+gaps. Outcome docs: iterations/35–38 hypothesis.md; bikar engine commits per gap.
+
+- #20 [sp] Iter 35: bold straps from seeded hypothesis
+- #21 [sp] Iter 36: palette-family pass, measured not guessed
+- #22 [sp] Iter 37 scope: pocket-star density (invocation gap vs engine work)
+- #23 [bikar] resolveLensPockets kernel + DSL `pockets` flag
+- #24 [sp] Iter 37: pocket-star density via `pockets`, A/B vs iter-36
+- #25 [sp] Iter 38: measured color-role transfer at face centroids
+- #26 Plan: engine-restraint audit at the 74% plateau — fed gaps 1–3 below
+- #28 [bikar] `!=` comparator in fill/classify/style conditions (Gap 2)
+- #29 [bikar] authoritative `sides` in gt.json + contract amendment (Gap 3)
+- #30 [bikar] hexagon `pockets star` variant via Hankin 54° (Gap 1)
+- #31 [bikar] parser registers queried source names for kernel-applied tags
+
+## 2026-06-11 — stage-gated reconstruction cascade (#32–#35)
+
+Structure → color → weave, each behind an owner gate. Plan: bikar
+`.claude/plans/vectorized-squishing-pearl.md`; protocol lives in the
+iterate-construction-hypothesis SKILL stage ladder.
+
+- #32 [sp] make-structure.py + structure-diff.sh skeleton tooling
+- #33 [sp] analyze-reference.py — line/fill split, standardized palette, swatch sheet
+- #34 Protocol + docs + skills amendment: stage field, freeze check, stage gates
+- #35 Stage-1 audit of iter-39 → first structure + palette gate packages
+
+## 2026-06-11 — wave-plan studio + wave-run support cascade (#36–#38, #40–#49, #52–#56)
+
+The owner-facing wave-plan studio (plan/palette/iterate/slides pages on
+wave-plan-server.py) and the engine/tooling fixes that kept the wave run
+moving. The wave run itself (waves 1–15 passed as of 2026-06-11, iters 41–57)
+stays open under #50. Skill: wave-planning + iterate-construction-hypothesis
+(cookbook + end-of-build reflection).
+
+- #36 [sp] Owner-driven structure matching — center validation + click-to-prioritize
+- #37 [sp] Wave-plan experience — radial reconstruction waves over the reference
+- #38 [sp] Motif level — composite shapes revolving around the center
+- #40 Codify wave planning + incremental radial walk as skill + design doc
+- #41 [sp] Interactive grouping editor on the wave-plan page
+- #42 UX audit of all review experiences
+- #43 [sp] Review-UX recommendations — hub + gate buttons + palette page
+- #44 [sp] Wave-switch preview — destination wave highlighted on dropdown change
+- #45 [sp] Flower views — repeated unit + orbit called out explicitly
+- #46 [sp] Wave views — dotted circle through wave shape midpoints
+- #47 [sp] Studio arrow keys flip next/previous view
+- #48 [sp] One-command wave-planning entry for a new reference image
+- #49 [sp] wave-diff.py — per-wave masked/cropped comparison
+- #52 [bikar] evaluator dedup drops concentric same-edge-count faces — area added to dedup key
+- #53 [bikar] svg-renderer strapwork bands between layer-0 and higher-layer face groups
+- #54 [sp] Studio /iterate page — wave-by-wave progress view (788c4c5)
+- #55 [sp] Iteration cookbook distilled into iterate-construction-hypothesis SKILL (8dcec96)
+- #56 [sp] Studio /slides reveal.js deck — consistent frame, fixed title, recipe-diff slides (8dcec96, 819c8be)
+
 ## 2026-05-29 — pre-existing meta-tasks archival (#80/#85/#100/#129/#132)
 
 Long-lived umbrella tasks that drove multi-cascade work; the underlying
