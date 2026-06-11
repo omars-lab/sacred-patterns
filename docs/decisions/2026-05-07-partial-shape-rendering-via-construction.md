@@ -1,6 +1,8 @@
 ---
-status: REOPENED 2026-05-25 — Option A falsified, Option G shipped + fixture verdict surfaced Option I (qiyas detector + sliver cleanup, NOT Option E/F clip semantic change); PENDING owner re-decision
-status_token: REOPENED
+status: "SUPERSEDED 2026-06-10 — owner pick via decision-picker ('close old, open fresh'): the live partial-shape question moves to qiyas/docs/decisions/2026-06-10-partial-shape-detector-sliver-cleanup.md; the Option-A falsification history below stands as archive"
+status_token: SUPERSEDED
+superseded_by:
+  - qiyas/docs/decisions/2026-06-10-partial-shape-detector-sliver-cleanup.md
 picked_option: null
 tag: arc-lens-partial
 dead_end:
@@ -676,3 +678,12 @@ to defer; it shouldn't make Option B the pick if we have the budget.
 **Tenet 7 stop rule:** Two variants of cascade #106 clip primitive falsified. Do not author Variant 3 without first running full L2/L3/L4 introspection, fresh web-search of canonical clip-and-intersect implementations (CGAL Arrangement_2 with do_intersect predicates, JTS difference/intersection semantics, Asymptote `clip` vs `intersection`), and authoring new options that surface the `intersect-before-clip` mechanism the cascade plan missed.
 
 **Next directive — local pickup paused per §F mechanical critical-path check:** iter-19 remains the medallion-10 ceiling at composite=0.8236. Pickup a different on-path task (autonomous loop will route per `qiyas/.claude/plans/post-i1-task-routing.md` §A/§C). The cascade re-decision (new Option E / F authoring + fresh web-search) is the next decision-doc work item once falsification protocol's remaining steps (web-search per skill, new option(s), cross-repo memory) are scheduled.
+
+## Superseded (2026-06-10, owner pick via docs/decision-picker.html)
+
+> arc-lens-partial: PICK yes — Yes — close old, open fresh
+
+The live question moves to
+`qiyas/docs/decisions/2026-06-10-partial-shape-detector-sliver-cleanup.md`
+(Option-I era: qiyas detector + sliver layer). This doc's falsification log
+and dead_end record stand as archive — do not reopen; extend the qiyas doc.

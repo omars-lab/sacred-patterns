@@ -9,7 +9,7 @@ drift from the doc. For the "authoritative-per-tag / dead-ends" view see
 
 | date — doc | status | picked | tag |
 |------------|--------|--------|-----|
-| 2026-05-07 — [partial-shape-rendering-via-construction](2026-05-07-partial-shape-rendering-via-construction.md) | REOPENED | — | `arc-lens-partial` |
+| 2026-05-07 — [partial-shape-rendering-via-construction](2026-05-07-partial-shape-rendering-via-construction.md) | SUPERSEDED | — | `arc-lens-partial` |
 | 2026-05-20 — [universal-dsl-tagging](2026-05-20-universal-dsl-tagging.md) | ACCEPTED | A | `dsl-tagging` |
 | 2026-05-23 — [unblock-critical-path-workstream](2026-05-23-unblock-critical-path-workstream.md) | ACCEPTED | B | `critical-path-workstream` |
 | 2026-06-07 — [loop-terminal-condition](2026-06-07-loop-terminal-condition.md) | ACCEPTED | C | `loop-terminal-condition` |

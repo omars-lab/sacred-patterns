@@ -10,7 +10,7 @@ problem (present-options skill §0). Schema: `docs/decision-schema.md`.
 
 | tag | doc | status | picked | authoritative | superseded-by |
 |-----|-----|--------|--------|---------------|---------------|
-| `arc-lens-partial` | docs/decisions/2026-05-07-partial-shape-rendering-via-construction.md | REOPENED | — | — | — |
+| `arc-lens-partial` | docs/decisions/2026-05-07-partial-shape-rendering-via-construction.md | SUPERSEDED | — | — | qiyas/docs/decisions/2026-06-10-partial-shape-detector-sliver-cleanup.md |
 | `critical-path-workstream` | docs/decisions/2026-05-23-unblock-critical-path-workstream.md | ACCEPTED | B | ★ | — |
 | `dsl-tagging` | docs/decisions/2026-05-20-universal-dsl-tagging.md | ACCEPTED | A | ★ | — |
 | `loop-terminal-condition` | docs/decisions/2026-06-07-loop-terminal-condition.md | ACCEPTED | C | ★ | — |
