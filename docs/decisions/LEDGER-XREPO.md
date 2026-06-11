@@ -68,7 +68,7 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `serialization-d4` | qiyas | qiyas/docs/decisions/2026-05-23-362-phase-1-d4-cutover-serialization.md | ACCEPTED | B | ★ |
 | `shape-vocab-typed-params` | qiyas | qiyas/docs/decisions/2026-05-16-typed-shape-params-vs-object-bag.md | ACCEPTED | C | ★ |
 | `shape-vocab-typed-params` | qiyas | qiyas/docs/decisions/2026-05-18-shape-discriminated-union-migration-sequencing.md | SUPERSEDED | — | — |
-| `shape-vocabulary` | qiyas | qiyas/docs/decisions/2026-05-18-shape-vocabulary-vs-detector-tolerances.md | PENDING | — | — |
+| `shape-vocabulary` | qiyas | qiyas/docs/decisions/2026-05-18-shape-vocabulary-vs-detector-tolerances.md | ACCEPTED | D | ★ |
 | `star7-red-detection` | qiyas | qiyas/docs/decisions/2026-05-18-star7-red-shape-detection-routing.md | SUPERSEDED | — | — |
 | `star7-red-detection` | qiyas | qiyas/docs/decisions/2026-05-21-star7-missed-red-shapes-mechanism.md | ACCEPTED | A | ★ |
 | `svg-direct` | qiyas | qiyas/docs/decisions/2026-05-17-eliminate-rasterize-trace-round-trip.md | SUPERSEDED | B | — |
