@@ -405,6 +405,37 @@ better tool supersedes it (note what replaced it).
     A parallel studio/bookkeeping session may exist; whoever lands the
     verdict owns the sync (don't assume the other session will).
 
+### End-of-build DSL reflection (after the LAST wave passes — one-time phase)
+
+16. When the final wave passes, the build is geometrically done but the
+    recipe is not: a wave-by-wave `.bkr` accretes per-wave overlays, stale
+    comments, and repetition a from-scratch author would never write. Run a
+    **reflection phase** before declaring the construction closed:
+    1. **Freeze the witness** — the final iteration's render (canonical
+       rasterizer) and its gt.json shape census are the equivalence oracle.
+       Record both checksums/counts in the reflection's hypothesis.md.
+    2. **Each optimization attempt is its own iteration** (`stage:
+       structure`, idea = one simplification), gated by **census equality +
+       pixel-identical raster** vs the frozen final — NOT by similarity
+       thresholds; a simplification that changes any face is a fail, full
+       stop. Run bikar `/simplify-pattern` for the candidate list: collapse
+       per-wave `rotate 10` + `connect cycle` pairs into shared blueprints,
+       merge circles that exist only to host one cpt, hoist duplicated
+       layer/classify boilerplate, delete comments that narrate dead waves.
+    3. **Capture every attempt durably, including the failures** — a
+       simplification that breaks census equality is a finding about engine
+       semantics (e.g. dedup order, layer extraction) and goes in the
+       attempt's hypothesis.md verdict plus, if it names an engine
+       behaviour, bikar `docs/lessons.md`. The point of the phase is the
+       captured attempt log, not just a shorter file.
+    4. **The deck tells this story too** — optimization iterations get
+       recipe-diff slides like any wave (the /slides route diffs
+       `pattern.bkr` between consecutive passed entries), so the owner sees
+       the recipe getting shorter while the picture stays identical.
+    Stop rule: two consecutive attempts that fail census equality for the
+    same root cause → stop simplifying, file the engine finding, ship the
+    last green recipe.
+
 ## Hard prerequisites — read these BEFORE acting
 
 Blocking. Do not start an iteration until you have read all four:
