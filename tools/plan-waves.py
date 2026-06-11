@@ -22,11 +22,21 @@ Outputs (under <session>/input/reference-analysis/wave-plan/):
     wave-plan.json   waves -> shapes (centroid, r_frac, theta, area, color)
     wave-<k>.png     wave k in full color over a dimmed grayscale reference
     waves-map.png    every shape tinted by its wave (distinct colors, Tenet 24)
+    flower-<f>.png   composite flower f: one instance bright, its rotated
+                     twins half-bright, everything else pale
+    flowers-map.png  every shape tinted by its composite flower
     wave-plan.html   the flip-through planning experience (plain language)
+
+Two grouping levels (owner, 2026-06-11): a WAVE is one kind of simple shape
+(equidistant midpoints, rotated copies, similar area+color); a FLOWER (motif)
+is the composite the owner sees — "a shape similar to our middle one that
+revolves around the origin" — several waves dressing one anchor star,
+repeated fold times. Build once, spin fold times: the DSL-native unit.
 
 Example: medallion-10 reference (753x722, center (386,361), diameter 738) ->
 22 same-kind waves over 426 shapes (380 real + 46 fragments), counts all
-10-fold (1, 10s, 20s, 40s), 100.0% of colored-tile area assigned.
+10-fold (1, 10s, 20s, 40s); 3 composite flowers (middle x1, inner x10 @
+r~0.46, outer x10 @ r~0.76); 100.0% of colored-tile area assigned.
 """
 
 from __future__ import annotations
@@ -92,6 +102,14 @@ def main() -> None:
     ap.add_argument("--center", nargs=2, type=float, required=True)
     ap.add_argument("--diameter", type=float, required=True)
     ap.add_argument("--reference", default="input/reference.jpg")
+    ap.add_argument(
+        "--seat",
+        action="append",
+        default=[],
+        metavar="WAVE=FLOWER",
+        help="Owner re-seat from the gate, e.g. --seat 13=3 moves wave 13 "
+        "into flower family 3 (both 1-based) without a code change.",
+    )
     args = ap.parse_args()
 
     tools_dir = Path(__file__).resolve().parent
@@ -216,6 +234,128 @@ def main() -> None:
     print(f"{n_waves} same-kind waves; counts: "
           + ", ".join(str(len(kind_members[k])) for k in order))
 
+    # --- group kinds into composite flowers (motifs) -------------------------
+    # Owner (2026-06-11): "there is a shape similar to our middle one that
+    # revolves around the origin — a mix of several waves." A MOTIF is that
+    # composite: one flower (an anchor star plus the kinds dressing it),
+    # repeated fold times around the center — the DSL-native unit (build the
+    # flower once, rotate fold). Each anchor ring seeds one family; a wave
+    # joins the family the majority of its members sit nearest to (euclidean
+    # to anchor centroids). Within a family a shape belongs to the INSTANCE
+    # whose anchor is nearest BY ANGLE — euclidean instance assignment
+    # mis-seats shapes at angular boundaries (witnessed: 10-member waves
+    # splitting [1,..,1,2,2] over 9 instances). Validation, the composite
+    # analog of the fold-count check: every instance of a family must hold
+    # the same wave-multiset.
+    a_idx = np.array([i for ring in rings for i in ring])
+    a_fam = np.array([f for f, ring in enumerate(rings) for _ in ring])
+    d2a = (cxs[:, None] - cxs[a_idx][None, :]) ** 2 + (
+        cys[:, None] - cys[a_idx][None, :]
+    ) ** 2
+    fam_vote = a_fam[np.argmin(d2a, axis=1)]
+    wave_fam = np.zeros(n_waves, dtype=int)
+    for w in range(n_waves):
+        vals, cnts = np.unique(fam_vote[kind_members[order[w]]], return_counts=True)
+        wave_fam[w] = int(vals[np.argmax(cnts)])
+    for ov in args.seat:
+        wv, fm = (int(t) for t in ov.split("="))
+        wave_fam[wv - 1] = fm - 1
+    fam_of = wave_fam[wave_of]
+    inst_of = np.zeros(n, dtype=int)
+    for f, ring in enumerate(rings):
+        if len(ring) < 2:
+            continue
+        ang = theta[np.array(sorted(ring, key=lambda i: theta[i]))]
+        n_inst = len(ring)
+        sel = np.nonzero(fam_of == f)[0]
+        for w in np.unique(wave_of[sel]):
+            mem = sel[(wave_of[sel] == w)]
+            mem_real = mem[real[mem]]
+            mem_frag = mem[~real[mem]]
+            mem_real = mem_real[np.argsort(theta[mem_real])]
+            k, rem = divmod(len(mem_real), n_inst)
+            if k == 0 or rem:
+                # Not fold-divisible (lost slivers): honest per-member
+                # nearest-anchor; the multiset check reports the deviation.
+                if len(mem_real):
+                    dd = np.abs(theta[mem_real][:, None] - ang[None, :])
+                    inst_of[mem_real] = np.minimum(dd, 360 - dd).argmin(axis=1)
+            else:
+                # Fold-divisible kinds: consecutive-by-angle chunks of k ARE
+                # the instances; pick the circular split + anchor alignment
+                # with least total angular distance. Per-member nearest-anchor
+                # coin-flips for kinds sitting exactly BETWEEN two flowers
+                # (witnessed: 18deg-offset waves splitting [1,..,1,2,2] over
+                # 9 instances); chunking is deterministic and even.
+                ts = theta[mem_real]
+                best_s, best_j0, best_cost = 0, 0, np.inf
+                for s in range(k):
+                    rolled = np.roll(ts, -s).copy()
+                    wrap = np.nonzero(np.diff(rolled) < 0)[0]
+                    if len(wrap):
+                        rolled[wrap[0] + 1 :] += 360
+                    gm = rolled.reshape(n_inst, k).mean(axis=1) % 360
+                    dd = np.abs(gm[:, None] - ang[None, :])
+                    dd = np.minimum(dd, 360 - dd)
+                    j0 = int(dd[0].argmin())
+                    cost = sum(dd[g, (j0 + g) % n_inst] for g in range(n_inst))
+                    if cost < best_cost:
+                        best_s, best_j0, best_cost = s, j0, cost
+                for g in range(n_inst):
+                    for t in range(k):
+                        mi = mem_real[(best_s + g * k + t) % len(mem_real)]
+                        inst_of[mi] = (best_j0 + g) % n_inst
+            if len(mem_frag):
+                dd = np.abs(theta[mem_frag][:, None] - ang[None, :])
+                inst_of[mem_frag] = np.minimum(dd, 360 - dd).argmin(axis=1)
+
+    multi = [f for f, ring in enumerate(rings) if len(ring) > 1]
+    motif_names = []
+    for f, ring in enumerate(rings):
+        if len(ring) == 1:
+            motif_names.append("the middle flower")
+        elif len(multi) == 2:
+            motif_names.append(
+                "the inner flowers" if f == multi[0] else "the outer flowers"
+            )
+        else:
+            motif_names.append(f"the flowers at ring {f + 1}")
+
+    motifs = []
+    for f, ring in enumerate(rings):
+        n_inst = len(ring)
+        M = np.zeros((n_inst, n_waves), dtype=int)
+        sel = np.nonzero((fam_of == f) & real)[0]
+        np.add.at(M, (inst_of[sel], wave_of[sel]), 1)
+        # Reference composition = per-wave mode across instances, so a single
+        # lost sliver (wave of 39, not 40) reads as a deviation, not the norm.
+        ref = np.array(
+            [np.bincount(M[:, w]).argmax() for w in range(n_waves)], dtype=int
+        )
+        deviations = int(np.abs(M - ref).sum())
+        motifs.append(
+            {
+                "motif": f + 1,
+                "name": motif_names[f],
+                "n_instances": n_inst,
+                "anchor_r_frac": round(ring_r[f], 3),
+                "waves": {str(w + 1): int(ref[w]) for w in range(n_waves) if ref[w]},
+                "shapes_per_instance": int(ref.sum()),
+                "instances_identical": deviations == 0,
+                "deviations": deviations,
+            }
+        )
+        parts = " + ".join(f"{ref[w]}x w{w + 1}" for w in range(n_waves) if ref[w])
+        flag = (
+            "all instances identical"
+            if deviations == 0
+            else f"{deviations} shape(s) deviate (lost slivers / seat noise)"
+        )
+        print(
+            f"flower {f + 1} ({motif_names[f]}, x{n_inst}): "
+            f"{int(ref.sum())} shapes per flower = {parts} — {flag}"
+        )
+
     def where_label(r: float) -> str:
         k = int(np.argmin([abs(r - rr) for rr in ring_r]))
         if k == 0 and len(rings[0]) == 1:
@@ -249,6 +389,7 @@ def main() -> None:
                 "wave": w + 1,
                 "color": color_names[members[0]],
                 "where": where_label(kr),
+                "flower": int(wave_fam[w] + 1),
                 "kind_r_frac": round(kr, 3),
                 "mean_area_px": int(areas[members].mean()),
                 "r_frac_range": [
@@ -283,6 +424,23 @@ def main() -> None:
         wave_map[sel_mask] = tint
     Image.fromarray(wave_map).save(out_dir / "waves-map.png")
 
+    # Flower frames: ONE instance full color, its rotated twins half-bright
+    # (so the eye can confirm "same flower, turned"), everything else pale.
+    for f in range(len(rings)):
+        frame = dim_rgb.copy()
+        sib = np.isin(labels, idx[(fam_of == f) & (inst_of != 0)])
+        frame[sib] = (0.55 * a[sib] + 0.45 * frame[sib]).astype(np.uint8)
+        bright = np.isin(labels, idx[(fam_of == f) & (inst_of == 0)])
+        frame[bright] = a[bright]
+        Image.fromarray(frame).save(out_dir / f"flower-{f + 1}.png")
+
+    flower_map = dim_rgb.copy()
+    for f in range(len(rings)):
+        tint = tuple(int(WAVE_COLORS[f % len(WAVE_COLORS)][j : j + 2], 16) for j in (1, 3, 5))
+        sel_mask = np.isin(labels, idx[fam_of == f])
+        flower_map[sel_mask] = tint
+    Image.fromarray(flower_map).save(out_dir / "flowers-map.png")
+
     coverage = float(areas.sum()) / float(tiles.sum())
     plan = {
         "source": str(args.reference),
@@ -295,6 +453,8 @@ def main() -> None:
         "fragment_shapes": int((~real).sum()),
         "coverage_of_tile_area": round(coverage, 4),
         "agreed": False,
+        "seat_overrides": list(args.seat),
+        "motifs": motifs,
         "waves": [{k: v for k, v in w.items() if k != "shapes"} for w in waves],
     }
     (out_dir / "wave-plan.json").write_text(
@@ -306,23 +466,78 @@ def main() -> None:
     )
 
     # --- the flip-through planning experience (plain language, Tenet 27) -----
-    buttons = "".join(
-        f'<button onclick="show({w})" id="b{w}">Wave {w + 1}</button>'
-        for w in range(n_waves)
-    )
-    captions = json.dumps(
-        [
-            f"Wave {w['wave']} — {w['real_shape_count']} "
-            f"{FRIENDLY.get(w['color'], w['color'])} shapes, all the same kind, "
-            f"{w['where']} ({w['area_share']:.0%} of the pattern). "
-            + (
-                "We copy these first."
-                if w["wave"] == 1
-                else ("We copy these last." if w["wave"] == n_waves else "")
+    # Two levels: composite flowers first (the big picture), then the waves
+    # (one kind at a time). All buttons drive one unified view list.
+    views = []
+    for m in motifs:
+        nm = m["name"]
+        if m["n_instances"] > 1:
+            cap = (
+                f"{nm.capitalize()} — one whole flower made of "
+                f"{m['shapes_per_instance']} shapes (from {len(m['waves'])} waves), "
+                f"repeated {m['n_instances']} times around the center. The bright "
+                f"one is a single flower; its paler twins are the same flower, "
+                f"turned. We build it once and spin it."
             )
-            for w in waves
-        ]
+        else:
+            cap = (
+                f"{nm.capitalize()} — {m['shapes_per_instance']} shapes "
+                f"(from {len(m['waves'])} waves) around the very center. "
+                f"This is where we start."
+            )
+        views.append(
+            {
+                "label": f"Flower {chr(64 + m['motif'])}"
+                + (f" (x{m['n_instances']})" if m["n_instances"] > 1 else ""),
+                "src": f"flower-{m['motif']}.png",
+                "cap": cap,
+            }
+        )
+    views.append(
+        {
+            "label": "All flowers (map)",
+            "src": "flowers-map.png",
+            "cap": "Every shape tinted by its flower group — "
+            + ", ".join(
+                f"{['red', 'yellow', 'green', 'blue', 'purple', 'teal'][(m['motif'] - 1) % 6]} is {m['name']}"
+                for m in motifs
+            )
+            + ".",
+        }
     )
+    n_flower_views = len(views)
+    for w in waves:
+        views.append(
+            {
+                "label": f"Wave {w['wave']}",
+                "src": f"wave-{w['wave']}.png",
+                "cap": f"Wave {w['wave']} — {w['real_shape_count']} "
+                f"{FRIENDLY.get(w['color'], w['color'])} shapes, all the same kind, "
+                f"{w['where']} ({w['area_share']:.0%} of the pattern). "
+                + (
+                    "We copy these first."
+                    if w["wave"] == 1
+                    else ("We copy these last." if w["wave"] == n_waves else "")
+                ),
+            }
+        )
+    views.append(
+        {
+            "label": "All waves (map)",
+            "src": "waves-map.png",
+            "cap": "Every wave at once — each color is one wave, "
+            "middle (red) first, edge last.",
+        }
+    )
+    flower_buttons = "".join(
+        f'<button onclick="show({i})" id="v{i}">{v["label"]}</button>'
+        for i, v in enumerate(views[:n_flower_views])
+    )
+    wave_buttons = "".join(
+        f'<button onclick="show({i})" id="v{i}">{v["label"]}</button>'
+        for i, v in enumerate(views[n_flower_views:], start=n_flower_views)
+    )
+    views_js = json.dumps([{"src": v["src"], "cap": v["cap"]} for v in views])
     html = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><title>The plan: copy the pattern in waves</title>
 <style>
@@ -330,43 +545,43 @@ def main() -> None:
  header {{ padding: 14px 20px; background: #fff; border-bottom: 1px solid #ddd; }}
  h1 {{ font-size: 20px; margin: 0 0 6px; }} p {{ margin: 4px 0; }}
  #caption {{ font-size: 17px; }} .muted {{ color: #666; font-size: 14px; }}
- .controls {{ padding: 12px 20px; display: flex; gap: 8px; flex-wrap: wrap; }}
+ .controls {{ padding: 6px 20px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }}
+ .rowlabel {{ font-size: 14px; color: #666; min-width: 60px; }}
  button {{ font-size: 16px; padding: 8px 16px; border-radius: 8px; border: 1px solid #999;
           background: #fff; cursor: pointer; }}
  button.on {{ background: #1b6ca8; color: #fff; border-color: #1b6ca8; }}
  img {{ display: block; margin: 0 20px 20px; max-width: calc(100% - 40px); }}
 </style></head><body>
 <header>
- <h1>The plan: copy the pattern in waves, middle first</h1>
+ <h1>The plan: a few flowers, copied in waves, middle first</h1>
  <p id="caption"></p>
- <p class="muted">Every shape in the photo belongs to exactly one wave —
-   {plan['real_shapes']} shapes, {coverage:.0%} of the colored area covered.
-   Bright shapes are the wave being shown; pale ones come later.
-   If a wave looks wrong (a shape in the wrong wave, a ring split in two), say so —
-   we don't start building until you agree with the waves.</p>
+ <p class="muted">The whole pattern is a few FLOWERS — composite shapes that
+   repeat around the center — and every flower is built from WAVES, where one
+   wave is one kind of simple shape. {plan['real_shapes']} shapes,
+   {coverage:.0%} of the colored area covered; every shape belongs to exactly
+   one wave and one flower. Bright shapes are what's being shown; pale ones
+   come later. If anything looks wrong (a shape in the wrong group, a flower
+   missing a petal), say so — we don't start building until you agree.</p>
 </header>
-<div class="controls">{buttons}<button onclick="show(-1)" id="bmap">All waves (colored map)</button></div>
-<img id="view" src="wave-1.png">
+<div class="controls"><span class="rowlabel">Flowers:</span>{flower_buttons}</div>
+<div class="controls"><span class="rowlabel">Waves:</span>{wave_buttons}</div>
+<img id="view" src="{views[0]['src']}">
 <script>
- const caps = {captions};
- function show(w) {{
+ const views = {views_js};
+ function show(i) {{
    document.querySelectorAll('button').forEach(b => b.classList.remove('on'));
-   if (w < 0) {{
-     document.getElementById('bmap').classList.add('on');
-     document.getElementById('view').src = 'waves-map.png';
-     document.getElementById('caption').textContent =
-       'Every wave at once — each color is one wave, middle (red) first, edge last.';
-   }} else {{
-     document.getElementById('b' + w).classList.add('on');
-     document.getElementById('view').src = 'wave-' + (w + 1) + '.png';
-     document.getElementById('caption').textContent = caps[w];
-   }}
+   document.getElementById('v' + i).classList.add('on');
+   document.getElementById('view').src = views[i].src;
+   document.getElementById('caption').textContent = views[i].cap;
  }}
  show(0);
 </script></body></html>
 """
     (out_dir / "wave-plan.html").write_text(html)
-    print(f"wrote {out_dir}/wave-plan.html (+ {n_waves} wave PNGs, waves-map.png, wave-plan.json)")
+    print(
+        f"wrote {out_dir}/wave-plan.html (+ {n_waves} wave PNGs, "
+        f"{len(rings)} flower PNGs, waves-map.png, flowers-map.png, wave-plan.json)"
+    )
 
 
 if __name__ == "__main__":

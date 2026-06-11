@@ -237,14 +237,29 @@ The protocol (`tools/plan-waves.py <session-dir> --center X Y --diameter D`):
    93% of the pattern in one wave; palette-name color matching split one
    kind 4/6.) The big rosette-center stars (top area tier) group into radial
    rings used for plain-language "where" labels.
-4. **Owner gates the wave plan** — the flip-through (`wave-plan.html`: one
-   wave bright per frame + an all-waves colored map) goes to the owner;
-   construction starts only after "waves agreed". Recorded in
+4. **Waves group into composite FLOWERS (motifs)** (owner, 2026-06-11: "a
+   shape similar to our middle one revolves around the origin — a mix of
+   several waves"). Each anchor ring seeds one flower family; a wave joins
+   the family the majority of its members sit nearest to; within a family,
+   fold-divisible waves chunk consecutive-by-angle into instances (per-member
+   nearest-anchor coin-flips for kinds sitting exactly BETWEEN two flowers —
+   witnessed [1,..,1,2,2] splits for the 18°-offset waves). **Validation,
+   the composite analog of the fold check: every instance of a family must
+   hold the same wave-multiset** (medallion-10: middle flower 21 shapes,
+   inner ×10 @ 15, outer ×10 @ 21 — the owner's "similar to the middle"
+   confirmed by count). A flower is the DSL-native unit: build it once,
+   `rotate` fold times. The owner re-seats a wave from the gate with
+   `--seat WAVE=FLOWER` — no code change. Full algorithm, thresholds, and
+   witnessed dead ends: `docs/wave-planning-design.md`.
+5. **Owner gates the wave plan** — the flip-through (`wave-plan.html`:
+   flowers row + waves row, one group bright per frame, colored maps) goes
+   to the owner; construction starts only after "waves agreed". Recorded in
    `session.json` → `stage_gates.structure.wave_plan.agreed`.
-5. **Iterate wave-by-wave** — each `stage: structure` iteration targets the
-   lowest unmatched wave; its gate visual and diff are CROPPED/MASKED to that
-   wave's region. Wave N must pass its visual check before wave N+1 opens —
-   the whole-image structure_similarity is logged for trend, not steered by.
+6. **Iterate flower-by-flower, wave-by-wave** — each `stage: structure`
+   iteration targets the lowest unmatched wave; its gate visual and diff are
+   CROPPED/MASKED to that wave's region. Wave N must pass its visual check
+   before wave N+1 opens — the whole-image structure_similarity is logged
+   for trend, not steered by.
 
 ## Hard prerequisites — read these BEFORE acting
 
