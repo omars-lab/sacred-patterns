@@ -290,6 +290,121 @@ omitted they are detected from the medallion mask and printed to confirm):
    before wave N+1 opens — the whole-image structure_similarity is logged
    for trend, not steered by.
 
+## Cookbook — proven tricks from the medallion-10 wave run (iters 41–55)
+
+Plain English: fifteen techniques that each earned their place by either
+passing a wave gate or catching a real defect during the run that took
+medallion-10 from 0 to 13 passed waves. Each entry names the trick, when to
+reach for it, and the witness iteration. This is a **living section** — add
+a trick when it survives contact with a second wave; retire one when a
+better tool supersedes it (note what replaced it).
+
+### Measuring the reference (before any .bkr edit)
+
+1. **Fold-and-cluster consensus measurement.** Never model a shape from one
+   contour — at ~10px shape scale, single-shape contours are noise. Fold ALL
+   N rotational/mirror copies into one canonical frame (rotate to the
+   nearest fold axis, e.g. `axis = 18 + 36*round((theta-18)/36)` for
+   10-fold; mirror-fold by the rel-angle sign), then greedy-cluster the
+   folded vertices in (tangential, radial) space with a ~3 pattern-unit
+   merge radius. n≈20–40 witnesses per vertex denoise what no single contour
+   can. *Witness: iter-49's wave-7 models, IoU 0.93–0.95 vs consensus.*
+2. **Area residual as a missing-vertex detector.** If the shoelace area of
+   your vertex model runs >10% under the measured mask area, suspect a
+   vertex hidden in a long shallow edge that `approximate_polygon` merges
+   away. Discriminate weak clusters: exactly collinear with an existing
+   edge → spurious; off-line AND including it closes the area gap → real.
+   *Witness: the wave-7 kite's hidden 5th vertex, 70.4→83.9u² vs 83.3
+   measured.*
+3. **IoU coordinate-descent against consensus masks — report fitted AND
+   snapped.** Optimize the vertex model by coordinate-descent on IoU against
+   the rebuilt consensus mask, then grid-snap and re-score. Snapping should
+   cost ~nothing (iter-49: 0.933→0.888 fitted-vs-snapped on the same
+   rebuilt masks scored 0.880 — i.e. the snap is free); a big snap cost
+   means the grid step is wrong, not the model.
+4. **Exact-gcd grid trick.** A vertex at `axis ± δ` lands exactly on a /N
+   division ring iff the ring's angular step divides gcd(18, δ). Pick ring
+   division counts so every model vertex has an exact cpt — then **assert
+   it programmatically** (a snap script that checks `cpt_index * step ==
+   18 ± rel` exactly) instead of eyeballing near-misses. *Witness: iter-49's
+   measure/snap-wave7.py, zero quantization error across 9 rings.*
+5. **Pixel-scale erosion bias is ~10% at ~10px shapes — document, don't
+   tune.** The segmentation's erode/regrow shaves small shapes; measured
+   mask areas under-read truth by up to ~10% at the smallest scales. Note
+   the bias in the measurement file and carry on — re-tuning ERODE_ITERS to
+   fit one wave is the Tenet-7 trap.
+
+### Proving the edit before rendering
+
+6. **Data-proven clearance.** Before predicting "no collisions with prior
+   waves," rasterize the snapped polygons in reference-pixel space and count
+   overlap pixels against the prior waves' reference masks. Zero is the only
+   acceptable number; "looks clear" is not a clearance check. *Witness:
+   iter-49's 40 polygons, 0px overlap with ref waves 1–6, 84% of ink on
+   ref wave-7 pixels.*
+7. **Falsifier routes named in advance.** The hypothesis's `falsifier:`
+   block pre-commits the diagnosis for each failure shape: displaced blob →
+   registration/radius (re-measure); short face-count delta → unclosed
+   cycle (Tier-0 witness); uniform boundary halo → band-edge erosion
+   (accepted, Stage-2). When the gate misses, you execute a named route
+   instead of improvising. *Witness: iter-49's iou miss fired the
+   "check WHERE" branch and resolved in one attribution pass.*
+8. **Tier-0 witness when a cycle fails to close.** If layer-1 face deltas
+   come up short, do NOT debug inside the composite — author the one shape
+   alone (no field, no repeats) and confirm the cycle closes there first
+   (bikar Tenet 17).
+
+### Gating the result
+
+9. **Census is the PRIMARY machine gate.** Predict the exact gt.json face
+   deltas by (sides, layer) bucket — e.g. "+20 layer-1 pentagons, +20
+   layer-1 quads, +9 benign blueprint circles" — and verify exactly. Count
+   bucket deltas, NOT raw side counts (the field already has pentagons).
+   A census hit + eyeball pass outranks any iou number. *Adopted as primary
+   from iter-53.*
+10. **iou misses need attribution, not retuning.** When iou lands under
+    prediction, decompose the penalty before touching anything: where does
+    the penalty ink sit relative to the REFERENCE? *Witness: iter-49 — 91%
+    of the penalty sat where the reference itself is white band/unbuilt
+    waves; counterfactual iou 0.771. The miss was the unbuilt surroundings,
+    not the wave's geometry.* An interstice wave's envelope is owned by
+    later waves — calibrate the prediction, don't move the geometry.
+11. **Saturated-baseline waves are weak-signal on iou.** When the field
+    already paints most of a wave's crop, predict an iou *band* [lo, hi],
+    not a floor — census + eyeball + clearance carry the gate.
+12. **Metric-interlock allowance, pre-declared.** Passed waves' iou may dip
+    ≤2 points when an adjacent wave lands ink inside their dilated crop
+    envelopes. Declare the allowance in the hypothesis; beyond it, diff the
+    shape census FIRST (face-split signal, not paint signal).
+13. **One rasterizer path, no exceptions.** Wave-diff comparisons are only
+    valid when both renders go through one rasterization call (canonical:
+    cairosvg, output_height=1024). Baselines come from a re-raster of the
+    frozen iteration's SVG, never from a stale PNG on disk. *Witness:
+    iter-49's phantom drift (w1 coverage −7.5) that vanished when iter-48
+    was re-rastered through the same path.*
+14. **Wave N+1's baseline is free.** The previous iteration's wave-diff
+    already computed ALL waves' metrics — read wave N+1's baseline from it
+    instead of re-running anything.
+
+### End-of-iteration bookkeeping (do this EVERY pass, pass or fail)
+
+15. The gate verdict is not "done" until the surfaces that other sessions
+    and the owner read are synced. In order:
+    1. **Verdict appended** to `iterations/<N>/hypothesis.md` (pass/fail,
+       metrics, attribution, next wave).
+    2. **`session.json` → `stage_gates.structure.waves_passed[<wave>]`**
+       gets `{iter, coverage, iou, date}` on a pass — this is what the
+       studio's `/iterate` and `/slides` pages read live; skipping it makes
+       the dashboard lie.
+    3. **Progress sheet regenerated** (the progress-strip script pattern:
+       reference + one tile per passed wave + current best, gold borders on
+       reference/best; registration per-iteration — magick raster ≤48,
+       cairosvg 49+) and copied to `<session>/progress.png`.
+    4. **Frozen-best pointer**: if the wave passed, this iteration is the
+       new frozen best — later baselines re-raster THIS SVG.
+    A parallel studio/bookkeeping session may exist; whoever lands the
+    verdict owns the sync (don't assume the other session will).
+
 ## Hard prerequisites — read these BEFORE acting
 
 Blocking. Do not start an iteration until you have read all four:
@@ -523,3 +638,6 @@ face vocabulary directly. Cite the source in the iteration log. This mirrors
 - [ ] `composite_score` compared to prior iteration; predicted warning checked.
 - [ ] Outcome logged in `evaluation.md`; falsification (if any) routed to a stop rule.
 - [ ] If a stop rule fired: escalation skill invoked (handle-falsification / present-options / escalate-qiyas-divergence), not a third blind variant.
+- [ ] Bookkeeping synced (Cookbook #15): verdict in hypothesis.md,
+      `session.json` waves_passed updated on a pass, progress sheet
+      regenerated + copied to `progress.png`.

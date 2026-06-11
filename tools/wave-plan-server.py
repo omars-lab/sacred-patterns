@@ -19,6 +19,11 @@ with one link per item. From there:
   gate side-by-side from wave-diff.py), with built/building/not-started
   status read from session.json's stage_gates.structure.waves_passed.
   Waves not yet built show the plan view's wave picture, dimmed.
+- /slides — the same build as a reveal.js slideshow: title slide with the
+  progress strip, one slide per PASSED wave (its gate side-by-side +
+  plain-language caption), closing slide of current best vs reference.
+  Reads session.json per request, so a newly passed wave appears with zero
+  regeneration. reveal.js loads from the jsdelivr CDN (needs internet).
 
 Usage:
     /Users/omareid/Workspace/git/qiyas/.venv/bin/python tools/wave-plan-server.py \
@@ -293,6 +298,91 @@ def main() -> None:
             f"<main>{progress_img}{''.join(cards)}</main></body></html>"
         )
 
+    def best_iter() -> int | None:
+        # The frozen current-best is the iteration that passed the highest
+        # wave — its render is what /slides closes on.
+        s = session()
+        passed = s.get("stage_gates", {}).get("structure", {}).get("waves_passed", {})
+        iters = [g.get("iter") for g in passed.values() if g.get("iter")]
+        return max(iters) if iters else None
+
+    def slides_html() -> str:
+        # A reveal.js deck telling the build story: title (progress strip),
+        # one slide per PASSED wave (the gate side-by-side), closing slide
+        # (our current best beside the reference). Reads session.json and
+        # wave-plan.json per request, same as /iterate — passing a new wave
+        # updates the deck with zero regeneration.
+        s = session()
+        passed = s.get("stage_gates", {}).get("structure", {}).get("waves_passed", {})
+        plan = json.loads((plan_dir / "wave-plan.json").read_text())
+        waves = sorted(plan["waves"], key=lambda w: w["wave"])
+        n_built = sum(1 for w in waves if str(w["wave"]) in passed)
+
+        slides = [
+            "<section><h1>Watching it get built</h1>"
+            f"<p class='lead'><b>{n_built} of {len(waves)} waves built</b> — "
+            "your picture first, then each building step.</p>"
+            "<img class='r-stretch' src='/progress.png' alt='progress so far'>"
+            "<p class='cap'>Tap, click, or use the arrow keys to move forward.</p>"
+            "</section>"
+        ]
+        for w in waves:
+            n = w["wave"]
+            gate = passed.get(str(n))
+            if not gate or latest_gate_sbs(n) is None:
+                continue
+            colour = str(w.get("color", "")).replace("_", " ")
+            count = w.get("real_shape_count", w.get("shape_count", "?"))
+            what = f"{count} {colour} shape{'s' if count != 1 else ''} {w.get('where', '')}"
+            pct = round(gate.get("coverage", 0) * 100)
+            slides.append(
+                f"<section><h2>Wave {n} <span class='what'>— {html.escape(what)}</span></h2>"
+                f"<img class='r-stretch' src='/gate/{n}/sbs.png' alt='wave {n}: ours beside yours'>"
+                f"<p class='cap'>Built in step {gate.get('iter', '?')}; our paint covers "
+                f"{pct}% of these shapes. Ours on the left, your picture on the right — "
+                "this wave's shapes are outlined in gold.</p></section>"
+            )
+        if best_iter() is not None:
+            slides.append(
+                "<section><h2>Where we are now</h2>"
+                "<div class='pair r-stretch'>"
+                "<figure><img src='/current-best.png' alt='ours so far'>"
+                "<figcaption>Ours so far</figcaption></figure>"
+                "<figure><img src='/reference.jpg' alt='your picture'>"
+                "<figcaption>Your picture</figcaption></figure></div>"
+                f"<p class='cap'>{n_built} of {len(waves)} waves built — "
+                "the rest are on their way, working outward.</p></section>"
+            )
+        css = """
+ .reveal { font-family: 'Avenir Next', Seravek, 'Helvetica Neue', -apple-system, sans-serif; }
+ .reveal h1, .reveal h2 { font-family: Charter, 'Iowan Old Style', Georgia, serif;
+   color: #202A36; text-transform: none; letter-spacing: .1px; }
+ .reveal h1 { font-size: 1.7em; } .reveal h2 { font-size: 1.15em; }
+ .reveal .what { color: #7A746A; font-weight: 400; }
+ .reveal p { color: #202A36; } .reveal .lead { font-size: .75em; }
+ .reveal .cap { color: #7A746A; font-size: .52em; line-height: 1.5; margin-top: 10px; }
+ .reveal img { border-radius: 10px; box-shadow: 0 1px 2px rgba(32,42,54,.05),
+   0 10px 28px rgba(32,42,54,.08); }
+ .pair { display: flex; gap: 24px; justify-content: center; align-items: flex-start; }
+ .pair figure { margin: 0; flex: 1; min-width: 0; }
+ .pair img { width: 100%; height: auto; object-fit: contain; }
+ .pair figcaption { color: #7A746A; font-size: .5em; margin-top: 8px; }
+ .home { position: fixed; top: 14px; left: 18px; z-index: 50; font-size: 14px;
+   font-family: 'Avenir Next', sans-serif; color: #19599C; text-decoration: none; }
+"""
+        return (
+            "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
+            "<title>The build, slide by slide</title>"
+            "<link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css'>"
+            f"<style>body {{ background: #F6F3EC; }}{css}</style></head><body>"
+            "<a class='home' href='/'>← Back to your review list</a>"
+            f"<div class='reveal'><div class='slides'>{''.join(slides)}</div></div>"
+            "<script src='https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js'></script>"
+            "<script>Reveal.initialize({ hash: true, transition: 'fade',"
+            " controlsTutorial: true, slideNumber: 'c/t' });</script>"
+            "</body></html>"
+        )
+
     def hub_html() -> str:
         # The front door: read session.json's stage gates and say, in plain
         # words, what needs the owner's eyes — one card per gate, done gates
@@ -340,6 +430,15 @@ def main() -> None:
                 f"<p>{n_built} waves are built so far. See each one beside "
                 "your picture — no verdict needed, just watch.</p>"
                 "<a class='go' href='/iterate'>Watch the build</a></div>"
+            )
+        if plan_agreed and waves_passed:
+            todo.append(
+                "<div class='gate'><h2>The story, slide by slide"
+                "<span class='badge done'>live</span></h2>"
+                "<p>The same build as a slideshow — one slide per finished "
+                "wave, ending with where we are now. Lean back and tap "
+                "through.</p>"
+                "<a class='go' href='/slides'>Play the slideshow</a></div>"
             )
         if (analysis_dir / "swatch-sheet.png").exists():
             if not palette_agreed:
@@ -403,6 +502,43 @@ def main() -> None:
                 return
             if self.path == "/iterate":
                 self._send_html(iterate_html())
+                return
+            if self.path == "/slides" or self.path.startswith("/slides?"):
+                # reveal.js routes its deck position via the URL hash/query;
+                # both land here.
+                self._send_html(slides_html())
+                return
+            if self.path == "/current-best.png":
+                it = best_iter()
+                if it is None:
+                    self.send_error(404)
+                    return
+                # cairosvg raster is canonical from iter 49; older bests only
+                # have the magick raster.
+                p = session_dir / "iterations" / str(it) / "render.cairo.png"
+                if not p.exists():
+                    p = session_dir / "iterations" / str(it) / "render.png"
+                if not p.exists():
+                    self.send_error(404)
+                    return
+                data = p.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+                return
+            if self.path == "/reference.jpg":
+                p = session_dir / "input" / "reference.jpg"
+                if not p.exists():
+                    self.send_error(404)
+                    return
+                data = p.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/jpeg")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
                 return
             if self.path.startswith("/gate/") and self.path.endswith("/sbs.png"):
                 try:
