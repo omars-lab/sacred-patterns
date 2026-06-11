@@ -49,18 +49,71 @@ The order is load-bearing. Don't reorder; the doc should be readable top-down by
 
 ### 1. Frontmatter
 
+The frontmatter carries BOTH a human-readable `status:` prose line (kept for the
+nuance a reader wants) AND **structured machine-read keys** that the decision-memory
+tooling (the generated `docs/decisions/LEDGER.md` + the CI-blocking
+`check-decision-coherence.sh`) parses. New docs are born compliant by including
+the structured keys from the start. Full schema + state machine:
+`docs/decision-schema.md`.
+
 ```markdown
 ---
-status: PROPOSED | ACCEPTED YYYY-MM-DD | REJECTED YYYY-MM-DD | SUPERSEDED-BY <link>
+# human-readable (kept; never machine-parsed)
+status: PROPOSED | ACCEPTED YYYY-MM-DD — Option <X> | REJECTED YYYY-MM-DD | SUPERSEDED YYYY-MM-DD
 discovered: YYYY-MM-DD
 decided: YYYY-MM-DD or "PENDING"
 owner: <github handle or "PENDING">
+# structured (machine-read — the contract)
+status_token: PROPOSED        # PROPOSED|ACCEPTED|REJECTED|SUPERSEDED|REOPENED|PENDING
+picked_option: null           # option letter once ACCEPTED, else null. ACCEPTED ⟹ not null.
+tag: <kebab-case>             # MUST be in docs/decisions/tags.yaml (add it there in the same commit if new)
+supersedes: []                # doc-paths this reverses (if any)
+superseded_by: []             # doc-paths that reverse THIS (if any)
+# dead_end:                   # optional, on SUPERSEDED/REOPENED/REJECTED docs:
+#   approach: <what not to retry>
+#   verdict: DEAD|REFUTED|OPEN
+#   use_instead: <the replacement>
+#   prior_art: <citation, or omit>
 related:
   - issue: <repo>/docs/issues/...
   - plan: <repo>/.claude/plans/...
   - cascade: <repo>/.claude/plans/...
 ---
 ```
+
+**Quote any frontmatter value containing a colon** (`status: "ACCEPTED — note: …"`,
+`- parent: "qiyas#298 (gates: CLI)"`) — an unquoted colon mid-value makes the YAML
+unparseable, which the coherence checker's rule 0 rejects.
+
+### 0. Premise check (MANDATORY — fill before any options)
+
+**Gate: no §5 options may be written before §0 is complete.** This is tenet C1
+(validate the premise before authoring options) made operational. The #1
+recurring mistake across the 5-week cascade was committing to a decision before
+checking its premise; this section forces the check up front, while the framing
+is fresh.
+
+Fill three lines:
+
+```markdown
+**Premise:** <the framing assumption this doc rests on, in one line — e.g. "the
+DSL cannot express girih substitution" or "face_class is a shape identity">
+
+**Verified against:** <where you checked the premise — a file path, a corpus
+sweep, a git-log range, a committed-tree grep. NOT the task text. e.g.
+"grep'd bikar/templates/ — no substitution primitive; confirmed in engine src">
+
+**LEDGER lookup (tag `<tag>`):** <run `make ledger` / grep `docs/decisions/*.md`
+for the problem-tag, then record one of: "no prior doc on this tag" |
+"prior doc <path> — this SUPERSEDES it (see §1 supersedes)" | "prior doc <path>
+— this LAYERS a distinct sub-question (different tag)">
+```
+
+If the LEDGER lookup finds a prior doc that already **decided or falsified** this
+exact question, STOP — cite it and don't re-decide (tenet C1). If it found a
+*dead-end* (verdict DEAD/REFUTED), the approach is off the table unless you have
+new evidence the verdict was wrong — and then you're reopening that doc via
+`handle-falsification`, not authoring a fresh one.
 
 ### 2. Layman summary (two sentences max)
 
@@ -285,6 +338,8 @@ something *isn't* the case anymore.
 ## Verification
 
 Before considering the skill done, check:
+- [ ] **§0 Premise check filled BEFORE any options were written** — premise stated, verified-against names a code/corpus/tree location (not the task text), and the LEDGER tag lookup is recorded (tenet C1 / C5). If the lookup found a prior doc that already decided this, the doc cites it instead of re-deciding.
+- [ ] **Structured frontmatter keys present** — `status_token`, `picked_option`, `tag` (in `tags.yaml`); `supersedes`/`superseded_by` if this reverses or is reversed; values with colons quoted. The doc passes `check-decision-coherence.sh`.
 - [ ] Layman summary readable by a non-technical reader.
 - [ ] At least 3 options, including a "do nothing" or "accommodate" option.
 - [ ] Every option has at least one web-search citation OR an explicit "no prior art found."

@@ -1,0 +1,30 @@
+# Decision-doc problem-tag vocabulary (sacred-patterns).
+#
+# The closed list of `tag:` values an SP decision doc may carry. The cluster
+# tags (C1–C10) are SHARED VERBATIM with qiyas + bikar so the cross-repo
+# ledger (LEDGER-XREPO.md) can group docs by tag across repos. SP-specific
+# tags follow. A doc with a tag not in this list is a checker error
+# (check-decision-coherence.py rule 5) — add a new tag here in the SAME
+# commit, with a one-line gloss.
+#
+# Canonical schema + state machine: docs/decision-schema.md (this repo is canonical).
+
+# --- Audit clusters C1–C10 (cross-repo, shared verbatim) ---
+face-class-identity: What "the same kind of shape" means — fill-class names vs canonical geometry as the identity/retrieval label.
+petal-ring-class: How petal-N / ring / rotate-block constructions assign face classes.
+scope-rescope: Scoping and re-scoping a gate / spec / cascade after an empirical delta.
+shape-vocab-typed-params: Shape vocabulary, typed params, and the discriminated-union migration vs an object bag.
+star7-red-detection: Detecting the red shapes in the star7 medallion construction.
+arc-lens-partial: Arc / lens / partial-shape emission and detection (cross-repo).
+svg-direct: Reading render.svg as the geometry source with gt.json as label oracle (the I1 spine), vs rasterize-trace round-trip.
+closeout-reporting: Closeout / dashboard / corpus-macro reporting surfaces (CLI, server, report vs feedback surface).
+ci-coverage-telemetry: CI gates, coverage scope, telemetry snapshots, fixtures, and the byte-strict comparator.
+bikar-construction: bikar-side construction primitives (clip / fill-void / merge / line / girih / mirror-rotate).
+
+# --- sacred-patterns-specific problem domains (orchestrator-level) ---
+dsl-tagging: Universal DSL tagging — the producer-of-record metadata contract.
+critical-path-workstream: Unblocking / sequencing the critical-path workstream across repos.
+loop-terminal-condition: What "done" means for the autonomous iteration / learn-new-pattern loop — the converged/stagnation/budget terminal states and the idle-vs-blocked distinction.
+
+# --- Decision-memory layer (shared dogfood tag) ---
+decision-hygiene: The decision-memory layer itself — ledger, coherence checker, frontmatter schema, tenet/skill guards.

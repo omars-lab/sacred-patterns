@@ -79,6 +79,31 @@ ends of the cascade):
 When any of the three sides of the cascade changes its surface, update
 all three mental-model docs in the same PR series.
 
+## How do I know if a decision was already made / tried / falsified?
+
+Consult **`docs/decisions/LEDGER.md`** (per-repo) and
+**`docs/decisions/LEDGER-XREPO.md`** (the cross-repo roll-up that joins qiyas +
+bikar + sacred-patterns by problem-tag) — the generated, can't-drift index of
+what's decided / dead / authoritative-per-tag. Because tags surface across repos
+(`face-class-identity` lives in both qiyas and bikar; the `svg-direct` spine
+crosses qiyas + SP), the cross-repo ledger is the right first stop from the
+orchestrator seat. Look up your problem-tag (vocabulary in
+`docs/decisions/tags.yaml`); the dead-ends table marks falsified approaches
+`DEAD` / `REFUTED` / `OPEN`. This is the first stop *before* re-deciding, per
+tenet C1.
+
+Why it can't lie: the ledgers are generated from each decision doc's structured
+frontmatter keys (`scripts/gen-decision-ledger.sh` +
+`gen-decision-ledger-xrepo.sh`, `npm run ledger`), and a gate
+(`scripts/check-decision-coherence.sh`, `npm run check:decisions`, run from
+`.husky/pre-commit`) keeps them honest. Schema + Mermaid state machine:
+`docs/decision-schema.md` (this repo is the canonical home; mirrored into qiyas +
+bikar). When you author a decision via `present-options`, its §0 Premise check
+forces this lookup; when one is falsified via `handle-falsification`, its L0
+branch + `dead_end:` step write the falsification back into the ledger.
+
+→ [decision-schema.md](decision-schema.md) · [LEDGER-XREPO.md](decisions/LEDGER-XREPO.md)
+
 ## Decisions that shaped this codebase
 
 ### Construction must be able to express extended-then-clipped shapes

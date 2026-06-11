@@ -1,5 +1,13 @@
 ---
 status: REOPENED 2026-05-25 — Option A falsified, Option G shipped + fixture verdict surfaced Option I (qiyas detector + sliver cleanup, NOT Option E/F clip semantic change); PENDING owner re-decision
+status_token: REOPENED
+picked_option: null
+tag: arc-lens-partial
+dead_end:
+  approach: ship the full 3-piece extend+clip cascade (Option A) for partial-shape rendering
+  verdict: REFUTED
+  use_instead: Option G (qiyas detector + sliver cleanup), not an Option E/F clip semantic change
+  killed_by: docs/decisions/2026-05-07-partial-shape-rendering-via-construction.md
 discovered: 2026-05-07
 decided: 2026-05-07 (original), PENDING (re-decision)
 owner: omar (sacred-patterns owner)

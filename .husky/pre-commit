@@ -15,6 +15,32 @@ if [ -n "$staged_ts" ]; then
   npx tsc --noEmit || exit 1
 fi
 
+# Decision-memory layer: when a decision doc / tag vocab / baseline is staged,
+# run the coherence gate (status-lies + unmarked reversals un-shippable), assert
+# the per-repo LEDGER.md is in sync, and refresh the cross-repo roll-up. All
+# read structured frontmatter keys only (no regex / no body scan). Scoped to
+# docs/decisions/** so unrelated commits stay fast. Schema: docs/decision-schema.md.
+staged_decisions=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^docs/decisions/' || true)
+if [ -n "$staged_decisions" ]; then
+  if command -v yq >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+    echo "[pre-commit] check-decision-coherence (docs/decisions/ changed)"
+    sh scripts/check-decision-coherence.sh || exit 1
+    echo "[pre-commit] check LEDGER.md + LEDGER-XREPO.md in sync"
+    sh scripts/gen-decision-ledger.sh --check || {
+      echo ""
+      echo "  LEDGER.md is stale. Run: sh scripts/gen-decision-ledger.sh && git add docs/decisions/LEDGER.md"
+      exit 1
+    }
+    sh scripts/gen-decision-ledger-xrepo.sh --check || {
+      echo ""
+      echo "  LEDGER-XREPO.md is stale. Run: sh scripts/gen-decision-ledger-xrepo.sh && git add docs/decisions/LEDGER-XREPO.md"
+      exit 1
+    }
+  else
+    echo "[pre-commit] WARN: yq/jq not installed — skipping decision-coherence gate (brew install yq jq)."
+  fi
+fi
+
 # Cross-repo tenet 12 — secret scan on staged hunks (sacred-patterns#345).
 # `gitleaks protect` is deprecated/broken in v8.30+: it detects leaks but
 # always exits 0, defeating the gate. Use the documented post-v8 path:
