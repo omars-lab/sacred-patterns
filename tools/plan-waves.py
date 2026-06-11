@@ -87,6 +87,13 @@ FRIENDLY = {
 }
 
 
+def friendly(color: str) -> str:
+    """Palette anchor names are engineer tokens; the page speaks plain words
+    (Tenet 27). Map the known ones, humanize the rest — e.g.
+    friendly("navy") -> "dark-blue", friendly("deep_navy") -> "deep navy"."""
+    return FRIENDLY.get(color, color.replace("_", " "))
+
+
 def load_analyze_reference(tools_dir: Path):
     """Reuse medallion_mask + palette anchors from analyze-reference.py
     (single source of truth for what counts as medallion / which blues exist)."""
@@ -616,8 +623,13 @@ def main() -> None:
                 "label": f"Wave {w['wave']}",
                 "src": f"wave-{w['wave']}.png",
                 "cap": f"Wave {w['wave']} — {w['real_shape_count']} "
-                f"{FRIENDLY.get(w['color'], w['color'])} shapes, all the same kind, "
-                f"{w['where']} ({w['area_share']:.0%} of the pattern). "
+                f"{friendly(w['color'])} "
+                + (
+                    "shapes, all the same kind, "
+                    if w["real_shape_count"] != 1
+                    else "shape "
+                )
+                + f"{w['where']} ({w['area_share']:.0%} of the pattern). "
                 + (
                     "The dotted ring runs through all their midpoints — "
                     "that ring is the wave. "
@@ -658,7 +670,7 @@ def main() -> None:
     shapes_js = json.dumps(
         [
             {"id": s["id"], "x": s["x"], "y": s["y"], "a": s["area_px"],
-             "w": wv["wave"], "c": FRIENDLY.get(s["color"], s["color"])}
+             "w": wv["wave"], "c": friendly(s["color"])}
             for wv in waves
             for s in wv["shapes"]
         ]
@@ -668,7 +680,7 @@ def main() -> None:
             str(wv["wave"]): {
                 "flower": wv["flower"],
                 "count": wv["real_shape_count"],
-                "color": FRIENDLY.get(wv["color"], wv["color"]),
+                "color": friendly(wv["color"]),
                 "where": wv["where"],
                 "view": n_flower_views + i,
             }
@@ -769,7 +781,7 @@ def main() -> None:
    <a href="/" id="hublink" hidden>&larr; Back to your review list</a></p>
 </header>
 <div class="controls"><span class="rowlabel">Flowers:</span>{flower_buttons}</div>
-<div class="controls"><span class="rowlabel">Waves:</span>{wave_buttons}</div>
+<div class="controls"><span class="rowlabel">Waves:</span>{wave_buttons}<span class="muted">&larr; &rarr; keys flip through</span></div>
 <div class="controls"><span class="rowlabel"></span>
  <button id="applybtn" style="display:none"></button>
  <button id="agreebtn" style="display:none">The plan looks right — start building</button>
@@ -803,7 +815,9 @@ def main() -> None:
 </div>
 <script>
  const views = {views_js};
+ let currentView = 0;
  function show(i) {{
+   currentView = i;
    document.querySelectorAll('[id^="v"].on').forEach(b => b.classList.remove('on'));
    const btn = document.getElementById('v' + i);
    if (btn) btn.classList.add('on');
@@ -811,6 +825,18 @@ def main() -> None:
    document.getElementById('caption').textContent = views[i].cap;
  }}
  show(0);
+ // Arrow keys flip to the next/previous view (owner ask 2026-06-11) —
+ // wrap-around, and hands off when focus is in a dropdown/field so the
+ // arrows keep their native meaning there. A just-clicked view button can
+ // keep focus: keydown still bubbles to document, so flipping works.
+ document.addEventListener('keydown', (e) => {{
+   if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+   const t = document.activeElement ? document.activeElement.tagName : '';
+   if (t === 'SELECT' || t === 'INPUT' || t === 'TEXTAREA') return;
+   e.preventDefault();
+   const n = views.length;
+   show((currentView + (e.key === 'ArrowRight' ? 1 : n - 1)) % n);
+ }});
 </script>
 <script>__EDIT_JS__</script></body></html>
 """
@@ -882,7 +908,7 @@ def main() -> None:
    let ws = '';
    for (const w in waveInfo) {
      const i = waveInfo[w];
-     ws += '<option value="' + w + '">Wave ' + w + ' — ' + i.count + ' ' + i.color + ' shapes ' + i.where + '</option>';
+     ws += '<option value="' + w + '">Wave ' + w + ' — ' + i.count + ' ' + i.color + ' ' + (i.count === 1 ? 'shape ' : 'shapes ') + i.where + '</option>';
    }
    $('selwave').innerHTML = ws;
    let fs = '';
@@ -897,7 +923,7 @@ def main() -> None:
    $('p-title').textContent = 'Shape #' + s.id;
    $('p-desc').textContent = 'A ' + s.c + ' shape. Blue dots = the other shapes in its wave. Pick a different group below and it lights up yellow.';
    $('p-wave').innerHTML = '<b>Its wave:</b> Wave ' + w + ' — ' + wi.count + ' ' + wi.color +
-     ' shapes ' + wi.where + ' <a href="#" id="see-wave">see it</a>';
+     (wi.count === 1 ? ' shape ' : ' shapes ') + wi.where + ' <a href="#" id="see-wave">see it</a>';
    $('p-flower').innerHTML = '<b>Its flower:</b> ' + flowerLabel(f) +
      (f && flowers[f - 1] ? ' <a href="#" id="see-flower">see it</a>' : '');
    $('see-wave').onclick = e => { e.preventDefault(); show(wi.view); };
