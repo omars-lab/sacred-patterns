@@ -24,10 +24,13 @@ Usage:
                                       [--stagnation-epsilon F]
 
 Exits:
-    0  converged
+    0  converged (metrics AND a passing portal verdict — the loop never
+       self-certifies; decision docs/decisions/2026-06-07-loop-terminal-condition.md)
     1  stagnation
     2  budget exhaustion
     3  uncaught error (broken render that didn't recover, etc.)
+    4  awaiting-portal-review — metric-converged but iterations/N/ carries
+       no sha-bound review-verdict.json; run `qiyas review` + portal-handoff
 """
 from __future__ import annotations
 
@@ -44,6 +47,7 @@ from pathlib import Path
 from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import portal_verdict  # noqa: E402
 from auto_iterate_capture import (  # noqa: E402
     CaptureError, IterContext, assert_destinations_writable, run_checklist,
 )
@@ -207,6 +211,38 @@ def _seed_next_bkr(session_dir: Path, n: int, k: int) -> Optional[Path]:
     return next_bkr
 
 
+def _portal_seed_block(session_dir: Path, n: int, k: int) -> str:
+    """When iter N carries a recorded portal verdict, draft iter K's
+    hypothesis seed (tools/seed-hypothesis.py) and return the prompt block
+    that makes the edit agent start from it. Empty string when no verdict —
+    the qiyas warning remains the only directive."""
+    if not portal_verdict.portal_verdict_recorded(session_dir, n):
+        return ""
+    seed_path = session_dir / "iterations" / str(k) / "hypothesis-seed.md"
+    if not seed_path.exists():
+        proc = subprocess.run(
+            [sys.executable,
+             str(Path(__file__).resolve().parent / "seed-hypothesis.py"),
+             str(session_dir), str(n)],
+            capture_output=True, text=True,
+        )
+        if proc.returncode != 0:
+            print(f"[warn] seed-hypothesis failed (continuing without seed): "
+                  f"{proc.stderr.strip()}", file=sys.stderr)
+            return ""
+    verdict_file = portal_verdict.verdict_path(session_dir, n)
+    return f"""
+Portal review (takes precedence over the qiyas warning when they conflict):
+- The art expert reviewed iter {n}; the machine verdict is {verdict_file}.
+- A hypothesis seed is drafted at {seed_path}.
+- Read the seed FIRST and author iterations/{k}/hypothesis.md from it BEFORE
+  editing pattern.bkr — address gaps[0] or state in hypothesis.md why you
+  override the ranking. Fill every TODO(judgment) yourself per the
+  iterate-construction-hypothesis routing table; a hypothesis.md still
+  containing TODO(judgment) is invalid.
+"""
+
+
 def auto_edit(session_dir: Path, n: int, k: int,
               it: IterationResult,
               max_budget_usd: float = 2.0) -> bool:
@@ -228,6 +264,7 @@ def auto_edit(session_dir: Path, n: int, k: int,
     val_path = session_dir / "iterations" / str(n) / "validation" / "validation.json"
     baseline = session_dir / "input" / "baseline.json"
     reference = session_dir / "input" / "reference.jpg"
+    portal_block = _portal_seed_block(session_dir, n, k)
 
     prompt = f"""You are running iteration K = {k} of the auto-iterate loop on
 session {session_dir.name}.
@@ -247,7 +284,7 @@ Inputs:
     rationale: {rationale}
 - Baseline: {baseline}
 - Reference image: {reference}
-
+{portal_block}
 Output:
 - Edit {next_bkr} in place to apply the warning's counterfactual.
 - After saving, print one paragraph to stdout with: which warning was
@@ -334,6 +371,50 @@ def composite_changed(window: list[float], epsilon: float) -> bool:
     return any(d >= epsilon for d in deltas)
 
 
+def portal_gap_pending(session_dir: Path, n: int) -> bool:
+    """A valid (sha-bound) portal verdict exists for iter N and the reviewer
+    found something wrong — the loop has a ready-made gap to iterate on even
+    when the qiyas metrics say converged."""
+    return (portal_verdict.portal_verdict_recorded(session_dir, n)
+            and not portal_verdict.review_passed(session_dir, n))
+
+
+def terminal_state(session_dir: Path, it: IterationResult, *,
+                   iter_count: int, max_iterations: int,
+                   composite_window: list[float],
+                   stagnation_window: int,
+                   stagnation_epsilon: float) -> str:
+    """Decide whether the loop is done, and how — pure so tests can table it.
+
+    Why "converged" needs more than the metric: the composite score is a
+    lossy projection, so metric-convergence alone hands off to the expert's
+    eye rather than self-certifying (decision
+    docs/decisions/2026-06-07-loop-terminal-condition.md, ACCEPTED Option C).
+
+      converged              metric-converged AND portal_verdict_recorded
+                             AND review_passed — truly done
+      awaiting-portal-review metric-converged, no valid sha-bound verdict —
+                             hand back for the portal look (exit 4)
+      not-terminal           keep iterating; includes metric-converged with
+                             a recorded verdict whose wrong > 0 (the verdict
+                             IS the next gap)
+      handback-budget        iteration budget exhausted (exit 2)
+      handback-stagnation    composite flat over the window (exit 1)
+    """
+    if it.go_no_go == "converged":
+        if not portal_verdict.portal_verdict_recorded(session_dir, it.n):
+            return "awaiting-portal-review"
+        if portal_verdict.review_passed(session_dir, it.n):
+            return "converged"
+        return "not-terminal"
+    if iter_count >= max_iterations:
+        return "handback-budget"
+    if (len(composite_window) >= stagnation_window
+            and not composite_changed(composite_window, stagnation_epsilon)):
+        return "handback-stagnation"
+    return "not-terminal"
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("session_dir")
@@ -398,18 +479,38 @@ def main() -> int:
     iter_count = 0
 
     while True:
-        # Terminal: convergence
-        if it.go_no_go == "converged":
-            print(f"[done] converged at iter {it.n}")
+        state = terminal_state(
+            session_dir, it,
+            iter_count=iter_count, max_iterations=args.max_iterations,
+            composite_window=composite_window,
+            stagnation_window=args.stagnation_window,
+            stagnation_epsilon=args.stagnation_epsilon,
+        )
+        if state == "converged":
+            print(f"[done] converged at iter {it.n} — metrics green AND the "
+                  f"portal verdict passed (sha-bound to the current render)")
             return 0
-
-        # Terminal: budget
-        if iter_count >= args.max_iterations:
+        if state == "awaiting-portal-review":
+            render = session_dir / "iterations" / str(it.n) / "render.svg"
+            print(f"[stop] iter {it.n} is metric-converged but carries no valid "
+                  f"portal verdict — the loop does not self-certify "
+                  f"(decision 2026-06-07-loop-terminal-condition, Option C).")
+            print("       Run the expert review, then land the verdict:")
+            print(f"         qiyas review {render} --against {reference}")
+            print(f"         tools/portal-handoff.py {session_dir} {it.n}")
+            return 4
+        if state == "handback-budget":
             print(f"[stop] budget exhausted ({args.max_iterations} iters from {start_n})")
             return 2
+        if state == "handback-stagnation":
+            print(f"[stop] stagnation: last {args.stagnation_window} composites "
+                  f"within {args.stagnation_epsilon} (window={composite_window})")
+            return 1
 
-        # Terminal: no actionable warning
-        if it.top_warning is None and it.go_no_go != "broken":
+        # Terminal: no actionable warning — unless the portal verdict itself
+        # supplies the gap (recorded review with wrong > 0).
+        if (it.top_warning is None and it.go_no_go != "broken"
+                and not portal_gap_pending(session_dir, it.n)):
             print(f"[stop] iter {it.n} has no warnings[0]; check qiyas score availability")
             print(f"       blocking_issues: {it.blocking_issues}")
             return 3
@@ -475,15 +576,10 @@ def main() -> int:
                       file=sys.stderr)
                 return 3
 
-        # === Stagnation check ===
+        # === Stagnation window upkeep (terminal_state reads it next pass) ===
         if new_it.composite is not None:
             composite_window.append(new_it.composite)
             composite_window = composite_window[-args.stagnation_window:]
-        if (len(composite_window) >= args.stagnation_window
-                and not composite_changed(composite_window, args.stagnation_epsilon)):
-            print(f"[stop] stagnation: last {args.stagnation_window} composites "
-                  f"within {args.stagnation_epsilon} (window={composite_window})")
-            return 1
 
         it = new_it
         iter_count += 1

@@ -211,6 +211,21 @@ detector_untouched: "confirmed — no qiyas param/threshold/cost in this iterati
 If you cannot fill a field honestly, STOP and surface why instead of
 fudging.
 
+**Start from the seed when one exists.** If the prior iteration carried a
+portal review, `tools/seed-hypothesis.py` (run by hand or by auto-iterate)
+has drafted `iterations/<N>/hypothesis-seed.md` with the machine-knowable
+half pre-filled: attempt number, the top-ranked gap citing its
+`annotation_id`, the evidence trail from `review-verdict.json`. Author
+`hypothesis.md` from that seed. Two rules govern the split:
+
+- `gap_targeted` is a machine draft — rewording is allowed, but either keep
+  the `[annotation …]` citation or state in `## Plan` why you override the
+  ranking (structure-before-pixels is the default order for a reason).
+- Every `TODO(judgment)` field is YOURS: `construction_hypothesis`,
+  `bkr_change`, `predicted_cost`, the Expected-visual prose. Never let
+  machine text stand in for them — a templated Tenet-24 expectation is a
+  fudged one. A hypothesis.md still containing `TODO(judgment)` is invalid.
+
 ### Step 2 — Make the change: exactly one construction idea
 
 One overlay change, one petal-construction method, one symmetry-order
@@ -246,6 +261,19 @@ score first, the eye rationalizes the number. **No iteration is "shipped"
 recorded review-portal verdict** — that is Tenet 27, and it is the whole
 reason the detector can stay frozen: the human eye, not a loosened
 threshold, is the acceptance authority.
+
+**After the portal look, land the machine verdict:**
+
+```bash
+./tools/portal-handoff.py <session-dir> <N>
+```
+
+This writes `iterations/<N>/review-verdict.json`, sha-bound to the render
+you just reviewed. `visual-verdict.md` stays the narrative; the JSON is the
+machine marker the loop's terminal check and `seed-hypothesis.py` read
+(decision `docs/decisions/2026-06-07-loop-terminal-condition.md`, ACCEPTED
+Option C — `portal_verdict_recorded` is a conjunct of "converged", so a
+review that never runs the handoff doesn't count).
 
 ### Step 4 — Measure against the prior iteration
 
@@ -337,8 +365,12 @@ face vocabulary directly. Cite the source in the iteration log. This mirrors
 ## Verification — before considering an iteration done
 
 - [ ] `hypothesis.md` frontmatter filled honestly, `detector_untouched: confirmed`.
+- [ ] No `TODO(judgment)` remains in `hypothesis.md` — every judgment field
+      authored by you, not the seed.
 - [ ] Exactly one construction idea changed; no qiyas param touched.
 - [ ] Render viewed in the review portal BEFORE reading the score; verdict recorded (Tenet 27).
+- [ ] `tools/portal-handoff.py` run after the review — `iterations/<N>/review-verdict.json`
+      exists and sha-matches the render.
 - [ ] `composite_score` compared to prior iteration; predicted warning checked.
 - [ ] Outcome logged in `evaluation.md`; falsification (if any) routed to a stop rule.
 - [ ] If a stop rule fired: escalation skill invoked (handle-falsification / present-options / escalate-qiyas-divergence), not a third blind variant.
