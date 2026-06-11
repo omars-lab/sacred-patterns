@@ -145,6 +145,66 @@ detector fix happen in qiyas's own calibration loop with its own
 corpus-wide regression guard. The split is: *construction wrong → fix here;
 detector wrong → escalate there; never tune the detector from here.*
 
+## The stage ladder — structure → color → weave (read THIRD)
+
+Plain English: an iteration that changes geometry, colors, AND band styling
+at once cannot attribute its score move to any of them — and steering all
+three by one full-color pixel number papers over structural divergence with
+color tuning (the medallion-10 74% plateau was exactly this; iter-39's
+"looked better, measured worse" color remap was the proof). So the loop is
+staged: **get the structure agreed first, then color, then the weave** —
+each stage with its own allowed edits, its own visual artifact, its own
+metric, and an explicit owner-agreement gate before the next stage opens.
+
+The `.bkr` statement vocabulary partitions natively by stage:
+
+| Stage | Allowed `.bkr` edits | Visual artifact (the gate) | Steering metric |
+|---|---|---|---|
+| **1 STRUCTURE** | geometry statements only: `girih field`, `voids detect`, `connect`/`cycle`, `rotate`/`mirror`, `layer`, `face`, `tile`, blueprint | skeleton vs edge-extracted reference (`tools/structure-diff.sh`) | `structure_similarity` (pixel-diff on edge maps) + gt.json shape census. **Ignore** color_match. |
+| **2 COLOR** | `palette` / `classify` / `fill` / `style` only — structure FROZEN | flat-color render vs reference + the standardized swatch sheet | `color_match_pct` toward `input/reference-analysis/reference-palette.json` values (values fixed once agreed; iterations only remap faces→named colors, **every remap ablation-gated**). Must not move structure_similarity. |
+| **3 WEAVE** | `strapwork` block only — structure + fills FROZEN | full render vs reference + zoomed band crossings | full pixel `similarity_pct` + A5 band integrity; strapwork `color`/`width` seeded from the reference-analysis line measurements |
+
+**Rules:**
+
+- **An iteration belongs to exactly ONE stage** — the `stage:` frontmatter
+  field in `hypothesis.md` (required). Step-2's "exactly one construction
+  idea" means one idea *within the active stage*.
+- **Scoping note:** strapwork *centerlines* (which decoration lines exist)
+  are structure and appear in the skeleton; the bands' width/weave/color
+  are Stage 3. Stage 1 settles "where do the lines go"; Stage 3 settles
+  "how they're dressed".
+- **Freeze check:** every Stage-2/3 iteration re-runs `structure-diff.sh`
+  and confirms `skeleton_sha256` is byte-identical to the gated one. A
+  changed sha means the iteration touched structure — revert or route back.
+- **Route-back:** if a Stage-2/3 hypothesis genuinely needs a structure
+  edit, the loop drops back to Stage 1 explicitly (new `stage: structure`
+  iteration, re-gate — cheap: skeleton re-diff + owner nod). Never smuggle
+  a geometry edit through a color iteration.
+- **Gates are visual first, metric second:** the owner's eye on the
+  side-by-side is the gate (Tenets 24/25/27); the machine numbers exist to
+  catch regressions after agreement, not to substitute for it. The gate
+  verdict is recorded in `session.json`:
+  ```json
+  "stage_gates": {
+    "structure": {"approved_at_iter": null, "skeleton_sha256": null, "approved_date": null},
+    "color":     {"approved_at_iter": null, "palette_agreed": false, "approved_date": null},
+    "weave":     {"approved_at_iter": null, "approved_date": null}
+  }
+  ```
+  v1 records the owner's chat agreement; the portal-native upgrade path is
+  qiyas annotation kinds Q12/Q9/Q11 with `verdict: "right"` (already
+  supported in `qiyas/src/qiyas/review/state.py`) — wire later if wanted.
+- **Stage entry gates:** Stage 2 opens only after BOTH the structure gate
+  AND the owner's palette-swatch agreement (`tools/analyze-reference.py`
+  swatch sheet); Stage 3 opens after the color gate. The weave gate is the
+  80% expert-review gate.
+- **Tooling:** `tools/make-structure.py` (pattern.bkr → structure.bkr),
+  `tools/structure-diff.sh` (skeleton render + edge maps + structure
+  similarity + gate side-by-sides; skeleton SVGs must rasterize via
+  rsvg-convert — ImageMagick's MSVG silently drops stroked paths),
+  `tools/analyze-reference.py` (line/fill separation, standardized palette,
+  swatch sheet — runs under the qiyas venv python).
+
 ## Hard prerequisites — read these BEFORE acting
 
 Blocking. Do not start an iteration until you have read all four:
@@ -189,6 +249,7 @@ Create `iterations/<N>/hypothesis.md` with this frontmatter BEFORE any
 ---
 attempt: N
 date: YYYY-MM-DD
+stage: structure | color | weave   # exactly one — see the stage ladder; edits outside the stage's vocabulary are invalid
 gap_targeted: "<one-sentence visually-confirmed gap from the portal look>"
 construction_hypothesis: "<what about the CONSTRUCTION is wrong, and why>"
 bkr_change: "<the smallest single .bkr edit — or named bikar primitive to add>"
@@ -364,7 +425,10 @@ face vocabulary directly. Cite the source in the iteration log. This mirrors
 
 ## Verification — before considering an iteration done
 
-- [ ] `hypothesis.md` frontmatter filled honestly, `detector_untouched: confirmed`.
+- [ ] `hypothesis.md` frontmatter filled honestly, `detector_untouched: confirmed`,
+      `stage:` named and every `.bkr` edit within that stage's vocabulary.
+- [ ] Stage 2/3 only: freeze check passed — `structure-diff.sh` re-run,
+      `skeleton_sha256` byte-identical to the gated one.
 - [ ] No `TODO(judgment)` remains in `hypothesis.md` — every judgment field
       authored by you, not the seed.
 - [ ] Exactly one construction idea changed; no qiyas param touched.
