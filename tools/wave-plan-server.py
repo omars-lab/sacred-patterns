@@ -14,6 +14,11 @@ with one link per item. From there:
 - /palette — the colour gate: the swatch sheet beside the reference;
   "These colours are right" records palette agreement; a note box captures
   corrections (auto-saved, with a visible "saved" confirmation).
+- /iterate — the BUILD progress view, companion to /plan: same wave list,
+  but each built wave shows OUR render beside the reference (the per-wave
+  gate side-by-side from wave-diff.py), with built/building/not-started
+  status read from session.json's stage_gates.structure.waves_passed.
+  Waves not yet built show the plan view's wave picture, dimmed.
 
 Usage:
     /Users/omareid/Workspace/git/qiyas/.venv/bin/python tools/wave-plan-server.py \
@@ -39,7 +44,7 @@ import json
 import subprocess
 import sys
 from datetime import date
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 
 # Mirrors the design tokens in plan-waves.py's studio CSS — one design system
@@ -194,6 +199,100 @@ def main() -> None:
     def save_session(s: dict) -> None:
         session_json.write_text(json.dumps(s, indent=2) + "\n")
 
+    def latest_gate_sbs(wave: int) -> Path | None:
+        # The newest iteration that ran a wave-diff for this wave owns the
+        # gate picture (our render | reference, gold-outlined wave region).
+        iters = sorted(
+            (d for d in (session_dir / "iterations").iterdir() if d.name.isdigit()),
+            key=lambda d: int(d.name),
+            reverse=True,
+        )
+        for it in iters:
+            p = it / "wave-diff" / f"wave-{wave:02d}" / "sbs.png"
+            if p.exists():
+                return p
+        return None
+
+    def iterate_html() -> str:
+        # The build-progress companion to /plan: one card per wave, in build
+        # order. Built waves show our render beside the reference; the next
+        # wave is called out; everything else shows the plan's wave picture.
+        s = session()
+        passed = s.get("stage_gates", {}).get("structure", {}).get("waves_passed", {})
+        plan = json.loads((plan_dir / "wave-plan.json").read_text())
+        waves = sorted(plan["waves"], key=lambda w: w["wave"])
+        next_wave = next((w["wave"] for w in waves if str(w["wave"]) not in passed), None)
+        n_built = sum(1 for w in waves if str(w["wave"]) in passed)
+
+        cards = []
+        for w in waves:
+            n = w["wave"]
+            colour = str(w.get("color", "")).replace("_", " ")
+            count = w.get("real_shape_count", w.get("shape_count", "?"))
+            what = f"{count} {colour} shape{'s' if count != 1 else ''} {w.get('where', '')}"
+            gate = passed.get(str(n))
+            if gate:
+                sbs = latest_gate_sbs(n)
+                img = (
+                    f"<img src='/gate/{n}/sbs.png' alt='wave {n}: ours beside yours'>"
+                    "<p class='muted caption'>Ours on the left, your picture on the "
+                    "right — this wave's shapes are outlined in gold.</p>"
+                    if sbs
+                    else ""
+                )
+                pct = round(gate.get("coverage", 0) * 100)
+                cards.append(
+                    f"<div class='gate'><h2>Wave {n} — {html.escape(what)}"
+                    "<span class='badge done'>built ✓</span></h2>"
+                    f"<p class='muted'>Built in step {gate.get('iter', '?')}; our paint "
+                    f"covers {pct}% of these shapes.</p>{img}</div>"
+                )
+            elif n == next_wave:
+                cards.append(
+                    f"<div class='gate'><h2>Wave {n} — {html.escape(what)}"
+                    "<span class='badge open'>building now</span></h2>"
+                    "<p class='muted'>This is the wave we're working on — it's "
+                    "highlighted below on your picture.</p>"
+                    f"<img src='/wave-{n}.png' alt='wave {n} on your picture'></div>"
+                )
+            else:
+                cards.append(
+                    f"<div class='gate todo'><h2>Wave {n} — {html.escape(what)}"
+                    "<span class='badge todo'>coming up</span></h2>"
+                    f"<details><summary class='muted'>See it on your picture</summary>"
+                    f"<img loading='lazy' src='/wave-{n}.png' alt='wave {n} on your picture'></details></div>"
+                )
+
+        bar = f"{(n_built / len(waves) * 100):.0f}%" if waves else "0%"
+        progress_img = (
+            "<div class='gate'><h2>The whole picture so far</h2>"
+            "<p class='muted'>Your picture first, then each building step "
+            "left to right.</p><img src='/progress.png' alt='progress so far'></div>"
+            if (session_dir / "progress.png").exists()
+            else ""
+        )
+        extra_css = """
+ img { max-width: 100%; display: block; border-radius: 10px; margin-top: 8px; }
+ .caption { margin-top: 6px; }
+ .badge.todo { background: #B7AE9D; }
+ .gate.todo { opacity: .72; }
+ details summary { cursor: pointer; }
+ .bar { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; margin-top: 8px; }
+ .bar > div { height: 100%; background: var(--agree); border-radius: 999px;
+              transition: width .6s ease; }
+"""
+        return (
+            "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
+            f"<title>Watching it get built</title><style>{HUB_CSS}{extra_css}</style></head><body>"
+            "<header><h1>Watching it get built</h1>"
+            f"<p>We rebuild your picture wave by wave, from the centre outward. "
+            f"<b>{n_built} of {len(waves)} waves are built.</b></p>"
+            f"<div class='bar'><div style='width:{bar}'></div></div>"
+            "<p class='muted'><a href='/'>Back to your review list</a> · "
+            "<a href='/plan'>See the building plan</a></p></header>"
+            f"<main>{progress_img}{''.join(cards)}</main></body></html>"
+        )
+
     def hub_html() -> str:
         # The front door: read session.json's stage gates and say, in plain
         # words, what needs the owner's eyes — one card per gate, done gates
@@ -231,6 +330,16 @@ def main() -> None:
                 "<span class='badge done'>agreed ✓</span></h2>"
                 "<p>You agreed to the plan — building is underway. You can "
                 "still <a href='/plan'>look at it</a>.</p></div>"
+            )
+        waves_passed = gates.get("structure", {}).get("waves_passed", {})
+        if plan_agreed:
+            n_built = len(waves_passed)
+            todo.append(
+                "<div class='gate'><h2>The build, wave by wave"
+                "<span class='badge done'>live</span></h2>"
+                f"<p>{n_built} waves are built so far. See each one beside "
+                "your picture — no verdict needed, just watch.</p>"
+                "<a class='go' href='/iterate'>Watch the build</a></div>"
             )
         if (analysis_dir / "swatch-sheet.png").exists():
             if not palette_agreed:
@@ -291,6 +400,38 @@ def main() -> None:
         def do_GET(self):
             if self.path in ("/", "/index.html"):
                 self._send_html(hub_html())
+                return
+            if self.path == "/iterate":
+                self._send_html(iterate_html())
+                return
+            if self.path.startswith("/gate/") and self.path.endswith("/sbs.png"):
+                try:
+                    wave = int(self.path.split("/")[2])
+                except ValueError:
+                    self.send_error(404)
+                    return
+                sbs = latest_gate_sbs(wave)
+                if sbs is None:
+                    self.send_error(404)
+                    return
+                data = sbs.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+                return
+            if self.path == "/progress.png":
+                p = session_dir / "progress.png"
+                if not p.exists():
+                    self.send_error(404)
+                    return
+                data = p.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
                 return
             if self.path == "/plan":
                 self.path = "/wave-plan.html"
@@ -372,7 +513,9 @@ def main() -> None:
 
     print(f"Review hub: http://127.0.0.1:{args.port}/")
     print("It lists what needs your eyes; each item links to its page. Ctrl-C to stop.")
-    HTTPServer(("127.0.0.1", args.port), Handler).serve_forever()
+    # Threading is load-bearing: a browser keep-alive connection on a plain
+    # HTTPServer holds the single handler slot and every other client times out.
+    ThreadingHTTPServer(("127.0.0.1", args.port), Handler).serve_forever()
 
 
 if __name__ == "__main__":
