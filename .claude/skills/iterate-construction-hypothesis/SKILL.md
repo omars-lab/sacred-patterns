@@ -117,6 +117,7 @@ still gets a `predicted_cost` and a portal verify.
 | `unmatched_detector` face (recon has a shape the reference lacks) | A spurious face from an over-division or a stray intersection | Remove the extra `divide`/`intersect`, or add the missing `classify .name` so a real face isn't read as unclassified |
 | A6 MISSING/PARTIAL for a named baseline shape | The baseline shape's vocabulary isn't produced by this construction philosophy | If isolated: author the shape (5-way #2). If it clusters with other A6 misses → philosophy ceiling (5-way #5, stop rule 2) |
 | A2 N-fold BROKEN/APPROXIMATE | Symmetry construct wrong order, or a per-sector edit broke rotational identity | Fix the `repeat N` / `rotate N` order; re-author the sector once and let the symmetry construct replicate it |
+| A2 shape correct but ROTATED off-reference (census stays EQUAL, points miss the outline) | Construction **phase** mismatch — `hankin` rays start at edge-MIDPOINT phase (180/N), a half-step off the division-VERTEX phase | Phase-align the circle's ring with `divide Cn into N offset <deg>`; never hand-rotate a copy — see Cookbook #8b |
 | A5 band-network GAPS/BROKEN | Strapwork decoration not woven (render-style gap, not geometry) | Invoke the `strapwork …` statement (5-way #1) — see `feedback_girih_strapwork_is_render_style_not_geometry`; do NOT add new tile geometry |
 | Face emitted with `face_class=None` / unclassified in gt.json | Polygon authored but no matching `classify` rule, or the classify-by-predicate polyclass trap | Add the `classify .name where <pred>`; if two same-`sides` classes collide, that's a DSL gap not a construction edit (`feedback_per_edge_class_tags_same_trap_as_classify`) |
 | Shape-count divergence but render looks right in the portal | Detector mis-read of a correct construction | **Escalate** (detector-bug owner) — do not edit the `.bkr` |
@@ -353,6 +354,32 @@ better tool supersedes it (note what replaced it).
    come up short, do NOT debug inside the composite — author the one shape
    alone (no field, no repeats) and confirm the cycle closes there first
    (bikar Tenet 17).
+8b. **Right-shape-wrong-rotation on a `hankin` wave → phase-align with
+    `divide … offset <deg>`, never a hand-rotated copy.** When a wave's
+    shape fatness/family is correct but it sits rotated off the reference
+    (the A2 "shape better but rotation off" signal — census stays EQUAL, the
+    points just don't land on the reference outline), suspect a **construction
+    phase mismatch**, not a geometry error. `hankin angle θ on Cn` shoots rays
+    from the inscribed N-gon's edge MIDPOINTS — phase `180/N` (18° for N=10) —
+    while a `connect every k` star and most reference stars sit at the
+    division-VERTEX phase (0°). The gap is exactly half a division step. **Fix:
+    pre-rotate that circle's division ring** with `divide Cn into N offset
+    <deg>` (the offset rotates the first division point CCW; negative = CW) so
+    the hankin star's points fall back on the reference's points — do NOT
+    author a second rotated star or nudge coordinates. The offset is **local to
+    the one circle**; sibling waves on other circles keep their own phase (this
+    is NOT a global rotation — only the misaligned circle carries the offset).
+    **Diagnose the magnitude empirically:** measure the rendered star's tip
+    angles from the navy-pixel mask vs the reference's, the delta IS the offset.
+    Census must stay EQUAL through the change (the offset rotates a ring, it
+    doesn't add/remove faces) — if it doesn't, the offset broke a downstream
+    intersection and you have a different bug. *Witness: iter-70 wave-1 — the
+    hankin-54 center star was 18° off; `divide C0 into 10 offset 18` put its 10
+    points on the gold reference outline, coverage 0.838→0.932, census EQUAL
+    675. The DSL `offset` keyword was a Tenet-26 invocation gap: kernel
+    `divideCircle` already took a `startAngle`, the `divide` statement just
+    didn't expose it (bikar commit 3ff260a, regression
+    `packages/core/tests/dsl/divide-offset.test.ts`).*
 
 ### Gating the result
 
@@ -393,9 +420,57 @@ better tool supersedes it (note what replaced it).
     1. **Verdict appended** to `iterations/<N>/hypothesis.md` (pass/fail,
        metrics, attribution, next wave).
     2. **`session.json` → `stage_gates.structure.waves_passed[<wave>]`**
-       gets `{iter, coverage, iou, date}` on a pass — this is what the
-       studio's `/iterate` and `/slides` pages read live; skipping it makes
-       the dashboard lie.
+       gets `{iter, coverage, iou, date}` on a pass — this is the *status
+       text* the studio's `/iterate` and `/slides` pages read live; skipping
+       it makes the dashboard lie. (Re-passing an already-passed wave at a
+       new iteration — e.g. a fit refinement on top of a later stage — counts:
+       re-stamp its entry to the new `{iter, coverage}` so the attribution
+       and the gate picture in 2b agree.)
+    2b. **Wave-diff regenerated for the changed wave** — run
+       `tools/wave-diff.py <session> <wave> --render iterations/<N>/render.cairo.png`
+       so `iterations/<N>/wave-diff/wave-<NN>/sbs.png` exists. THIS is what
+       drives the per-wave gate picture: `/iterate` (and `/slides`) serve
+       `/gate/<wave>/sbs.png`, which resolves via `latest_gate_sbs()` to the
+       *newest iteration that ran a wave-diff for that wave*. Step 2's
+       `session.json` text alone does NOT move the picture — without 2b the
+       card shows the OLD iteration's render even though the text says the new
+       one passed (text and image disagree = the same "dashboard lies"
+       failure as step 2, on the image surface). Needs `render.cairo.png`
+       (cairosvg, 1024) per Cookbook #13's one-rasterizer rule. *Witness:
+       iter-70's hankin-54 wave-1 re-pass — `session.json` was updated but
+       `/iterate` kept serving iter-69's thin-star gate until wave-diff ran on
+       iter-70.*
+       **2b-ALL — a shared-geometry change stales EVERY built wave's crop, not
+       just the changed wave's.** Every wave-diff crop is cut from the SAME full
+       render, so when a fix touches geometry that other waves' crops include
+       (the center star sits inside waves 2, 3, … crops; a ring shape sits inside
+       its neighbours' crops), regenerating only the changed wave leaves all the
+       OTHER waves' crops showing the OLD geometry — the portal serves a current
+       center for wave 1 and a stale center for waves 2+. The owner sees "the
+       middle shape is different between wave 1 and wave 2" — which reads as a
+       geometry contradiction but is pure crop staleness. **Rule:** after a fix
+       that changes any shape visible in more than its own wave's crop — or any
+       whole-image re-raster (a renderer change, the blueprint display:none fix)
+       — re-cut **ALL passed waves** against the new render with the one
+       idempotent command:
+       `/Users/omareid/Workspace/git/qiyas/.venv/bin/python tools/regate-all.py <session> <N>`.
+       It loops `wave-diff.py` over every wave in `waves_passed`, re-stamps each
+       entry to the fresh coverage/iou (preserving the genuine pre-change number
+       under `prev`), and is safe to re-run (same iter → same numbers, `prev`
+       untouched). A **Stop-hook** (`.claude/hooks/portal-regate-watch.py`) trips
+       automatically when an iteration's `render.svg` is newer than its gate
+       stamps and nudges you with the exact `regate-all.py` line — so you don't
+       have to remember. `--dry-run` previews the wave list; `--no-stamp` re-cuts
+       the crops without touching `session.json`. Coverage will shift a little
+       for the re-cut waves — that is the
+       cross-raster baseline shift (Cookbook #13), NOT a regression; confirm by
+       eyeballing that the shapes still sit on their gold outlines before
+       accepting the new numbers. *Witness: iter-70 — wave-1's `divide offset`
+       rotation fix changed the center star; only wave-1's crop was regenerated,
+       so waves 2–15 kept showing the pre-rotation center until all 15 were
+       re-cut against iter-70's render. The dart rings (waves 2's own shapes)
+       were verified unchanged by eyeball — the −7pt wave-2 coverage drop was the
+       baseline shift, not lost ink.*
     3. **Progress sheet regenerated** (the progress-strip script pattern:
        reference + one tile per passed wave + current best, gold borders on
        reference/best; registration per-iteration — magick raster ≤48,

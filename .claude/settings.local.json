@@ -341,6 +341,11 @@
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/decision-doc-watch.py",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/portal-regate-watch.py",
+            "timeout": 5
           }
         ]
       }
