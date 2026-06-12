@@ -54,6 +54,59 @@ from pathlib import Path
 
 # Mirrors the design tokens in plan-waves.py's studio CSS — one design system
 # across every page the owner touches (hub, plan, palette).
+# The /iterate per-wave feedback wiring: Approve / Needs-work toggle each wave's
+# verdict, and the comment box saves on its own (debounced) AND rides along with
+# whichever button is clicked, so a "Needs work" + note posts as one fix request
+# the loop reads from session.json. No build step — vanilla JS injected inline.
+ITERATE_JS = r"""
+function post(wave, state, note) {
+  return fetch('/api/wave-verdict', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ wave: wave, state: state, note: note }),
+  });
+}
+document.querySelectorAll('.verdict').forEach(function (box) {
+  const wave = box.getAttribute('data-wave');
+  const approve = box.querySelector('.approve');
+  const deny = box.querySelector('.deny');
+  const note = box.querySelector('.vnote');
+  const saved = box.querySelector('.vsaved');
+  // Reflect the server-rendered state onto the buttons.
+  const card = document.querySelector("[data-wave-card='" + wave + "']");
+  if (card && card.querySelector('.badge.ok')) approve.classList.add('active');
+  if (card && card.querySelector('.badge.no')) deny.classList.add('active');
+
+  function setVerdict(state) {
+    approve.classList.toggle('active', state === 'approved');
+    deny.classList.toggle('active', state === 'denied');
+    saved.textContent = 'saving…';
+    post(wave, state, note.value).then(function () {
+      saved.textContent = state === 'approved'
+        ? 'recorded — approved ✓'
+        : 'recorded — we\'ll work on it ✓';
+    }).catch(function () { saved.textContent = "couldn't save — try again"; });
+  }
+  approve.addEventListener('click', function () { setVerdict('approved'); });
+  deny.addEventListener('click', function () { setVerdict('denied'); });
+
+  // The note saves on its own too (so a comment without a button click sticks),
+  // keeping whatever Approve/Needs-work state is already showing.
+  let t = null;
+  note.addEventListener('input', function () {
+    clearTimeout(t);
+    saved.textContent = 'saving…';
+    const state = approve.classList.contains('active') ? 'approved'
+                : deny.classList.contains('active') ? 'denied' : '';
+    t = setTimeout(function () {
+      post(wave, state, note.value)
+        .then(function () { saved.textContent = 'saved ✓'; })
+        .catch(function () { saved.textContent = "couldn't save — try again"; });
+    }, 600);
+  });
+});
+"""
+
 HUB_CSS = """
  :root {
    --paper: #F6F3EC; --card: #FFFFFF; --ink: #202A36; --muted: #7A746A;
@@ -218,6 +271,39 @@ def main() -> None:
                 return p
         return None
 
+    def wave_history(wave: int) -> list[dict]:
+        # Every iteration that produced a gate picture for this wave, newest
+        # first: the "how this wave evolved" timeline behind the filmstrip.
+        # Each entry carries the iter number, its coverage (read from that
+        # iteration's wave-diff.json), and that the sbs thumbnail exists.
+        # Example: wave 1 -> [{iter:70, coverage:0.976}, {iter:69, ...}, ...]
+        # spanning all 32 iterations that re-cut wave-1's crop.
+        out: list[dict] = []
+        for it in sorted(
+            (d for d in (session_dir / "iterations").iterdir() if d.name.isdigit()),
+            key=lambda d: int(d.name),
+            reverse=True,
+        ):
+            wd = it / "wave-diff" / f"wave-{wave:02d}"
+            if not (wd / "sbs.png").exists():
+                continue
+            cov = None
+            meta = wd / "wave-diff.json"
+            if meta.exists():
+                try:
+                    cov = json.loads(meta.read_text()).get("coverage")
+                except Exception:
+                    cov = None
+            out.append({"iter": int(it.name), "coverage": cov})
+        return out
+
+    def history_sbs(wave: int, it: int) -> Path | None:
+        # The sbs picture for ONE specific iteration of a wave (the filmstrip
+        # thumbnail route), as opposed to latest_gate_sbs's newest-only pick.
+        p = (session_dir / "iterations" / str(it)
+             / "wave-diff" / f"wave-{wave:02d}" / "sbs.png")
+        return p if p.exists() else None
+
     def iterate_html() -> str:
         # The build-progress companion to /plan: one card per wave, in build
         # order. Built waves show our render beside the reference; the next
@@ -246,11 +332,56 @@ def main() -> None:
                     else ""
                 )
                 pct = round(gate.get("coverage", 0) * 100)
+                verdict = gate.get("owner_verdict", {})
+                vstate = verdict.get("state", "")  # "" | "approved" | "denied"
+                vnote = verdict.get("note", "")
+                # The owner's per-wave call lives right on the card: Approve /
+                # Needs work, plus a comment that (on Needs-work) becomes the
+                # fix instruction the loop picks up. data-wave drives the JS.
+                badge = "<span class='badge done'>built ✓</span>"
+                if vstate == "approved":
+                    badge += "<span class='badge ok'>you approved ✓</span>"
+                elif vstate == "denied":
+                    badge += "<span class='badge no'>needs work ✗</span>"
+                # Filmstrip: every past iteration of this wave, newest first.
+                hist = wave_history(n)
+                frame_parts = []
+                for h in hist:
+                    it_n = h["iter"]
+                    pct_txt = ("" if h["coverage"] is None
+                               else f", {round(h['coverage'] * 100)}%")
+                    cap = ("" if h["coverage"] is None
+                           else f" · {round(h['coverage'] * 100)}%")
+                    frame_parts.append(
+                        f"<a class='frame' href='/gate/{n}/{it_n}/sbs.png' "
+                        f"target='_blank' title='step {it_n}{pct_txt}'>"
+                        f"<img loading='lazy' src='/gate/{n}/{it_n}/sbs.png' "
+                        f"alt='wave {n} at step {it_n}'>"
+                        f"<span class='muted'>{it_n}{cap}</span></a>"
+                    )
+                frames = "".join(frame_parts)
+                history = (
+                    f"<details class='history'><summary class='muted'>"
+                    f"Show history ({len(hist)} step{'s' if len(hist) != 1 else ''})</summary>"
+                    f"<div class='filmstrip'>{frames}</div></details>"
+                    if hist else ""
+                )
+                panel = (
+                    f"<div class='verdict' data-wave='{n}'>"
+                    f"<button class='approve'>This wave looks right</button>"
+                    f"<button class='deny'>Needs work</button>"
+                    f"<span class='vsaved muted'></span>"
+                    "<p class='muted'>Anything off? Say it in your own words — "
+                    "\"the star points are too thin\", \"this should be gold\". On "
+                    "<b>Needs work</b> this is the fix we'll make next.</p>"
+                    f"<textarea class='vnote' rows='2' placeholder='What should change?'>"
+                    f"{html.escape(vnote)}</textarea></div>"
+                )
                 cards.append(
-                    f"<div class='gate'><h2>Wave {n} — {html.escape(what)}"
-                    "<span class='badge done'>built ✓</span></h2>"
+                    f"<div class='gate' data-wave-card='{n}'><h2>Wave {n} — "
+                    f"{html.escape(what)}{badge}</h2>"
                     f"<p class='muted'>Built in step {gate.get('iter', '?')}; our paint "
-                    f"covers {pct}% of these shapes.</p>{img}</div>"
+                    f"covers {pct}% of these shapes.</p>{img}{panel}{history}</div>"
                 )
             elif n == next_wave:
                 cards.append(
@@ -285,6 +416,22 @@ def main() -> None:
  .bar { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; margin-top: 8px; }
  .bar > div { height: 100%; background: var(--agree); border-radius: 999px;
               transition: width .6s ease; }
+ .badge.ok { background: #2E7D5B; }
+ .badge.no { background: #B23A48; }
+ .verdict { margin-top: 12px; padding: 12px; border: 1px solid var(--line);
+            border-radius: 10px; background: rgba(0,0,0,.015); }
+ .verdict button { margin-right: 8px; }
+ .verdict button.approve.active { background: #2E7D5B; color: #fff; }
+ .verdict button.deny.active { background: #B23A48; color: #fff; }
+ .verdict textarea { width: 100%; margin-top: 8px; box-sizing: border-box;
+                     border: 1px solid var(--line); border-radius: 8px; padding: 8px;
+                     font: inherit; }
+ .history { margin-top: 10px; }
+ .filmstrip { display: flex; gap: 10px; overflow-x: auto; padding: 8px 2px; }
+ .filmstrip .frame { flex: 0 0 auto; width: 150px; text-align: center;
+                     text-decoration: none; }
+ .filmstrip .frame img { width: 150px; margin: 0; border: 1px solid var(--line); }
+ .filmstrip .frame span { display: block; font-size: 12px; margin-top: 2px; }
 """
         return (
             "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
@@ -295,7 +442,8 @@ def main() -> None:
             f"<div class='bar'><div style='width:{bar}'></div></div>"
             "<p class='muted'><a href='/'>Back to your review list</a> · "
             "<a href='/plan'>See the building plan</a></p></header>"
-            f"<main>{progress_img}{''.join(cards)}</main></body></html>"
+            f"<main>{progress_img}{''.join(cards)}</main>"
+            f"<script>{ITERATE_JS}</script></body></html>"
         )
 
     def best_iter() -> int | None:
@@ -640,6 +788,28 @@ def main() -> None:
                 self.end_headers()
                 self.wfile.write(data)
                 return
+            # History thumbnail: /gate/<wave>/<iter>/sbs.png — one specific
+            # past iteration of a wave (the filmstrip frames). 4 path parts
+            # after the leading slash; checked BEFORE the 3-part latest route.
+            if (self.path.startswith("/gate/") and self.path.endswith("/sbs.png")
+                    and len(self.path.strip("/").split("/")) == 4):
+                parts = self.path.strip("/").split("/")  # ["gate", wave, iter, "sbs.png"]
+                try:
+                    wave, it = int(parts[1]), int(parts[2])
+                except ValueError:
+                    self.send_error(404)
+                    return
+                sbs = history_sbs(wave, it)
+                if sbs is None:
+                    self.send_error(404)
+                    return
+                data = sbs.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+                return
             if self.path.startswith("/gate/") and self.path.endswith("/sbs.png"):
                 try:
                     wave = int(self.path.split("/")[2])
@@ -736,6 +906,44 @@ def main() -> None:
                     note_path.write_text(note)
                 elif note_path.exists():
                     note_path.unlink()
+                self._send_ok()
+            elif self.path == "/api/wave-verdict":
+                # The owner's per-wave call, recorded where the loop reads it
+                # (session.json waves_passed[n].owner_verdict) — no chat
+                # transcription. state ∈ {"approved","denied",""}; an empty
+                # state with a note is a comment-only save. When EVERY built
+                # wave is approved, the structure stage auto-flips to approved
+                # (the owner asked for per-wave only — the stage gate is a
+                # derived rollup, not a separate button).
+                data = json.loads(self._read_body())
+                wave = str(int(data["wave"]))
+                state = data.get("state", "")
+                note = (data.get("note") or "").strip()
+                s = session()
+                wp = s["stage_gates"]["structure"].get("waves_passed", {})
+                if wave not in wp:
+                    self.send_error(404, f"wave {wave} not built")
+                    return
+                wp[wave]["owner_verdict"] = {
+                    "state": state,
+                    "note": note,
+                    "date": date.today().isoformat(),
+                }
+                # Derived stage rollup: approved only when every built wave is
+                # approved; a single deny (or any un-judged wave) leaves it open.
+                struct = s["stage_gates"]["structure"]
+                states = [v.get("owner_verdict", {}).get("state") for v in wp.values()]
+                if states and all(st == "approved" for st in states):
+                    struct["approved"] = True
+                    struct["approved_at_iter"] = max(
+                        (v.get("iter") for v in wp.values() if isinstance(v.get("iter"), int)),
+                        default=None,
+                    )
+                    struct["approved_date"] = date.today().isoformat()
+                else:
+                    struct["approved"] = None
+                    struct["approved_at_iter"] = None
+                save_session(s)
                 self._send_ok()
             else:
                 self.send_error(404)
