@@ -60,10 +60,16 @@ from pathlib import Path
 # the loop reads from session.json. No build step — vanilla JS injected inline.
 ITERATE_JS = r"""
 function post(wave, state, note) {
+  // fetch() does NOT reject on a 4xx/5xx — it resolves with res.ok=false. So
+  // we throw on a non-OK status ourselves; otherwise a real server error
+  // would silently show "recorded ✓" while nothing was saved.
   return fetch('/api/wave-verdict', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ wave: wave, state: state, note: note }),
+  }).then(function (res) {
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res;
   });
 }
 document.querySelectorAll('.verdict').forEach(function (box) {
@@ -77,15 +83,20 @@ document.querySelectorAll('.verdict').forEach(function (box) {
   if (card && card.querySelector('.badge.ok')) approve.classList.add('active');
   if (card && card.querySelector('.badge.no')) deny.classList.add('active');
 
+  function status(msg, kind) {
+    saved.textContent = msg;
+    saved.classList.remove('ok', 'err');
+    if (kind) saved.classList.add(kind);
+  }
   function setVerdict(state) {
     approve.classList.toggle('active', state === 'approved');
     deny.classList.toggle('active', state === 'denied');
-    saved.textContent = 'saving…';
+    status('saving…');
     post(wave, state, note.value).then(function () {
-      saved.textContent = state === 'approved'
+      status(state === 'approved'
         ? 'recorded — approved ✓'
-        : 'recorded — we\'ll work on it ✓';
-    }).catch(function () { saved.textContent = "couldn't save — try again"; });
+        : 'recorded — we\'ll work on it ✓', 'ok');
+    }).catch(function () { status("couldn't save — try again", 'err'); });
   }
   approve.addEventListener('click', function () { setVerdict('approved'); });
   deny.addEventListener('click', function () { setVerdict('denied'); });
@@ -95,13 +106,13 @@ document.querySelectorAll('.verdict').forEach(function (box) {
   let t = null;
   note.addEventListener('input', function () {
     clearTimeout(t);
-    saved.textContent = 'saving…';
+    status('saving…');
     const state = approve.classList.contains('active') ? 'approved'
                 : deny.classList.contains('active') ? 'denied' : '';
     t = setTimeout(function () {
       post(wave, state, note.value)
-        .then(function () { saved.textContent = 'saved ✓'; })
-        .catch(function () { saved.textContent = "couldn't save — try again"; });
+        .then(function () { status('saved ✓', 'ok'); })
+        .catch(function () { status("couldn't save — try again", 'err'); });
     }, 600);
   });
 });
@@ -373,13 +384,15 @@ def main() -> None:
                 )
                 panel = (
                     f"<div class='verdict' data-wave='{n}'>"
+                    f"<div class='vbtns'>"
                     f"<button class='approve'>This wave looks right</button>"
                     f"<button class='deny'>Needs work</button>"
-                    f"<span class='vsaved muted'></span>"
+                    f"</div>"
+                    f"<div class='vsaved muted'></div>"
                     "<p class='muted'>Anything off? Say it in your own words — "
                     "\"the star points are too thin\", \"this should be gold\". On "
                     "<b>Needs work</b> this is the fix we'll make next.</p>"
-                    f"<textarea class='vnote' rows='2' placeholder='What should change?'>"
+                    f"<textarea class='vnote' rows='3' placeholder='What should change?'>"
                     f"{html.escape(vnote)}</textarea></div>"
                 )
                 # Two-column card: the gate picture + its history filmstrip on
@@ -442,14 +455,22 @@ def main() -> None:
  .gate-side .verdict { margin-top: 0; }
  @media (max-width: 760px) { .gate-row { flex-direction: column; }
                              .gate-side { min-width: 0; width: 100%; } }
- .verdict { margin-top: 12px; padding: 12px; border: 1px solid var(--line);
-            border-radius: 10px; background: rgba(0,0,0,.015); }
- .verdict button { margin-right: 8px; }
- .verdict button.approve.active { background: #2E7D5B; color: #fff; }
- .verdict button.deny.active { background: #B23A48; color: #fff; }
- .verdict textarea { width: 100%; margin-top: 8px; box-sizing: border-box;
+ .verdict { margin-top: 12px; padding: 14px 16px; border: 1px solid var(--line);
+            border-radius: 12px; background: #FBFAF7; }
+ /* Buttons share one wrapping row; the save-status sits on its own line below
+    so a long message ("couldn't save — try again") never crams between the two
+    buttons or pushes them apart. */
+ .vbtns { display: flex; flex-wrap: wrap; gap: 8px; }
+ .verdict button { margin: 0; border: 1px solid var(--line); background: #fff;
+                   border-radius: 8px; padding: 8px 14px; font: inherit;
+                   cursor: pointer; transition: background .15s, color .15s; }
+ .verdict button.approve.active { background: #2E7D5B; color: #fff; border-color: #2E7D5B; }
+ .verdict button.deny.active { background: #B23A48; color: #fff; border-color: #B23A48; }
+ .vsaved { display: block; min-height: 16px; margin-top: 8px; font-size: 13px; }
+ .vsaved.ok { color: #2E7D5B; } .vsaved.err { color: #B23A48; }
+ .verdict textarea { width: 100%; margin-top: 4px; box-sizing: border-box;
                      border: 1px solid var(--line); border-radius: 8px; padding: 8px;
-                     font: inherit; }
+                     font: inherit; resize: vertical; }
  .history { margin-top: 10px; }
  .filmstrip { display: flex; gap: 10px; overflow-x: auto; padding: 8px 2px; }
  .filmstrip .frame { flex: 0 0 auto; width: 150px; text-align: center;
