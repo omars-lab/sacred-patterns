@@ -352,10 +352,15 @@ def main() -> None:
                                else f", {round(h['coverage'] * 100)}%")
                     cap = ("" if h["coverage"] is None
                            else f" · {round(h['coverage'] * 100)}%")
+                    # No loading='lazy' here: these frames live inside a
+                    # collapsed <details>, and a lazy <img> in a display:none
+                    # container never enters the viewport, so it never loads —
+                    # it renders as a broken-image icon the moment the details
+                    # is opened. Eager-load so every frame is ready on expand.
                     frame_parts.append(
                         f"<a class='frame' href='/gate/{n}/{it_n}/sbs.png' "
                         f"target='_blank' title='step {it_n}{pct_txt}'>"
-                        f"<img loading='lazy' src='/gate/{n}/{it_n}/sbs.png' "
+                        f"<img src='/gate/{n}/{it_n}/sbs.png' "
                         f"alt='wave {n} at step {it_n}'>"
                         f"<span class='muted'>{it_n}{cap}</span></a>"
                     )
@@ -377,11 +382,19 @@ def main() -> None:
                     f"<textarea class='vnote' rows='2' placeholder='What should change?'>"
                     f"{html.escape(vnote)}</textarea></div>"
                 )
+                # Two-column card: the gate picture + its history filmstrip on
+                # the left, the owner's verdict/feedback panel on the right, so
+                # the reviewer looks at the wave and votes on it side by side
+                # (the panel doesn't push the picture off-screen).
                 cards.append(
-                    f"<div class='gate' data-wave-card='{n}'><h2>Wave {n} — "
+                    f"<div class='gate built' data-wave-card='{n}'><h2>Wave {n} — "
                     f"{html.escape(what)}{badge}</h2>"
                     f"<p class='muted'>Built in step {gate.get('iter', '?')}; our paint "
-                    f"covers {pct}% of these shapes.</p>{img}{panel}{history}</div>"
+                    f"covers {pct}% of these shapes.</p>"
+                    f"<div class='gate-row'>"
+                    f"<div class='gate-main'>{img}{history}</div>"
+                    f"<div class='gate-side'>{panel}</div>"
+                    f"</div></div>"
                 )
             elif n == next_wave:
                 cards.append(
@@ -418,6 +431,17 @@ def main() -> None:
               transition: width .6s ease; }
  .badge.ok { background: #2E7D5B; }
  .badge.no { background: #B23A48; }
+ /* The built-wave cards are two columns (picture | feedback), so the
+    iterate page needs more room than the 760px reading width the shared hub
+    CSS sets. Widen main here only; / and /plan keep the narrow width. */
+ main { max-width: 1000px; }
+ .gate.built { max-width: 1000px; }
+ .gate-row { display: flex; gap: 18px; align-items: flex-start; margin-top: 8px; }
+ .gate-main { flex: 1 1 60%; min-width: 0; }
+ .gate-side { flex: 1 1 40%; min-width: 280px; }
+ .gate-side .verdict { margin-top: 0; }
+ @media (max-width: 760px) { .gate-row { flex-direction: column; }
+                             .gate-side { min-width: 0; width: 100%; } }
  .verdict { margin-top: 12px; padding: 12px; border: 1px solid var(--line);
             border-radius: 10px; background: rgba(0,0,0,.015); }
  .verdict button { margin-right: 8px; }
