@@ -85,18 +85,50 @@ document.querySelectorAll('.verdict').forEach(function (box) {
 
   function status(msg, kind) {
     saved.textContent = msg;
-    saved.classList.remove('ok', 'err');
+    saved.classList.remove('ok', 'err', 'wait');
     if (kind) saved.classList.add(kind);
   }
+
+  // The owner reviews from a long-lived tab. If the portal server restarts
+  // (a fresh process, a new port, a brief down window), an in-flight save
+  // would reject — a hard "couldn't save" dead-end. Instead we keep ONE
+  // pending value per card and retry it with backoff until the server is
+  // reachable again, showing "reconnecting…" meanwhile. A newer click/edit
+  // while reconnecting overwrites the pending value (we only ever land the
+  // latest), so the owner never loses their most recent intent.
+  let pending = null;     // {state, note, okMsg} we still owe the server
+  let retrying = false;   // a backoff loop is already running
+  let backoff = 1000;     // ms; doubles per failure, capped
+
+  function flush() {
+    if (!pending) { retrying = false; return; }
+    const job = pending;
+    post(wave, job.state, job.note).then(function () {
+      // Only clear if no newer edit landed while this request was in flight.
+      if (pending === job) { pending = null; status(job.okMsg, 'ok'); }
+      retrying = false; backoff = 1000;
+      if (pending) flush();           // a newer value queued mid-flight
+    }).catch(function () {
+      retrying = true;
+      status('reconnecting…', 'wait');
+      setTimeout(flush, backoff);
+      backoff = Math.min(backoff * 2, 5000);
+    });
+  }
+
+  function save(state, note, okMsg) {
+    pending = { state: state, note: note, okMsg: okMsg };
+    if (retrying) return;             // backoff loop will pick up the new value
+    status('saving…');
+    flush();
+  }
+
   function setVerdict(state) {
     approve.classList.toggle('active', state === 'approved');
     deny.classList.toggle('active', state === 'denied');
-    status('saving…');
-    post(wave, state, note.value).then(function () {
-      status(state === 'approved'
-        ? 'recorded — approved ✓'
-        : 'recorded — we\'ll work on it ✓', 'ok');
-    }).catch(function () { status("couldn't save — try again", 'err'); });
+    save(state, note.value, state === 'approved'
+      ? 'recorded — approved ✓'
+      : 'recorded — we\'ll work on it ✓');
   }
   approve.addEventListener('click', function () { setVerdict('approved'); });
   deny.addEventListener('click', function () { setVerdict('denied'); });
@@ -106,14 +138,9 @@ document.querySelectorAll('.verdict').forEach(function (box) {
   let t = null;
   note.addEventListener('input', function () {
     clearTimeout(t);
-    status('saving…');
     const state = approve.classList.contains('active') ? 'approved'
                 : deny.classList.contains('active') ? 'denied' : '';
-    t = setTimeout(function () {
-      post(wave, state, note.value)
-        .then(function () { status('saved ✓', 'ok'); })
-        .catch(function () { status("couldn't save — try again", 'err'); });
-    }, 600);
+    t = setTimeout(function () { save(state, note.value, 'saved ✓'); }, 600);
   });
 });
 """
@@ -468,6 +495,7 @@ def main() -> None:
  .verdict button.deny.active { background: #B23A48; color: #fff; border-color: #B23A48; }
  .vsaved { display: block; min-height: 16px; margin-top: 8px; font-size: 13px; }
  .vsaved.ok { color: #2E7D5B; } .vsaved.err { color: #B23A48; }
+ .vsaved.wait { color: #B8860B; }
  .verdict textarea { width: 100%; margin-top: 4px; box-sizing: border-box;
                      border: 1px solid var(--line); border-radius: 8px; padding: 8px;
                      font: inherit; resize: vertical; }
