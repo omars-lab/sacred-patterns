@@ -198,6 +198,22 @@ The `.bkr` statement vocabulary partitions natively by stage:
   (`POST /api/palette-agree` → `palette_agreed`). The portal-native upgrade
   path is qiyas annotation kinds Q12/Q9/Q11 with `verdict: "right"` (already
   supported in `qiyas/src/qiyas/review/state.py`) — wire later if wanted.
+- **Per-wave owner verdicts are the decisive steering signal — consume them
+  FIRST, every tick.** The `/iterate` portal gives the owner an approve /
+  "Needs work" button + comment on every built wave; the verdict lands in
+  `session.json` waves_passed[<n>].owner_verdict `{state, note, date}` (the
+  studio's `POST /api/wave-verdict`, never chat). A `state: "denied"` is the
+  highest-priority work in the loop — the owner's eye caught a defect the
+  census/coverage metrics missed, which is the entire reason the portal
+  exists (Tenets 24/25/27). **The note IS the fix instruction** (owner
+  design: "Deny + comment = a fix request"). The loop reads denials at pickup
+  with `tools/wave-feedback.py <session-dir>` (exit 2 = denied waves exist,
+  with the wave + note printed; exit 0 = clean; `--json`/`--quiet` for
+  tooling). Fix the lowest-numbered denied wave first (Tenet 20), re-render,
+  re-run the gate, and let the owner re-judge in the portal — **never
+  self-clear a denial**; only the owner flips it back to approved. When every
+  built wave is owner-approved, `/api/wave-verdict` auto-rolls the structure
+  stage to `approved` (the rollup is derived, not a separate button).
 - **Stage entry gates:** Stage 2 opens only after BOTH the structure gate
   AND the owner's palette-swatch agreement (`tools/analyze-reference.py`
   swatch sheet); Stage 3 opens after the color gate. The weave gate is the
@@ -217,8 +233,14 @@ The `.bkr` statement vocabulary partitions natively by stage:
   session.json stage_gates and lists what needs the owner's eyes; `/plan` is
   the studio — owner clicks any shape, fixes its wave/flower with paired
   shape-level/wave-level buttons, Apply re-plans with the fixes persisted in
-  wave-plan-overrides.json, the agree button records the gate; `/palette`
-  is the colour gate).
+  wave-plan-overrides.json, the agree button records the gate; `/iterate` is
+  the per-wave build review — each built wave shows its gate crop + history
+  filmstrip beside an approve / "Needs work" + comment panel
+  (`POST /api/wave-verdict`, auto-reconnects on a server restart); `/palette`
+  is the colour gate),
+  `tools/wave-feedback.py` (the loop's reader for the `/iterate` verdicts —
+  prints denied waves + their fix-instruction notes, exit 2 when work is
+  owed; run it at every loop pickup before advancing construction).
 
 ### Stage 1 is wave-based — plan the waves FIRST, never steer by one-shot whole-image diff
 
