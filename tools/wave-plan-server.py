@@ -143,6 +143,83 @@ document.querySelectorAll('.verdict').forEach(function (box) {
     t = setTimeout(function () { save(state, note.value, 'saved ✓'); }, 600);
   });
 });
+
+// Copy-to-continue: copy the self-contained resume prompt to the clipboard.
+// Falls back to selecting the textarea when the async Clipboard API is
+// unavailable (http on a non-localhost host, or an older browser).
+(function () {
+  const btn = document.getElementById('copy-continue');
+  const ta = document.getElementById('continue-prompt');
+  const status = document.getElementById('copy-continue-status');
+  if (!btn || !ta) return;
+  function flash(msg) {
+    btn.classList.add('done');
+    status.textContent = msg;
+    setTimeout(function () { btn.classList.remove('done'); status.textContent = ''; }, 2500);
+  }
+  btn.addEventListener('click', function () {
+    const text = ta.value;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(function () { flash('copied ✓ — paste into a fresh session'); })
+        .catch(function () { fallback(); });
+    } else {
+      fallback();
+    }
+    function fallback() {
+      ta.hidden = false;
+      ta.style.position = 'absolute';
+      ta.style.left = '-9999px';
+      ta.select();
+      try {
+        document.execCommand('copy');
+        flash('copied ✓ — paste into a fresh session');
+      } catch (e) {
+        ta.hidden = false;
+        ta.style.position = '';
+        ta.style.left = '';
+        status.textContent = 'select the text below and copy it manually';
+      }
+      ta.hidden = true;
+    }
+  });
+})();
+
+// Refresh-thumbnails: regenerate the baked wave/progress PNGs server-side, then
+// cache-bust every wave/progress <img> so the new pictures actually show (same
+// URL would serve the browser's cached copy). WHY all images, not just the
+// strip: per-wave thumbnails are baked by the same plan-waves.py run, so they
+// go stale together.
+(function () {
+  const btn = document.getElementById('refresh-pics');
+  const status = document.getElementById('refresh-pics-status');
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    btn.disabled = true;
+    btn.classList.remove('done');
+    status.textContent = 'rebuilding pictures…';
+    fetch('/api/refresh-pictures', { method: 'POST' })
+      .then(function (res) { if (!res.ok) throw new Error('HTTP ' + res.status); })
+      .then(function () {
+        const bust = '?t=' + Date.now();
+        document.querySelectorAll('img').forEach(function (img) {
+          const src = img.getAttribute('src') || '';
+          if (/\.png(\?|$)/.test(src) && !/reference\.jpg/.test(src)) {
+            img.src = src.split('?')[0] + bust;
+          }
+        });
+        btn.classList.add('done');
+        status.textContent = 'updated ✓';
+        setTimeout(function () {
+          btn.classList.remove('done'); status.textContent = ''; btn.disabled = false;
+        }, 2000);
+      })
+      .catch(function (e) {
+        status.textContent = 'refresh failed — ' + e.message;
+        btn.disabled = false;
+      });
+  });
+})();
 """
 
 HUB_CSS = """
@@ -289,6 +366,58 @@ def main() -> None:
             cmd += ["--diameter", str(args.diameter)]
         subprocess.run(cmd, check=True)
 
+    def rebuild_progress_strip() -> None:
+        # Rebuild the "whole picture so far" strip (progress.png) from the
+        # CURRENT renders: the reference first, then each passed wave's frozen
+        # iteration render, left to right. WHY this lives here and not in
+        # plan-waves.py: plan-waves regenerates the *reference-overlay* wave
+        # pictures, but progress.png is the *build-render* filmstrip — it was a
+        # hand-stitched artifact with no generator, which is exactly why it went
+        # stale (last rebuilt only when someone remembered to). This makes the
+        # Refresh button rebuild it deterministically from the latest renders.
+        from PIL import Image  # local import: only the refresh path needs PIL
+
+        s = session()
+        passed = s.get("stage_gates", {}).get("structure", {}).get("waves_passed", {})
+        # One render per distinct iteration that owns a passed wave, in build
+        # order (lowest wave first); the reference leads.
+        seen: set[int] = set()
+        iters_in_order: list[int] = []
+        for w in sorted(passed, key=lambda k: int(k)):
+            it = passed[w].get("iter")
+            if it is not None and it not in seen:
+                seen.add(it)
+                iters_in_order.append(it)
+
+        frames: list[Image.Image] = []
+        ref = session_dir / "input" / "reference.jpg"
+        if ref.exists():
+            frames.append(Image.open(ref).convert("RGB"))
+        for it in iters_in_order:
+            for name in ("render.png", "render.cairo.png"):
+                rp = session_dir / "iterations" / str(it) / name
+                if rp.exists():
+                    frames.append(Image.open(rp).convert("RGB"))
+                    break
+        if not frames:
+            return
+
+        # Normalise to a common height, lay out horizontally with a thin gutter.
+        H = 360
+        gutter = 12
+        bg = (251, 250, 247)  # matches the portal card background
+        scaled = []
+        for im in frames:
+            w = max(1, round(im.width * H / im.height))
+            scaled.append(im.resize((w, H)))
+        total_w = sum(im.width for im in scaled) + gutter * (len(scaled) + 1)
+        strip = Image.new("RGB", (total_w, H + 2 * gutter), bg)
+        x = gutter
+        for im in scaled:
+            strip.paste(im, (x, gutter))
+            x += im.width + gutter
+        strip.save(session_dir / "progress.png")
+
     def session() -> dict:
         return json.loads(session_json.read_text())
 
@@ -342,6 +471,47 @@ def main() -> None:
              / "wave-diff" / f"wave-{wave:02d}" / "sbs.png")
         return p if p.exists() else None
 
+    def continue_prompt_text(next_wave, next_desc: str, n_built: int, n_total: int) -> str:
+        # WHY a literal heredoc and not a reference to LOOP-PROMPT.md: the owner
+        # pastes this into a CLEAN session where nothing on disk has been read
+        # yet. It must carry its own pointers to the durable anchors (the
+        # in-session task list does not survive /clear) and the master skill,
+        # plus the exact next wave, so the cold loop builds instead of idling —
+        # the failure this whole button exists to prevent.
+        sd = str(session_dir)
+        return (
+            "/loop Continue the medallion-10 stage-gated reconstruction. "
+            f"BUILD the next unbuilt wave: {next_desc}. "
+            f"Progress: {n_built}/{n_total} structure waves built.\n\n"
+            "READ FIRST (the in-session task list does NOT survive /clear — these on-disk anchors are the memory):\n"
+            "- Loop memory: /Users/omareid/.claude/projects/-Users-omareid-Workspace-git-sacred-patterns/memory/MEMORY.md\n"
+            "- Master iteration skill (staged protocol; census = PRIMARY gate, eyeball = DECISIVE, do NOT tune toward iou):\n"
+            "  sacred-patterns/.claude/skills/iterate-construction-hypothesis/SKILL.md\n"
+            f"- Session state (waves_passed, stage_gates): {sd}/session.json\n"
+            f"- Live pattern: {sd}/iterations/<latest>/pattern.bkr\n"
+            "- Wave plan (this portal): http://127.0.0.1:8765/plan  ·  build view: http://127.0.0.1:8765/iterate\n\n"
+            "OWNER FEEDBACK FIRST (decisive gate, every tick before building):\n"
+            "  /Users/omareid/Workspace/git/qiyas/.venv/bin/python sacred-patterns/tools/wave-feedback.py \\\n"
+            f"    {sd}\n"
+            "  Exit 2 = a wave was denied; fix the lowest-numbered denied wave first (its note IS the fix "
+            "instruction) before building the next wave. Do NOT self-clear a denial — only the owner flips it back.\n\n"
+            "BUILD LOOP: build the next unbuilt wave per the wave plan, one wave per iteration, gated by:\n"
+            "  1. Census-equality (PRIMARY): re-render with --emit-truth; diff gt.json (type,sides) buckets vs the "
+            "pre-change render. Only the intended faces may change; zero new buckets / no spurious face-split.\n"
+            "  2. Eyeball (DECISIVE, Tenet 24/27): STATE the expected visual BEFORE viewing, then build the wave "
+            "side-by-side crop at matched scale vs input/reference.jpg and confirm the expected change.\n"
+            "  3. iou is attribution-only — do NOT tune toward it (Tenet 7).\n"
+            "After a wave passes: stamp session.json waves_passed, re-render, and the owner re-judges it in the portal. "
+            "Continue until wave 22 passes (then the structure stage reaches the owner approval gate).\n\n"
+            "CONSTRAINTS:\n"
+            "- Node 22 for bikar render: export PATH=\"/Users/omareid/.nvm/versions/node/v22.22.3/bin:$PATH\"\n"
+            "- bikar CLI: /Users/omareid/Workspace/git/bikar/packages/cli/dist/index.js render <bkr> -o <svg> "
+            "--emit-truth <gt.json> --image <png> --width 1024 --height 1024\n"
+            "- qiyas venv python (PIL/numpy/scipy/cairosvg): /Users/omareid/Workspace/git/qiyas/.venv/bin/python\n"
+            "- qiyas detector is FROZEN — never tune a qiyas number from this loop.\n"
+            "- sacred-patterns has NO active CI (pushes cheap); bikar/qiyas pushes follow Tenet 22 (batch, name CI sim)."
+        )
+
     def iterate_html() -> str:
         # The build-progress companion to /plan: one card per wave, in build
         # order. Built waves show our render beside the reference; the next
@@ -352,6 +522,20 @@ def main() -> None:
         waves = sorted(plan["waves"], key=lambda w: w["wave"])
         next_wave = next((w["wave"] for w in waves if str(w["wave"]) not in passed), None)
         n_built = sum(1 for w in waves if str(w["wave"]) in passed)
+
+        # The "Copy to continue" prompt: a self-contained /loop instruction the
+        # owner can paste into a fresh session if the build ever stalls. It must
+        # survive /clear, so it names the on-disk anchors (the in-session task
+        # list does NOT survive) and the master iteration skill, and pins the
+        # exact next wave so the cold session resumes building, not idling.
+        next_spec = next((w for w in waves if w["wave"] == next_wave), None)
+        if next_wave is not None and next_spec is not None:
+            nc = str(next_spec.get("color", "")).replace("_", " ")
+            ncount = next_spec.get("real_shape_count", next_spec.get("shape_count", "?"))
+            next_desc = f"wave {next_wave} ({ncount} {nc} shapes {next_spec.get('where', '')})".strip()
+        else:
+            next_desc = "the structure stage is fully built — next is the owner approval gate"
+        continue_prompt = continue_prompt_text(next_wave, next_desc, n_built, len(waves))
 
         cards = []
         for w in waves:
@@ -454,9 +638,12 @@ def main() -> None:
 
         bar = f"{(n_built / len(waves) * 100):.0f}%" if waves else "0%"
         progress_img = (
-            "<div class='gate'><h2>The whole picture so far</h2>"
+            "<div class='gate'><h2>The whole picture so far "
+            "<button id='refresh-pics' type='button' class='refresh'>↻ Refresh thumbnails</button>"
+            "<span id='refresh-pics-status' class='muted'></span></h2>"
             "<p class='muted'>Your picture first, then each building step "
-            "left to right.</p><img src='/progress.png' alt='progress so far'></div>"
+            "left to right. If a step looks out of date, click Refresh.</p>"
+            "<img id='progress-strip' src='/progress.png' alt='progress so far'></div>"
             if (session_dir / "progress.png").exists()
             else ""
         )
@@ -505,6 +692,27 @@ def main() -> None:
                      text-decoration: none; }
  .filmstrip .frame img { width: 150px; margin: 0; border: 1px solid var(--line); }
  .filmstrip .frame span { display: block; font-size: 12px; margin-top: 2px; }
+ /* Copy-to-continue: a prominent action so the owner can resume a stalled
+    build from a clean session without hunting for the loop prompt. */
+ .continue { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line);
+             border-radius: 12px; background: #FBFAF7; }
+ #copy-continue { border: 1px solid var(--agree); background: var(--agree);
+                  color: #fff; border-radius: 8px; padding: 9px 16px;
+                  font: inherit; cursor: pointer; transition: opacity .15s; }
+ #copy-continue:hover { opacity: .9; }
+ #copy-continue.done { background: #2E7D5B; border-color: #2E7D5B; }
+ #copy-continue-status { margin-left: 10px; font-size: 13px; }
+ .continue p { margin: 8px 0 0; }
+ /* Refresh-thumbnails: a small inline action in the progress-strip heading so
+    the owner can rebuild stale baked PNGs on demand without a server restart. */
+ button.refresh { font: inherit; font-size: 14px; vertical-align: middle;
+                  margin-left: 12px; border: 1px solid var(--line); background: #fff;
+                  border-radius: 8px; padding: 5px 12px; cursor: pointer;
+                  transition: background .15s; }
+ button.refresh:hover { background: #F2EFE9; }
+ button.refresh:disabled { opacity: .55; cursor: default; }
+ button.refresh.done { background: #2E7D5B; color: #fff; border-color: #2E7D5B; }
+ #refresh-pics-status { margin-left: 10px; font-size: 13px; }
 """
         return (
             "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
@@ -514,7 +722,14 @@ def main() -> None:
             f"<b>{n_built} of {len(waves)} waves are built.</b></p>"
             f"<div class='bar'><div style='width:{bar}'></div></div>"
             "<p class='muted'><a href='/'>Back to your review list</a> · "
-            "<a href='/plan'>See the building plan</a></p></header>"
+            "<a href='/plan'>See the building plan</a></p>"
+            "<div class='continue'>"
+            "<button id='copy-continue' type='button'>📋 Copy prompt to continue building</button>"
+            "<span id='copy-continue-status' class='muted'></span>"
+            "<p class='muted'>If the build ever stops, paste this into a fresh "
+            "session to resume from the next wave.</p>"
+            f"<textarea id='continue-prompt' hidden>{html.escape(continue_prompt)}</textarea>"
+            "</div></header>"
             f"<main>{progress_img}{''.join(cards)}</main>"
             f"<script>{ITERATE_JS}</script></body></html>"
         )
@@ -953,6 +1168,24 @@ def main() -> None:
                     regen()
                 except subprocess.CalledProcessError as e:
                     self.send_error(500, f"plan regeneration failed: {e}")
+                    return
+                self._send_ok()
+            elif self.path == "/api/refresh-pictures":
+                # Owner-triggered rebuild of every wave/progress picture from
+                # the current renders. WHY this exists: the progress strip and
+                # the per-wave thumbnails are baked PNGs (plan-waves.py output),
+                # so after the loop ships a new iteration they go stale until a
+                # regen runs. This button forces that regen on demand instead of
+                # making the owner restart the server.
+                self._read_body()
+                try:
+                    regen()
+                    rebuild_progress_strip()
+                except subprocess.CalledProcessError as e:
+                    self.send_error(500, f"picture refresh failed: {e}")
+                    return
+                except Exception as e:  # strip rebuild is best-effort
+                    self.send_error(500, f"progress strip rebuild failed: {e}")
                     return
                 self._send_ok()
             elif self.path == "/api/agree":
