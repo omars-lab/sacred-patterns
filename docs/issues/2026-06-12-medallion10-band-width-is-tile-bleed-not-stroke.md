@@ -87,9 +87,38 @@ Decided 2026-06-12 by the autonomous loop under the decision-pick authorization
 (reversible, evidence-grounded, applies the existing #23 scope). The divergence from
 the inherited portal verdict's literal wording is recorded here per Tenet 6.
 
+## Update 2026-06-14 — per-wave isolation falsifies "w8/w12 are the culprits"
+
+A quick check ranked every wave by its `wave-diff.json` IoU/coverage vs the
+reference photo (iter-69 wave-diff, all 22 waves). The result overturns the
+task's named scope:
+
+| family | waves | IoU range | coverage | reading |
+|---|---|---|---|---|
+| **deep_navy** (layer-2 tile overlays, #3C3F47, 210 faces) | w7, w10, w11, w15, w16, w19, w21 | **0.204–0.262** | 0.83–1.00 | full self-coverage **+ spill** — the real bleed |
+| navy (the task's named waves) | **w8** 0.334 / **w12** 0.463 | 0.33–0.46 | 0.84 / 1.00 | middling; w8 *under*-covers (not bleeding) |
+
+High coverage (~1.0) + low IoU (~0.24) = "paints all of its own footprint plus
+a lot outside it" — exactly the ink-falling-where-reference-is-white that the
+portal's "19.4% render-only webbing" measures. The deep_navy family's IoUs are
+**roughly half** of w12's, and w8 actually under-covers — so retargeting at
+w8/w12 would barely move the 0.339→0.550 white-in-disk gap.
+
+`deep_navy` (#3C3F47) is confirmed the **layer-2 wave-overlay tile family**
+(`fill void where layer == 2`), NOT the background field (`navy` #132A61). These
+are the colored ring tiles between rosettes — exactly where the white lattice
+should breathe. This is the class the deficit belongs to (Tenet 8: solve the
+class, not the named instance; Tenet 20: fix the measured-worst, not the named one).
+
+**Scope correction:** the iter-70 refit should target the deep_navy family
+(worst-first: w19 0.204, w15 0.243, w16 0.244, w10 0.251, w7 0.253, w11 0.261,
+w21 0.262), not w8/w12. w8/w12 ride along only if their own IoU regresses.
+
 ## Follow-ups
 
-- iterations/70 — w8 navy diamond refit (this slice).
+- iterations/70 — **deep_navy family** tile refit (worst-first: w19/w15/w16),
+  shrink/reshape to open the white lattice channels. (Was: w8 navy diamond —
+  superseded by the 2026-06-14 isolation finding above.)
 - The portal `band_width` finding stays `disposition=backlog` until the refit
   re-records it; update the iter-69 annotation's downstream when iter-70 ships.
 - If a uniform white-fraction residual survives the per-wave refits, file the
