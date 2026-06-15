@@ -554,7 +554,10 @@ def main() -> None:
                     else ""
                 )
                 pct = round(gate.get("coverage", 0) * 100)
-                verdict = gate.get("owner_verdict", {})
+                # owner_verdict is `None` until the owner judges the wave (the
+                # stamp writes it as an explicit null), so a bare .get default of
+                # {} is not enough — coerce the null to {} before reading .state.
+                verdict = gate.get("owner_verdict") or {}
                 vstate = verdict.get("state", "")  # "" | "approved" | "denied"
                 vnote = verdict.get("note", "")
                 # The owner's per-wave call lives right on the card: Approve /
@@ -621,12 +624,23 @@ def main() -> None:
                     f"</div></div>"
                 )
             elif n == next_wave:
+                # The Copy-to-continue action lives ON the building-now card
+                # (owner, 2026-06-14: "copy button should be next to wave that's
+                # processing, not up top") so resuming a stalled build is right
+                # where the eye already is — on the wave in progress.
                 cards.append(
-                    f"<div class='gate'><h2>Wave {n} — {html.escape(what)}"
+                    f"<div class='gate' data-wave-card='{n}'><h2>Wave {n} — {html.escape(what)}"
                     "<span class='badge open'>building now</span></h2>"
                     "<p class='muted'>This is the wave we're working on — it's "
                     "highlighted below on your picture.</p>"
-                    f"<img src='/wave-{n}.png' alt='wave {n} on your picture'></div>"
+                    f"<img src='/wave-{n}.png' alt='wave {n} on your picture'>"
+                    "<div class='continue'>"
+                    "<button id='copy-continue' type='button'>📋 Copy prompt to continue building</button>"
+                    "<span id='copy-continue-status' class='muted'></span>"
+                    "<p class='muted'>If the build ever stops, paste this into a fresh "
+                    "session to resume from this wave.</p>"
+                    f"<textarea id='continue-prompt' hidden>{html.escape(continue_prompt)}</textarea>"
+                    "</div></div>"
                 )
             else:
                 cards.append(
@@ -636,13 +650,42 @@ def main() -> None:
                     f"<img loading='lazy' src='/wave-{n}.png' alt='wave {n} on your picture'></details></div>"
                 )
 
+        # Progress as a row of stacked squares, one per wave (owner, 2026-06-14:
+        # "green and white squares ... which wave we reached, what's left").
+        # Green = passed, white = remaining; the next-to-build wave gets a ring
+        # so the eye lands on where the build is. Each square is titled with its
+        # wave number + state so hovering reads as a plain-language tooltip.
+        sq = []
+        for w in waves:
+            n = w["wave"]
+            done = str(n) in passed
+            cls = "sq done" if done else "sq todo"
+            if n == next_wave:
+                cls += " here"
+            state = "done" if done else ("building now" if n == next_wave else "to do")
+            sq.append(f"<span class='{cls}' title='Wave {n} — {state}'></span>")
+        squares = (
+            "<div class='squares' role='img' "
+            f"aria-label='{n_built} of {len(waves)} waves done'>"
+            + "".join(sq)
+            + "</div>"
+        )
         bar = f"{(n_built / len(waves) * 100):.0f}%" if waves else "0%"
+        # A pointer to the per-wave page (owner, 2026-06-15: the picker became a
+        # plain "waves page" with all views shown at once — /waves).
+        waves_link = (
+            "<div class='gate'><h2>The waves, one by one"
+            "<span class='badge done'>live</span></h2>"
+            "<p class='muted'>Every wave on one page — your photo zoomed to its "
+            "shapes, our build, just that wave's shapes, and the recipe change. "
+            "<a href='/waves'>Open the waves page</a>.</p></div>"
+        )
         progress_img = (
             "<div class='gate'><h2>The whole picture so far "
             "<button id='refresh-pics' type='button' class='refresh'>↻ Refresh thumbnails</button>"
             "<span id='refresh-pics-status' class='muted'></span></h2>"
-            "<p class='muted'>Your picture first, then each building step "
-            "left to right. If a step looks out of date, click Refresh.</p>"
+            "<p class='muted'>Your picture on the left, our latest full render "
+            "on the right. If it looks out of date, click Refresh.</p>"
             "<img id='progress-strip' src='/progress.png' alt='progress so far'></div>"
             if (session_dir / "progress.png").exists()
             else ""
@@ -656,6 +699,14 @@ def main() -> None:
  .bar { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; margin-top: 8px; }
  .bar > div { height: 100%; background: var(--agree); border-radius: 999px;
               transition: width .6s ease; }
+ /* Stacked-squares progress: one square per wave, green=done / white=left,
+    a ring on the wave currently building. */
+ .squares { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0 4px; }
+ .squares .sq { width: 22px; height: 22px; border-radius: 5px;
+                border: 1px solid var(--line); box-sizing: border-box; }
+ .squares .sq.done { background: #2E7D5B; border-color: #2E7D5B; }
+ .squares .sq.todo { background: #fff; }
+ .squares .sq.here { outline: 2px solid #B8860B; outline-offset: 1px; }
  .badge.ok { background: #2E7D5B; }
  .badge.no { background: #B23A48; }
  /* The built-wave cards are two columns (picture | feedback), so the
@@ -720,17 +771,11 @@ def main() -> None:
             "<header><h1>Watching it get built</h1>"
             f"<p>We rebuild your picture wave by wave, from the centre outward. "
             f"<b>{n_built} of {len(waves)} waves are built.</b></p>"
-            f"<div class='bar'><div style='width:{bar}'></div></div>"
+            f"{squares}"
             "<p class='muted'><a href='/'>Back to your review list</a> · "
             "<a href='/plan'>See the building plan</a></p>"
-            "<div class='continue'>"
-            "<button id='copy-continue' type='button'>📋 Copy prompt to continue building</button>"
-            "<span id='copy-continue-status' class='muted'></span>"
-            "<p class='muted'>If the build ever stops, paste this into a fresh "
-            "session to resume from the next wave.</p>"
-            f"<textarea id='continue-prompt' hidden>{html.escape(continue_prompt)}</textarea>"
-            "</div></header>"
-            f"<main>{progress_img}{''.join(cards)}</main>"
+            "</header>"
+            f"<main>{progress_img}{waves_link}{''.join(cards)}</main>"
             f"<script>{ITERATE_JS}</script></body></html>"
         )
 
@@ -919,6 +964,313 @@ def main() -> None:
             "</body></html>"
         )
 
+    # The pictures we show for EVERY wave — no picker (owner, 2026-06-15: "I dont
+    # want a view picker per wave ... I want to see all three for a card"). The
+    # DEFAULT/primary tile is a tight CROP of the reference photo focused on this
+    # wave's shapes (owner: "a cropped version of Your original photo's steps
+    # focused on the shapes being recreated"); the others sit beside it. The
+    # code-diff tile is built separately (it needs the recipe text, not a URL).
+    WAVE_VIEWS = [
+        ("crop", "Your photo, zoomed to this wave",
+         "Your original reference photo, zoomed in on just the shapes this wave "
+         "rebuilds — each one ringed in orange.",
+         lambda n: f"/wave-ghosts/wave-{n}-crop.png"),
+        ("ours", "Our build",
+         "The whole picture faded to grey with only this ring lit up in colour, "
+         "built from <em>our</em> drawing.",
+         lambda n: f"/wave-ghosts/wave-{n}.png"),
+        ("iso", "Just this wave's shapes",
+         "Only the shapes this wave adds, on a clean white page — nothing else.",
+         lambda n: f"/wave-ghosts/wave-{n}-iso.png"),
+    ]
+
+    def wave_view_choices() -> dict:
+        # Legacy: the owner's old per-wave view picks. The picker is gone
+        # (2026-06-15) but the /iterate roll-up + saved choices are read
+        # elsewhere, so keep the accessor returning {} when unset.
+        return (
+            session().get("stage_gates", {}).get("structure", {})
+            .get("wave_view_choices", {})
+        )
+
+    def wave_iters_in_order(passed: dict, waves: list) -> dict:
+        # wave_number -> the iteration that built it, for the waves that passed,
+        # in build order. Used to diff each wave's recipe against the previous
+        # built wave's recipe (the code-diff tile).
+        out: dict[int, int] = {}
+        for w in sorted(waves, key=lambda w: w["wave"]):
+            g = passed.get(str(w["wave"]))
+            if g and isinstance(g.get("iter"), int):
+                out[w["wave"]] = g["iter"]
+        return out
+
+    def waves_html() -> str:
+        # The "waves page" (owner, 2026-06-15: "rather a waves page with all
+        # these views per wave ... and even a code diff view"). One card per
+        # wave; every card shows ALL views at once — no picker. The big primary
+        # tile is the zoomed reference crop; beside it our build + just-this-wave;
+        # below, the recipe (.bkr) diff that built the wave. Grandma-plain
+        # language, no jargon (Tenet 27).
+        s = session()
+        passed = s.get("stage_gates", {}).get("structure", {}).get("waves_passed", {})
+        plan = json.loads((plan_dir / "wave-plan.json").read_text())
+        waves = sorted(plan["waves"], key=lambda w: w["wave"])
+        built_iters = wave_iters_in_order(passed, waves)
+
+        cards = []
+        prev_iter: int | None = None
+        for w in waves:
+            n = w["wave"]
+            colour = str(w.get("color", "")).replace("_", " ")
+            count = w.get("real_shape_count", w.get("shape_count", "?"))
+            what = f"{count} {colour} shape{'s' if count != 1 else ''} {w.get('where', '')}".strip()
+            built = str(n) in passed
+
+            # All three views render at the SAME size in one row (owner,
+            # 2026-06-15: "all three wave cards should be same size"). The crop
+            # keeps an accent border so the eye knows it's the reference, but it
+            # is no longer oversized. Each tile gets an "expand" button that
+            # opens it full-screen in a lightbox.
+            tiles = []
+            for idx, (key, title, blurb, url) in enumerate(WAVE_VIEWS):
+                cls = "view primary" if idx == 0 else "view"
+                src = url(n)
+                tiles.append(
+                    f"<figure class='{cls}'>"
+                    f"<div class='imgwrap'>"
+                    f"<img loading='lazy' src='{src}' alt='wave {n}: {title}'>"
+                    f"<button class='expand' type='button' "
+                    f"data-full='{src}' data-label='{html.escape(title)}' "
+                    f"title='View full screen' aria-label='View full screen'>⤢</button>"
+                    f"</div>"
+                    f"<figcaption><b>{title}</b>"
+                    f"<span class='vblurb muted'>{blurb}</span></figcaption></figure>"
+                )
+
+            # Code-diff tile: the recipe change that built this wave, vs. the
+            # previous built wave. Only meaningful for built waves (an unbuilt
+            # wave has no recipe yet); folds away unchanged lines.
+            it = built_iters.get(n)
+            diff_tile = ""
+            if it is not None:
+                lpane, rpane = diff_panes(bkr_text(prev_iter), bkr_text(it))
+                diff_tile = (
+                    "<details class='codediff'><summary>Show the recipe change "
+                    "(the lines we added to draw this wave)</summary>"
+                    f"<div class='codepair'><pre>{lpane}</pre><pre>{rpane}</pre></div>"
+                    "<p class='muted'>Left: the recipe before this wave "
+                    "(<span class='del'>red = taken out</span>). Right: after "
+                    "(<span class='ins'>green = added</span>).</p></details>"
+                )
+                prev_iter = it
+
+            status = ("<span class='badge done'>built ✓</span>" if built
+                      else "<span class='badge todo'>coming up</span>")
+            cards.append(
+                f"<div class='gate' id='w{n}' data-wave-card='{n}'>"
+                f"<h2>Wave {n} — {html.escape(what)}{status}</h2>"
+                f"<div class='wave-views'>{''.join(tiles)}</div>"
+                f"{diff_tile}</div>"
+            )
+
+        n_built = len(passed)
+        head = (
+            f"{n_built} of {len(waves)} waves are built. Each card shows your "
+            "photo zoomed to that wave's shapes, our build of them, just that "
+            "wave's shapes on white, and the recipe lines that drew them."
+        )
+        extra_css = """
+ /* All three views are equal-size cells in one responsive grid (owner:
+    "all three wave cards should be same size"). */
+ .wave-views { display: grid; gap: 14px; margin-top: 10px; align-items: start;
+               grid-template-columns: repeat(3, minmax(0, 1fr)); }
+ @media (max-width: 760px) { .wave-views { grid-template-columns: 1fr; } }
+ .view { margin: 0; border: 1px solid var(--line); border-radius: 12px;
+         padding: 8px; background: #fff; box-sizing: border-box; }
+ .view.primary { border-width: 2px; border-color: var(--accent); }
+ .imgwrap { position: relative; }
+ /* Square the image cell so every tile is identical regardless of the source
+    aspect ratio; the image fills it (object-fit: contain keeps it un-cropped). */
+ .view img { width: 100%; aspect-ratio: 1 / 1; object-fit: contain;
+             border-radius: 8px; display: block; background: #fff; }
+ .view .expand { position: absolute; top: 8px; right: 8px; width: 34px;
+                 height: 34px; border: none; border-radius: 8px; cursor: pointer;
+                 background: rgba(17,24,39,.62); color: #fff; font-size: 18px;
+                 line-height: 1; display: grid; place-items: center;
+                 box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+ .view .expand:hover { background: rgba(17,24,39,.85); }
+ /* Full-screen lightbox: click an expand button to fill the screen. */
+ #lightbox { position: fixed; inset: 0; background: rgba(17,24,39,.92);
+             display: none; place-items: center; z-index: 50; padding: 24px; }
+ #lightbox.open { display: grid; }
+ #lightbox figure { margin: 0; max-width: 96vw; max-height: 92vh;
+                    display: grid; gap: 10px; justify-items: center; }
+ #lightbox img { max-width: 96vw; max-height: 84vh; object-fit: contain;
+                 border-radius: 10px; background: #fff; }
+ #lightbox figcaption { color: #fff; font-size: 16px; }
+ #lightbox .close { position: fixed; top: 18px; right: 22px; width: 44px;
+                    height: 44px; border: none; border-radius: 10px;
+                    background: rgba(255,255,255,.16); color: #fff;
+                    font-size: 26px; cursor: pointer; line-height: 1; }
+ .view figcaption { display: block; margin-top: 6px; }
+ .view figcaption b { display: block; }
+ .vblurb { display: block; font-size: 12.5px; margin: 4px 0 2px; }
+ .badge.todo { background: #B7AE9D; }
+ /* Code-diff tile: a foldaway PR-style two-pane recipe diff. */
+ .codediff { margin-top: 12px; }
+ .codediff summary { cursor: pointer; font-size: 14px; color: var(--accent); }
+ .codediff .codepair { display: flex; gap: 12px; margin-top: 8px; }
+ .codediff pre { flex: 1; min-width: 0; max-height: 360px; overflow: auto;
+                 margin: 0; font-size: 12px; line-height: 1.4;
+                 font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+                 background: #fff; border: 1px solid var(--line);
+                 border-radius: 10px; padding: 10px 12px; }
+ .del { background: #FBE3E3; border-radius: 3px; }
+ .ins { background: #DFF2E3; border-radius: 3px; }
+ .skip { color: #B7AE9D; }
+ main { max-width: 1100px; }
+"""
+        return (
+            "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
+            "<title>The waves, one by one</title>"
+            f"<style>{HUB_CSS}{extra_css}</style></head><body>"
+            "<header><h1>The waves, one by one</h1>"
+            f"<p>{head}</p>"
+            "<p class='muted'><a href='/'>Back to your review list</a> · "
+            "<a href='/iterate'>Watch the build</a> · "
+            "<a href='/inspect'>Tap a shape to find its wave</a></p></header>"
+            f"<main>{''.join(cards)}</main>"
+            # Full-screen lightbox + the expand-button wiring (Tenet 27: one tap,
+            # no jargon — the ⤢ button on any tile fills the screen; click the
+            # backdrop, the ✕, or press Esc to close).
+            "<div id='lightbox' role='dialog' aria-modal='true'>"
+            "<button class='close' type='button' aria-label='Close'>✕</button>"
+            "<figure><img alt=''><figcaption></figcaption></figure></div>"
+            "<script>(function(){"
+            "var lb=document.getElementById('lightbox');"
+            "var img=lb.querySelector('img');var cap=lb.querySelector('figcaption');"
+            "function open(src,label){img.src=src;img.alt=label;cap.textContent=label;"
+            "lb.classList.add('open');}"
+            "function close(){lb.classList.remove('open');img.src='';}"
+            "document.querySelectorAll('.expand').forEach(function(b){"
+            "b.addEventListener('click',function(){"
+            "open(b.getAttribute('data-full'),b.getAttribute('data-label'));});});"
+            "lb.addEventListener('click',function(e){"
+            "if(e.target===lb||e.target.classList.contains('close'))close();});"
+            "document.addEventListener('keydown',function(e){"
+            "if(e.key==='Escape')close();});"
+            "})();</script>"
+            "</body></html>"
+        )
+
+    def inspect_html() -> str:
+        # The shape→wave inspector (owner, 2026-06-15: "a separate component
+        # that allows me to see the original and final shape side by side and
+        # press any sub shape of either and it tells me what wave that shape is
+        # handled / introduced"). LEFT = the reference photo with a clickable
+        # hotspot per wave-plan shape (each already carries its wave). RIGHT =
+        # our final render; its per-shape→wave map needs the matcher fix
+        # (task #26), so for now it shows the build with a plain "coming soon"
+        # note rather than a wrong answer. Grandma-plain, no jargon (Tenet 27).
+        s = session()
+        plan = json.loads((plan_dir / "wave-plan.json").read_text())
+        waves = sorted(plan["waves"], key=lambda w: w["wave"])
+        ref = session_dir / "input" / "reference.jpg"
+        # reference.jpg — read its size via PIL once (cheap, one image).
+        try:
+            from PIL import Image
+            with Image.open(ref) as im:
+                ref_w, ref_h = im.size
+        except Exception:
+            ref_w, ref_h = (753, 722)
+
+        # One hotspot per shape: a transparent circle at the shape's photo
+        # coords, sized to the shape, tagged with its wave + a plain label. The
+        # SVG sits over the photo via a shared viewBox so a click maps straight
+        # to the shape under the cursor.
+        import math as _math
+        spots = []
+        for w in waves:
+            n = w["wave"]
+            colour = str(w.get("color", "")).replace("_", " ")
+            for sh in w.get("shapes", []):
+                r = max(_math.sqrt(max(sh.get("area_px", 0), 1)) / 2.0, 5)
+                label = f"Wave {n} — {colour} shape"
+                spots.append(
+                    f"<circle cx='{sh['x']:.1f}' cy='{sh['y']:.1f}' r='{r:.1f}' "
+                    f"class='spot' data-wave='{n}' "
+                    f"data-label='{html.escape(label)}'></circle>"
+                )
+        overlay = (
+            f"<svg class='spots' viewBox='0 0 {ref_w} {ref_h}' "
+            f"preserveAspectRatio='xMidYMid meet'>{''.join(spots)}</svg>"
+        )
+
+        best = best_iter()
+        right_img = (
+            f"<img src='/current-best.png' alt='our finished drawing'>"
+            if best is not None else "<p class='muted'>No build yet.</p>"
+        )
+
+        extra_css = """
+ main { max-width: 1100px; }
+ .panes { display: flex; gap: 18px; flex-wrap: wrap; }
+ .pane { flex: 1 1 380px; min-width: 300px; }
+ .stage { position: relative; line-height: 0; border: 1px solid var(--line);
+          border-radius: 12px; overflow: hidden; background: #fff; }
+ .stage img { width: 100%; display: block; }
+ svg.spots { position: absolute; inset: 0; width: 100%; height: 100%; }
+ .spot { fill: transparent; stroke: transparent; cursor: pointer;
+         transition: fill .12s, stroke .12s; }
+ .spot:hover { fill: rgba(227,78,16,.28); stroke: #E34E10; stroke-width: 2; }
+ .spot.lit { fill: rgba(227,78,16,.45); stroke: #E34E10; stroke-width: 2.5; }
+ .readout { margin-top: 12px; padding: 14px 16px; border: 1px solid var(--line);
+            border-radius: 12px; background: #FBFAF7; font-size: 16px;
+            min-height: 52px; display: flex; align-items: center; }
+ .readout b { color: var(--accent); }
+ .soon { margin-top: 8px; font-size: 13.5px; }
+"""
+        script = """
+<script>
+(function () {
+  var read = document.getElementById('readout');
+  document.querySelectorAll('.spot').forEach(function (c) {
+    c.addEventListener('click', function () {
+      document.querySelectorAll('.spot.lit').forEach(function (o) { o.classList.remove('lit'); });
+      // Light every shape from the same wave, so a click shows the whole ring.
+      var wv = c.getAttribute('data-wave');
+      document.querySelectorAll(".spot[data-wave='" + wv + "']").forEach(function (o) { o.classList.add('lit'); });
+      read.innerHTML = 'This shape is built in <b>Wave ' + wv + '</b> — ' +
+        c.getAttribute('data-label').replace(/^Wave \\d+ — /, '') + '. ' +
+        'Every shape we just lit up is built in the same wave.';
+    });
+  });
+})();
+</script>
+"""
+        return (
+            "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
+            "<title>Tap a shape to find its wave</title>"
+            f"<style>{HUB_CSS}{extra_css}</style></head><body>"
+            "<header><h1>Tap a shape to find its wave</h1>"
+            "<p>Tap any shape on your photo and we'll tell you which wave builds "
+            "it — and light up every other shape made in that same wave.</p>"
+            "<p class='muted'><a href='/'>Back to your review list</a> · "
+            "<a href='/waves'>See the waves</a></p></header>"
+            "<main>"
+            f"<div class='readout' id='readout'>Tap a shape on your photo to "
+            "see which wave it belongs to.</div>"
+            "<div class='panes'>"
+            "<div class='pane'><h2 style='font-family:var(--serif)'>Your photo</h2>"
+            f"<div class='stage'><img src='/reference.jpg' alt='your photo'>{overlay}</div></div>"
+            "<div class='pane'><h2 style='font-family:var(--serif)'>Our finished drawing</h2>"
+            f"<div class='stage'>{right_img}</div>"
+            "<p class='muted soon'>Tap-a-shape on our drawing is coming next — "
+            "we're teaching it which drawn shape belongs to which wave.</p></div>"
+            "</div></main>"
+            f"{script}</body></html>"
+        )
+
     def hub_html() -> str:
         # The front door: read session.json's stage gates and say, in plain
         # words, what needs the owner's eyes — one card per gate, done gates
@@ -975,6 +1327,21 @@ def main() -> None:
                 "wave, ending with where we are now. Lean back and tap "
                 "through.</p>"
                 "<a class='go' href='/slides'>Play the slideshow</a></div>"
+            )
+            todo.append(
+                "<div class='gate'><h2>The waves, one by one"
+                "<span class='badge done'>live</span></h2>"
+                "<p>Every wave on one page: your photo zoomed to that wave's "
+                "shapes, our build of them, just that wave's shapes on white, and "
+                "the recipe lines that drew them.</p>"
+                "<a class='go' href='/waves'>See the waves</a></div>"
+            )
+            todo.append(
+                "<div class='gate'><h2>Find a shape's wave"
+                "<span class='badge done'>live</span></h2>"
+                "<p>Your photo beside our finished drawing — tap any shape on "
+                "either one and we'll tell you which wave builds it.</p>"
+                "<a class='go' href='/inspect'>Tap a shape</a></div>"
             )
         if (analysis_dir / "swatch-sheet.png").exists():
             if not palette_agreed:
@@ -1148,6 +1515,39 @@ def main() -> None:
                 self.end_headers()
                 self.wfile.write(data)
                 return
+            if self.path == "/waves":
+                self._send_html(waves_html())
+                return
+            if self.path == "/inspect":
+                self._send_html(inspect_html())
+                return
+            if self.path == "/wave-options":
+                # Renamed to /waves (owner, 2026-06-15: "i don't want a
+                # 'wave-options' page ... rather a waves page"). Redirect so old
+                # links/bookmarks still land.
+                self.send_response(301)
+                self.send_header("Location", "/waves")
+                self.end_headers()
+                return
+            # Per-wave ghost images + the option-strip comparisons live in the
+            # iteration dir, outside the served plan_dir — serve them by name.
+            if self.path.startswith("/wave-ghosts/"):
+                name = self.path.split("/wave-ghosts/", 1)[1].split("?")[0]
+                if "/" in name or ".." in name or not name.endswith(".png"):
+                    self.send_error(404)
+                    return
+                it = best_iter()
+                p = session_dir / "iterations" / str(it) / "wave-ghosts" / name
+                if not p.exists():
+                    self.send_error(404)
+                    return
+                data = p.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+                return
             super().do_GET()
 
         def _read_body(self) -> bytes:
@@ -1198,6 +1598,28 @@ def main() -> None:
                 wp["agreed_date"] = date.today().isoformat()
                 save_session(s)
                 self._send_ok()
+            elif self.path == "/api/wave-view-pick":
+                # The owner's per-wave view pick, recorded where the loop reads
+                # it (session.json -> stage_gates.structure.wave_view_choices,
+                # a {wave_str: view_key} map). view ∈ {"ref","ours","iso"}; the
+                # stable option id the owner sees is f"w{wave}.{view}". This is
+                # NOT a stage-gate approval — just which picture to show per ring.
+                data = json.loads(self._read_body())
+                view = data.get("view", "")
+                wave = str(data.get("wave", "")).strip()
+                if view not in ("ref", "ours", "iso"):
+                    self.send_error(400, "view must be 'ref', 'ours', or 'iso'")
+                    return
+                if not wave.isdigit():
+                    self.send_error(400, "wave must be a wave number")
+                    return
+                s = session()
+                st = s["stage_gates"]["structure"]
+                choices = st.setdefault("wave_view_choices", {})
+                choices[wave] = view
+                st["wave_view_choices_date"] = date.today().isoformat()
+                save_session(s)
+                self._send_ok()
             elif self.path == "/api/palette-agree":
                 self._read_body()
                 s = session()
@@ -1238,7 +1660,7 @@ def main() -> None:
                 # Derived stage rollup: approved only when every built wave is
                 # approved; a single deny (or any un-judged wave) leaves it open.
                 struct = s["stage_gates"]["structure"]
-                states = [v.get("owner_verdict", {}).get("state") for v in wp.values()]
+                states = [(v.get("owner_verdict") or {}).get("state") for v in wp.values()]
                 if states and all(st == "approved" for st in states):
                     struct["approved"] = True
                     struct["approved_at_iter"] = max(
