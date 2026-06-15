@@ -328,6 +328,300 @@ PALETTE_HTML = """<!DOCTYPE html>
 </body></html>"""
 
 
+# The simplify experience (#44): a vocabulary strip + a one-at-a-time "are these the
+# same shape?" loop. Grandma-plain (Tenet 27): big silhouettes, plain captions, one
+# question on screen, two buttons. No "cluster"/"signature"/"EPS" anywhere she reads.
+SIMPLIFY_HTML = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>What's your pattern made of?</title>
+<style>__CSS__
+ .shapes { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0 4px; }
+ figure.shape { margin: 0; width: 120px; text-align: center;
+                background: var(--card); border: 1px solid var(--line);
+                border-radius: 12px; padding: 8px 6px 10px; cursor: pointer;
+                transition: transform .12s ease, box-shadow .12s ease,
+                            border-color .12s ease; }
+ figure.shape:hover { transform: translateY(-2px); box-shadow: var(--shadow);
+                      border-color: var(--accent); }
+ figure.shape svg { display: block; margin: 0 auto; }
+ /* Click-to-see modal: the full picture with every copy of one shape lit up. */
+ #modal { position: fixed; inset: 0; background: rgba(20,18,16,.78);
+          display: none; align-items: center; justify-content: center;
+          z-index: 50; padding: 24px; }
+ #modal.open { display: flex; }
+ #modal .sheet { background: var(--card); border-radius: 16px; max-width: 92vw;
+                 max-height: 92vh; padding: 16px 16px 14px; box-shadow: var(--shadow);
+                 display: flex; flex-direction: column; align-items: center; }
+ #modal h3 { margin: 0 0 4px; font-family: var(--serif); font-size: 19px; }
+ #modal .mcap { color: var(--muted); font-size: 13.5px; margin: 0 0 10px; }
+ #modal .stage { position: relative; line-height: 0; }
+ #modal svg.over { position: absolute; inset: 0; width: 100%; height: 100%; }
+ #modal img.bg { max-width: min(78vw, 680px); max-height: 70vh; width: auto;
+                 height: auto; border-radius: 10px; display: block; }
+ #modal .x { align-self: flex-end; margin: -6px -4px 2px 0; background: none;
+             color: var(--muted); border: 0; font-size: 26px; line-height: 1;
+             height: auto; padding: 2px 8px; cursor: pointer; box-shadow: none; }
+ #modal .x:hover { transform: none; color: var(--ink); box-shadow: none; }
+ figcaption { font-size: 13px; margin-top: 4px; }
+ .pair { display: flex; gap: 22px; justify-content: center; align-items: center;
+         margin: 6px 0 14px; }
+ .pair .one { text-align: center; }
+ .pair svg { background: var(--card); border: 1px solid var(--line);
+             border-radius: 12px; }
+ .vs { font-family: var(--serif); font-size: 22px; color: var(--muted); }
+ /* The pair silhouettes are buttons into the locate modal — reset the pill-button look. */
+ button.peek { background: none; border: 0; padding: 0; height: auto; cursor: pointer;
+               border-radius: 12px; display: block;
+               transition: transform .12s ease, box-shadow .12s ease; }
+ button.peek:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+ .peekhint { display: inline-block; margin-top: 2px; font-size: 12px;
+             color: var(--accent); }
+ .btns { display: flex; gap: 12px; justify-content: center; margin-top: 8px; }
+ button { font: inherit; font-size: 15px; font-weight: 600; color: #fff;
+          display: inline-flex; align-items: center; height: 40px;
+          padding: 0 22px; border-radius: 999px; border: 0; cursor: pointer;
+          transition: transform .15s ease, box-shadow .15s ease; }
+ button:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+ button.same { background: var(--agree); }
+ button.diff { background: var(--accent); }
+ button.skip { background: var(--muted); height: 34px; font-size: 14px; }
+ .progress { color: var(--muted); font-size: 13.5px; text-align: center; }
+ #done { text-align: center; padding: 18px; }
+ #done .big { font-family: var(--serif); font-size: 21px; }
+ /* The made-decisions review list: one row per judged pair. */
+ .drow { display: flex; align-items: center; gap: 14px; padding: 10px 4px;
+         border-top: 1px solid var(--line); }
+ .drow:first-child { border-top: 0; }
+ .drow .mini { background: var(--card); border: 1px solid var(--line);
+               border-radius: 10px; padding: 0; cursor: pointer; line-height: 0;
+               transition: transform .12s ease, box-shadow .12s ease; }
+ .drow .mini:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+ .drow .verdict { font-weight: 600; min-width: 132px; }
+ .drow .verdict.same { color: var(--agree); }
+ .drow .verdict.different { color: var(--accent); }
+ .drow .vsep { color: var(--muted); font-family: var(--serif); font-size: 18px; }
+ .drow .spacer { flex: 1; }
+ .drow .change { background: none; border: 1px solid var(--line); color: var(--muted);
+                 height: 32px; padding: 0 14px; font-size: 13.5px; font-weight: 600;
+                 border-radius: 999px; cursor: pointer; box-shadow: none; }
+ .drow .change:hover { transform: none; box-shadow: none; border-color: var(--accent);
+                       color: var(--ink); }
+</style></head><body>
+<header>
+ <h1>What's your pattern made of?</h1>
+ <p class="muted">Now that we've drawn your picture, let's see what shapes it's
+  really built from — and tidy up the ones that are the same.
+  <a href="/">Back to your review list</a></p>
+</header>
+<main>
+ <div class="gate">
+  <h2>The shapes we found</h2>
+  <p>__VOCAB__</p>
+  <div class="shapes">__CARDS__</div>
+  <p class="muted">Many of these repeat all the way around. Below, we'll check a few
+   that look almost the same — you decide if they're really one shape.</p>
+ </div>
+
+ <div class="gate" id="askbox">
+  <h2>Are these the same shape?</h2>
+  <p class="progress"><span id="progress"></span></p>
+  <div class="pair" id="pair"></div>
+  <div class="btns">
+   <button class="same" id="yes">Yes — one shape</button>
+   <button class="diff" id="no">No — keep apart</button>
+  </div>
+  <div class="btns"><button class="skip" id="skip">Not sure — skip</button></div>
+ </div>
+
+ <div class="gate" id="done" style="display:none">
+  <p class="big">All checked ✓</p>
+  <p class="muted">You've judged every look-alike pair. Your choices are saved.</p>
+ </div>
+
+ <div class="gate" id="decided" style="display:none">
+  <h2>Decisions you've made <span class="muted" id="decided-count"></span></h2>
+  <p class="muted">Every "same shape?" you've already answered. Tap a shape to find it
+   in the picture, or change your mind.</p>
+  <div id="decided-list"></div>
+ </div>
+</main>
+
+<div id="modal" role="dialog" aria-modal="true">
+ <div class="sheet">
+  <button class="x" id="mx" aria-label="Close">×</button>
+  <h3 id="mtitle"></h3>
+  <p class="mcap" id="mcap"></p>
+  <div class="stage" id="mstage">
+   <img class="bg" id="mbg" alt="The full pattern" />
+   <svg class="over" id="mover" preserveAspectRatio="none"></svg>
+  </div>
+ </div>
+</div>
+<script>
+ const DATA = __PAYLOAD__;
+ const NDONE0 = __NDONE__, NTOTAL = __NTOTAL__;
+ // Build the queue of not-yet-judged proposals.
+ const queue = DATA.proposals.filter(p => !(`${p.a}|${p.b}` in DATA.verdicts));
+ let i = 0, done = NDONE0;
+
+ function swatch(cid, size) {
+   const c = DATA.clusters[cid];
+   if (!c || c.kind === 'circle' || !c.outline) {
+     return `<svg viewBox='0 0 ${size} ${size}' width='${size}' height='${size}'>`
+       + `<circle cx='${size/2}' cy='${size/2}' r='${size/2-12}' fill='#CCC' `
+       + `stroke='#2A2A2A' stroke-width='1.2'/></svg>`;
+   }
+   const o = c.outline, xs = o.map(p=>p[0]), ys = o.map(p=>p[1]);
+   const w = (Math.max(...xs)-Math.min(...xs))||1, h=(Math.max(...ys)-Math.min(...ys))||1;
+   const pad=14, s=(size-2*pad)/Math.max(w,h);
+   const cx=(Math.min(...xs)+Math.max(...xs))/2, cy=(Math.min(...ys)+Math.max(...ys))/2;
+   const pts = o.map(p=>`${(size/2+(p[0]-cx)*s).toFixed(1)},${(size/2+(p[1]-cy)*s).toFixed(1)}`).join(' ');
+   const fill = (c.color && c.color!=='None') ? c.color : '#CCC';
+   return `<svg viewBox='0 0 ${size} ${size}' width='${size}' height='${size}'>`
+     + `<polygon points='${pts}' fill='${fill}' stroke='#2A2A2A' stroke-width='1.2'/></svg>`;
+ }
+ function sidesPhrase(cid) {
+   const c = DATA.clusters[cid];
+   if (!c || c.kind==='circle' || !c.edges || !c.edges.length) return '';
+   const n=c.edges.length, uniq=new Set(c.edges.map(e=>Math.round(e*100)/100)).size;
+   const k = uniq===1 ? 'all sides equal' : uniq===2 ? 'two side-lengths'
+            : uniq+' different side-lengths';
+   return `${n} sides · ${k}`;
+ }
+ function render() {
+   document.getElementById('progress').textContent =
+     `Look-alike pair ${Math.min(done+1,NTOTAL)} of ${NTOTAL}`;
+   if (i >= queue.length) {
+     document.getElementById('askbox').style.display='none';
+     document.getElementById('done').style.display='block';
+     return;
+   }
+   const p = queue[i];
+   // Each silhouette is a button into the SAME locate-in-the-picture modal as the
+   // vocabulary cards — click to see where that candidate sits before deciding.
+   const side = (cid) =>
+     `<div class='one'><button class='peek' data-cid='${cid}' `
+     + `title='Click to see where this shape sits in the picture'>${swatch(cid,150)}</button>`
+     + `<div class='muted'>${sidesPhrase(cid)}<br>${DATA.clusters[cid].count}× in the picture`
+     + `<br><span class='peekhint'>tap to find it</span></div></div>`;
+   document.getElementById('pair').innerHTML =
+     side(p.a) + `<div class='vs'>vs</div>` + side(p.b);
+ }
+ // Live copy of what's been decided (seeded from the server) so the "Decisions
+ // you've made" list can update the moment the owner answers or changes a call.
+ const verdicts = Object.assign({}, DATA.verdicts);
+ async function post(a, b, state) {
+   try {
+     await fetch('/api/merge-verdict', { method:'POST',
+       body: JSON.stringify({ a, b, state }) });
+   } catch (e) { /* file write is best-effort, not blocking */ }
+ }
+ async function record(state) {
+   const p = queue[i];
+   await post(p.a, p.b, state);
+   const key = `${p.a}|${p.b}`;
+   if (state === 'skip') { delete verdicts[key]; }
+   else { verdicts[key] = { state }; done++; }
+   i++; render(); renderDecided();
+ }
+ document.getElementById('yes').addEventListener('click', ()=>record('same'));
+ document.getElementById('no').addEventListener('click', ()=>record('different'));
+ document.getElementById('skip').addEventListener('click', ()=>record('skip'));
+
+ // "Decisions you've made": one row per pair the owner has already judged. Both
+ // silhouettes click into the locate-modal; "Change" re-asks that pair at the top
+ // of the question card (so changing your mind reuses the same Yes/No buttons).
+ function miniSwatch(cid) {
+   return `<button class='mini peek' data-cid='${cid}' `
+     + `title='Click to see where this shape sits in the picture'>${swatch(cid,72)}</button>`;
+ }
+ function renderDecided() {
+   const rows = DATA.proposals
+     .map(p => ({ p, v: verdicts[`${p.a}|${p.b}`] }))
+     .filter(x => x.v && (x.v.state === 'same' || x.v.state === 'different'));
+   const box = document.getElementById('decided');
+   const list = document.getElementById('decided-list');
+   if (!rows.length) { box.style.display = 'none'; list.innerHTML = ''; return; }
+   box.style.display = 'block';
+   document.getElementById('decided-count').textContent = `(${rows.length})`;
+   list.innerHTML = rows.map(({p, v}) => {
+     const same = v.state === 'same';
+     const word = same ? 'One shape' : 'Kept apart';
+     return `<div class='drow'>`
+       + miniSwatch(p.a) + `<span class='vsep'>vs</span>` + miniSwatch(p.b)
+       + `<span class='verdict ${v.state}'>${same ? '✓ ' : '✗ '}${word}</span>`
+       + `<span class='spacer'></span>`
+       + `<button class='change' data-a='${p.a}' data-b='${p.b}'>Change my mind</button>`
+       + `</div>`;
+   }).join('');
+ }
+ // Re-ask one already-decided pair: drop its verdict, queue it next, scroll up.
+ async function reAsk(a, b) {
+   const key = `${a}|${b}`;
+   await post(a, b, 'skip');               // 'skip' clears the saved verdict server-side
+   if (verdicts[key]) { delete verdicts[key]; done = Math.max(0, done-1); }
+   const idx = DATA.proposals.findIndex(p => p.a===a && p.b===b);
+   if (idx >= 0) { queue.splice(i, 0, DATA.proposals[idx]); }  // becomes the current question
+   render(); renderDecided();
+   document.getElementById('askbox').scrollIntoView({ behavior:'smooth', block:'center' });
+ }
+ document.getElementById('decided-list').addEventListener('click', e => {
+   const peek = e.target.closest('button.peek[data-cid]');
+   if (peek) { openModal(peek.getAttribute('data-cid')); return; }
+   const chg = e.target.closest('button.change');
+   if (chg) reAsk(chg.getAttribute('data-a'), chg.getAttribute('data-b'));
+ });
+
+ // Click a shape card -> show the whole picture with every copy of that shape lit up.
+ // The overlay SVG shares the render's pixel box (DATA.image.w x .h) via viewBox, and
+ // is stretched to whatever size the picture displays at (preserveAspectRatio=none).
+ const IMG = DATA.image || { w:1024, h:1024 };
+ const modal = document.getElementById('modal');
+ const mover = document.getElementById('mover');
+ function openModal(cid) {
+   const c = DATA.clusters[cid];
+   if (!c) return;
+   const where = c.kind==='circle' ? 'round shape' : (sidesPhrase(cid)||'shape');
+   document.getElementById('mtitle').textContent =
+     `This shape appears ${c.count} time${c.count===1?'':'s'}`;
+   document.getElementById('mcap').textContent =
+     `${where} — every copy is outlined below.`;
+   document.getElementById('mbg').src = '/simplify/pattern.png?t=' + Date.now();
+   mover.setAttribute('viewBox', `0 0 ${IMG.w} ${IMG.h}`);
+   const lit = (c.color && c.color!=='None') ? c.color : '#FF2BD6';
+   let svg = '';
+   // True polygon outlines when we have them; otherwise ring the member centers.
+   if (c.members && c.members.length) {
+     for (const o of c.members) {
+       const pts = o.map(p=>`${p[0]},${p[1]}`).join(' ');
+       svg += `<polygon points='${pts}' fill='rgba(255,43,214,.32)' `
+            + `stroke='#FF2BD6' stroke-width='3' stroke-linejoin='round'/>`;
+     }
+   } else if (c.centers && c.centers.length) {
+     for (const [x,y] of c.centers) {
+       svg += `<circle cx='${x}' cy='${y}' r='16' fill='rgba(255,43,214,.32)' `
+            + `stroke='#FF2BD6' stroke-width='3'/>`;
+     }
+   }
+   mover.innerHTML = svg;
+   modal.classList.add('open');
+ }
+ function closeModal(){ modal.classList.remove('open'); mover.innerHTML=''; }
+ document.querySelectorAll('figure.shape[data-cid]').forEach(fig =>
+   fig.addEventListener('click', () => openModal(fig.getAttribute('data-cid'))));
+ // The merge-question pair is re-rendered each step, so delegate from its container.
+ document.getElementById('pair').addEventListener('click', e => {
+   const btn = e.target.closest('button.peek[data-cid]');
+   if (btn) openModal(btn.getAttribute('data-cid'));
+ });
+ document.getElementById('mx').addEventListener('click', closeModal);
+ modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+ document.addEventListener('keydown', e => { if (e.key==='Escape') closeModal(); });
+
+ render(); renderDecided();
+</script>
+</body></html>"""
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("session_dir", type=Path)
@@ -489,7 +783,7 @@ def main() -> None:
             "  sacred-patterns/.claude/skills/iterate-construction-hypothesis/SKILL.md\n"
             f"- Session state (waves_passed, stage_gates): {sd}/session.json\n"
             f"- Live pattern: {sd}/iterations/<latest>/pattern.bkr\n"
-            "- Wave plan (this portal): http://127.0.0.1:8765/plan  ·  build view: http://127.0.0.1:8765/iterate\n\n"
+            "- Wave plan (this portal): http://127.0.0.1:8765/plan  ·  build + review view: http://127.0.0.1:8765/waves\n\n"
             "OWNER FEEDBACK FIRST (decisive gate, every tick before building):\n"
             "  /Users/omareid/Workspace/git/qiyas/.venv/bin/python sacred-patterns/tools/wave-feedback.py \\\n"
             f"    {sd}\n"
@@ -804,6 +1098,21 @@ def main() -> None:
         p = session_dir / "iterations" / str(it) / "pattern.bkr"
         return p.read_text() if p.exists() else ""
 
+    def wave_bkr_text(n: int | None) -> str:
+        # The cumulative per-wave recipe waves/wave-{n}.bkr (generated by
+        # waves/generate_wave_files.py from the wave-wired master). Diffing
+        # wave-{n-1} -> wave-{n} shows EXACTLY the lines wave n added — the
+        # clean "watch the code grow" diff the owner asked for (2026-06-15),
+        # not the noisy whole-iteration pattern.bkr diff. Falls back to "" when
+        # the file is absent (e.g. n == 0), so the first wave diffs against empty.
+        if n is None or n < 1:
+            return ""
+        it = best_iter()
+        if it is None:
+            return ""
+        p = session_dir / "iterations" / str(it) / "waves" / f"wave-{n}.bkr"
+        return p.read_text() if p.exists() else ""
+
     def diff_panes(before: str, after: str) -> tuple[str, str]:
         # PR-style side-by-side: the before recipe with removed lines red,
         # the after recipe with added lines green; long unchanged runs
@@ -976,9 +1285,9 @@ def main() -> None:
          "rebuilds — each one ringed in orange.",
          lambda n: f"/wave-ghosts/wave-{n}-crop.png"),
         ("ours", "Our build",
-         "The whole picture faded to grey with only this ring lit up in colour, "
-         "built from <em>our</em> drawing.",
-         lambda n: f"/wave-ghosts/wave-{n}.png"),
+         "Our drawing built up to this point — the picture grows from the centre "
+         "out, one wave at a time, shapes on a clean white page.",
+         lambda n: f"/wave-ghosts/wave-{n}-build.png"),
         ("iso", "Just this wave's shapes",
          "Only the shapes this wave adds, on a clean white page — nothing else.",
          lambda n: f"/wave-ghosts/wave-{n}-iso.png"),
@@ -1015,22 +1324,77 @@ def main() -> None:
         passed = s.get("stage_gates", {}).get("structure", {}).get("waves_passed", {})
         plan = json.loads((plan_dir / "wave-plan.json").read_text())
         waves = sorted(plan["waves"], key=lambda w: w["wave"])
-        built_iters = wave_iters_in_order(passed, waves)
+        next_wave = next((w["wave"] for w in waves if str(w["wave"]) not in passed), None)
+        n_built = sum(1 for w in waves if str(w["wave"]) in passed)
+
+        # The "Copy to continue" prompt (folded in from the old /iterate page,
+        # owner 2026-06-15 "merge into one page"): a self-contained /loop
+        # instruction the owner can paste into a fresh session if the build ever
+        # stalls. It lives on the building-now card so resuming is right where
+        # the eye already is. Pin the exact next wave so the cold session builds
+        # instead of idling.
+        next_spec = next((w for w in waves if w["wave"] == next_wave), None)
+        if next_wave is not None and next_spec is not None:
+            nc = str(next_spec.get("color", "")).replace("_", " ")
+            ncount = next_spec.get("real_shape_count", next_spec.get("shape_count", "?"))
+            next_desc = f"wave {next_wave} ({ncount} {nc} shapes {next_spec.get('where', '')})".strip()
+        else:
+            next_desc = "the structure stage is fully built — next is the owner approval gate"
+        continue_prompt = continue_prompt_text(next_wave, next_desc, n_built, len(waves))
 
         cards = []
-        prev_iter: int | None = None
         for w in waves:
             n = w["wave"]
             colour = str(w.get("color", "")).replace("_", " ")
             count = w.get("real_shape_count", w.get("shape_count", "?"))
             what = f"{count} {colour} shape{'s' if count != 1 else ''} {w.get('where', '')}".strip()
             built = str(n) in passed
+            gate = passed.get(str(n))
+
+            # HERO picture (owner 2026-06-15: "i want an additive view just like
+            # we did for /waves"). The big primary view is a side-by-side that
+            # GROWS WAVE BY WAVE on BOTH sides: left = our build through wave N
+            # (wave-{n}-build.png), right = your photo with everything faded to a
+            # grey ghost EXCEPT waves 1..N in full colour (wave-{n}-photo.png,
+            # built by wave-ghosts/build_wave_photo_ghosts.py). On wave 1 both
+            # sides show only the centre star; on wave 22 both show the whole
+            # flower. (Replaces the old gold-outline gate sbs, whose photo side
+            # showed the WHOLE pattern at once — not additive.)
+            hero = ""
+            if built:
+                lb, rb = f"/wave-ghosts/wave-{n}-build.png", f"/wave-ghosts/wave-{n}-photo.png"
+                hero = (
+                    f"<figure class='hero'><div class='heropair'>"
+                    f"<div class='imgwrap'><img src='{lb}' alt='wave {n}: our build so far'>"
+                    f"<button class='expand' type='button' data-full='{lb}' "
+                    f"data-label='Wave {n} — our build so far' "
+                    f"title='View full screen' aria-label='View full screen'>⤢</button></div>"
+                    f"<div class='imgwrap'><img src='{rb}' alt='wave {n}: your photo, "
+                    f"revealed up to this wave'>"
+                    f"<button class='expand' type='button' data-full='{rb}' "
+                    f"data-label='Wave {n} — your photo so far' "
+                    f"title='View full screen' aria-label='View full screen'>⤢</button></div>"
+                    f"</div><figcaption class='muted'>Our drawing on the left, your photo "
+                    f"on the right — both fill in one wave at a time. Everything past this "
+                    f"wave is greyed out, so you see exactly what's been built.</figcaption>"
+                    f"</figure>"
+                )
+            elif n == next_wave:
+                hero = (
+                    f"<figure class='hero'><div class='imgwrap'>"
+                    f"<img src='/wave-{n}.png' alt='wave {n} highlighted on your photo'>"
+                    f"<button class='expand' type='button' data-full='/wave-{n}.png' "
+                    f"data-label='Wave {n} on your photo' "
+                    f"title='View full screen' aria-label='View full screen'>⤢</button>"
+                    f"</div><figcaption class='muted'>This is the wave we're working "
+                    f"on now — highlighted on your photo.</figcaption></figure>"
+                )
 
             # All three views render at the SAME size in one row (owner,
             # 2026-06-15: "all three wave cards should be same size"). The crop
             # keeps an accent border so the eye knows it's the reference, but it
             # is no longer oversized. Each tile gets an "expand" button that
-            # opens it full-screen in a lightbox.
+            # opens it full-screen in a lightbox. They sit BELOW the hero.
             tiles = []
             for idx, (key, title, blurb, url) in enumerate(WAVE_VIEWS):
                 cls = "view primary" if idx == 0 else "view"
@@ -1047,13 +1411,16 @@ def main() -> None:
                     f"<span class='vblurb muted'>{blurb}</span></figcaption></figure>"
                 )
 
-            # Code-diff tile: the recipe change that built this wave, vs. the
-            # previous built wave. Only meaningful for built waves (an unbuilt
-            # wave has no recipe yet); folds away unchanged lines.
-            it = built_iters.get(n)
+            # Code-diff tile: the recipe change that built this wave. The owner
+            # (2026-06-15) wants to SEE THE CODE GROW — so we diff the CUMULATIVE
+            # wave files: wave-(n-1).bkr (everything up to the previous wave) vs
+            # wave-n.bkr (with this wave's lines added). The left pane is empty
+            # for wave 1 (nothing came before the lone star). Folds unchanged
+            # lines away.
+            after_txt = wave_bkr_text(n)
             diff_tile = ""
-            if it is not None:
-                lpane, rpane = diff_panes(bkr_text(prev_iter), bkr_text(it))
+            if after_txt:
+                lpane, rpane = diff_panes(wave_bkr_text(n - 1), after_txt)
                 diff_tile = (
                     "<details class='codediff'><summary>Show the recipe change "
                     "(the lines we added to draw this wave)</summary>"
@@ -1062,22 +1429,119 @@ def main() -> None:
                     "(<span class='del'>red = taken out</span>). Right: after "
                     "(<span class='ins'>green = added</span>).</p></details>"
                 )
-                prev_iter = it
 
-            status = ("<span class='badge done'>built ✓</span>" if built
-                      else "<span class='badge todo'>coming up</span>")
+            # History filmstrip (folded in from /iterate): every past iteration
+            # of this wave, newest first, inside a foldaway <details>. Eager-load
+            # the frames — a lazy <img> in a collapsed details never enters the
+            # viewport and shows broken on expand.
+            history = ""
+            verdict_panel = ""
+            continue_block = ""
+            if built:
+                hist = wave_history(n)
+                frame_parts = []
+                for h in hist:
+                    it_n = h["iter"]
+                    pct_txt = ("" if h["coverage"] is None
+                               else f", {round(h['coverage'] * 100)}%")
+                    cap = ("" if h["coverage"] is None
+                           else f" · {round(h['coverage'] * 100)}%")
+                    frame_parts.append(
+                        f"<a class='frame' href='/gate/{n}/{it_n}/sbs.png' "
+                        f"target='_blank' title='step {it_n}{pct_txt}'>"
+                        f"<img src='/gate/{n}/{it_n}/sbs.png' "
+                        f"alt='wave {n} at step {it_n}'>"
+                        f"<span class='muted'>{it_n}{cap}</span></a>"
+                    )
+                if hist:
+                    history = (
+                        f"<details class='history'><summary class='muted'>"
+                        f"Show history ({len(hist)} step{'s' if len(hist) != 1 else ''})"
+                        f"</summary><div class='filmstrip'>{''.join(frame_parts)}</div></details>"
+                    )
+
+                # Owner verdict panel (folded in from /iterate): Approve /
+                # Needs-work + a free-text note that, on Needs-work, becomes the
+                # loop's next fix instruction. owner_verdict is an explicit null
+                # until the owner judges, so coerce to {} before reading.
+                verdict = gate.get("owner_verdict") or {}
+                vstate = verdict.get("state", "")
+                vnote = verdict.get("note", "")
+                verdict_panel = (
+                    f"<div class='verdict' data-wave='{n}'>"
+                    f"<div class='vbtns'>"
+                    f"<button class='approve'>This wave looks right</button>"
+                    f"<button class='deny'>Needs work</button>"
+                    f"</div>"
+                    f"<div class='vsaved muted'></div>"
+                    "<p class='muted'>Anything off? Say it in your own words — "
+                    "\"the star points are too thin\", \"this should be gold\". On "
+                    "<b>Needs work</b> this is the fix we'll make next.</p>"
+                    f"<textarea class='vnote' rows='3' placeholder='What should change?'>"
+                    f"{html.escape(vnote)}</textarea></div>"
+                )
+
+            if n == next_wave:
+                # Copy-to-continue lives on the building-now card.
+                continue_block = (
+                    "<div class='continue'>"
+                    "<button id='copy-continue' type='button'>📋 Copy prompt to continue building</button>"
+                    "<span id='copy-continue-status' class='muted'></span>"
+                    "<p class='muted'>If the build ever stops, paste this into a fresh "
+                    "session to resume from this wave.</p>"
+                    f"<textarea id='continue-prompt' hidden>{html.escape(continue_prompt)}</textarea>"
+                    "</div>"
+                )
+
+            # Status badges: built / approved / needs-work / building-now / coming-up.
+            if built:
+                status = "<span class='badge done'>built ✓</span>"
+                verdict = gate.get("owner_verdict") or {}
+                if verdict.get("state") == "approved":
+                    status += "<span class='badge ok'>you approved ✓</span>"
+                elif verdict.get("state") == "denied":
+                    status += "<span class='badge no'>needs work ✗</span>"
+            elif n == next_wave:
+                status = "<span class='badge open'>building now</span>"
+            else:
+                status = "<span class='badge todo'>coming up</span>"
+
+            built_note = (
+                f"<p class='muted'>Built in step {gate.get('iter', '?')}; our paint "
+                f"covers {round(gate.get('coverage', 0) * 100)}% of these shapes.</p>"
+                if built else ""
+            )
+            card_cls = "gate built" if built else ("gate" if n == next_wave else "gate todo")
             cards.append(
-                f"<div class='gate' id='w{n}' data-wave-card='{n}'>"
+                f"<div class='{card_cls}' id='w{n}' data-wave-card='{n}'>"
                 f"<h2>Wave {n} — {html.escape(what)}{status}</h2>"
+                f"{built_note}"
+                f"{hero}"
                 f"<div class='wave-views'>{''.join(tiles)}</div>"
-                f"{diff_tile}</div>"
+                f"{diff_tile}{history}{continue_block}{verdict_panel}</div>"
             )
 
-        n_built = len(passed)
         head = (
-            f"{n_built} of {len(waves)} waves are built. Each card shows your "
-            "photo zoomed to that wave's shapes, our build of them, just that "
-            "wave's shapes on white, and the recipe lines that drew them."
+            f"{n_built} of {len(waves)} waves are built. Each card shows our "
+            "build beside your photo — both fill in one wave at a time — plus the "
+            "three close-up views, the recipe lines that drew it, and your verdict."
+        )
+        # Progress as a row of stacked squares, one per wave (folded in from
+        # /iterate, owner 2026-06-14). Green = built, white = remaining; the
+        # next-to-build wave gets a ring so the eye lands on where the build is.
+        sq = []
+        for w in waves:
+            n = w["wave"]
+            done = str(n) in passed
+            cls = "sq done" if done else "sq todo"
+            if n == next_wave:
+                cls += " here"
+            state = "done" if done else ("building now" if n == next_wave else "to do")
+            sq.append(f"<span class='{cls}' title='Wave {n} — {state}'></span>")
+        squares = (
+            "<div class='squares' role='img' "
+            f"aria-label='{n_built} of {len(waves)} waves done'>"
+            + "".join(sq) + "</div>"
         )
         extra_css = """
  /* All three views are equal-size cells in one responsive grid (owner:
@@ -1129,6 +1593,58 @@ def main() -> None:
  .ins { background: #DFF2E3; border-radius: 3px; }
  .skip { color: #B7AE9D; }
  main { max-width: 1100px; }
+ /* HERO: the gold-outlined ours|yours picture, the big primary view on each
+    card (owner: shape-outline highlight preferred over inner-circle dots). */
+ .hero { margin: 10px 0 4px; border: 1px solid var(--line); border-radius: 12px;
+         padding: 8px; background: #fff; }
+ .hero img { width: 100%; display: block; border-radius: 8px; background: #fff; }
+ /* Additive two-up: our build | your photo, side by side, equal width. */
+ .heropair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+ .heropair .imgwrap { position: relative; }
+ .hero figcaption { margin-top: 6px; }
+ .gate.todo { opacity: .72; }
+ /* Stacked-squares progress (folded in from /iterate). */
+ .squares { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0 4px; }
+ .squares .sq { width: 22px; height: 22px; border-radius: 5px;
+                border: 1px solid var(--line); box-sizing: border-box; }
+ .squares .sq.done { background: #2E7D5B; border-color: #2E7D5B; }
+ .squares .sq.todo { background: #fff; }
+ .squares .sq.here { outline: 2px solid #B8860B; outline-offset: 1px; }
+ .badge.ok { background: #2E7D5B; }
+ .badge.no { background: #B23A48; }
+ /* Owner verdict panel (folded in from /iterate). */
+ .verdict { margin-top: 14px; padding: 14px 16px; border: 1px solid var(--line);
+            border-radius: 12px; background: #FBFAF7; }
+ .vbtns { display: flex; flex-wrap: wrap; gap: 8px; }
+ .verdict button { margin: 0; border: 1px solid var(--line); background: #fff;
+                   border-radius: 8px; padding: 8px 14px; font: inherit;
+                   cursor: pointer; transition: background .15s, color .15s; }
+ .verdict button.approve.active { background: #2E7D5B; color: #fff; border-color: #2E7D5B; }
+ .verdict button.deny.active { background: #B23A48; color: #fff; border-color: #B23A48; }
+ .vsaved { display: block; min-height: 16px; margin-top: 8px; font-size: 13px; }
+ .vsaved.ok { color: #2E7D5B; } .vsaved.err { color: #B23A48; }
+ .vsaved.wait { color: #B8860B; }
+ .verdict textarea { width: 100%; margin-top: 4px; box-sizing: border-box;
+                     border: 1px solid var(--line); border-radius: 8px; padding: 8px;
+                     font: inherit; resize: vertical; }
+ /* History filmstrip (folded in from /iterate). */
+ .history { margin-top: 10px; }
+ .filmstrip { display: flex; gap: 10px; overflow-x: auto; padding: 8px 2px; }
+ .filmstrip .frame { flex: 0 0 auto; width: 150px; text-align: center;
+                     text-decoration: none; }
+ .filmstrip .frame img { width: 150px; margin: 0; border: 1px solid var(--line);
+                         border-radius: 6px; }
+ .filmstrip .frame span { display: block; font-size: 12px; margin-top: 2px; }
+ /* Copy-to-continue (folded in from /iterate). */
+ .continue { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line);
+             border-radius: 12px; background: #FBFAF7; }
+ #copy-continue { border: 1px solid var(--agree); background: var(--agree);
+                  color: #fff; border-radius: 8px; padding: 9px 16px;
+                  font: inherit; cursor: pointer; transition: opacity .15s; }
+ #copy-continue:hover { opacity: .9; }
+ #copy-continue.done { background: #2E7D5B; border-color: #2E7D5B; }
+ #copy-continue-status { margin-left: 10px; font-size: 13px; }
+ .continue p { margin: 8px 0 0; }
 """
         return (
             "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
@@ -1136,8 +1652,8 @@ def main() -> None:
             f"<style>{HUB_CSS}{extra_css}</style></head><body>"
             "<header><h1>The waves, one by one</h1>"
             f"<p>{head}</p>"
+            f"{squares}"
             "<p class='muted'><a href='/'>Back to your review list</a> · "
-            "<a href='/iterate'>Watch the build</a> · "
             "<a href='/inspect'>Tap a shape to find its wave</a></p></header>"
             f"<main>{''.join(cards)}</main>"
             # Full-screen lightbox + the expand-button wiring (Tenet 27: one tap,
@@ -1160,6 +1676,9 @@ def main() -> None:
             "document.addEventListener('keydown',function(e){"
             "if(e.key==='Escape')close();});"
             "})();</script>"
+            # The verdict-panel / copy-continue / refresh wiring (folded in from
+            # /iterate). Same JS, now driving the merged cards.
+            f"<script>{ITERATE_JS}</script>"
             "</body></html>"
         )
 
@@ -1313,11 +1832,13 @@ def main() -> None:
         if plan_agreed:
             n_built = len(waves_passed)
             todo.append(
-                "<div class='gate'><h2>The build, wave by wave"
+                "<div class='gate'><h2>The waves, one by one"
                 "<span class='badge done'>live</span></h2>"
-                f"<p>{n_built} waves are built so far. See each one beside "
-                "your picture — no verdict needed, just watch.</p>"
-                "<a class='go' href='/iterate'>Watch the build</a></div>"
+                f"<p>{n_built} waves built so far. Every wave on one page: our "
+                "build beside your photo — both fill in one wave at a time — the "
+                "close-up views, the recipe lines that drew it, and a place to say "
+                "if each one looks right.</p>"
+                "<a class='go' href='/waves'>See the waves</a></div>"
             )
         if plan_agreed and waves_passed:
             todo.append(
@@ -1329,19 +1850,19 @@ def main() -> None:
                 "<a class='go' href='/slides'>Play the slideshow</a></div>"
             )
             todo.append(
-                "<div class='gate'><h2>The waves, one by one"
-                "<span class='badge done'>live</span></h2>"
-                "<p>Every wave on one page: your photo zoomed to that wave's "
-                "shapes, our build of them, just that wave's shapes on white, and "
-                "the recipe lines that drew them.</p>"
-                "<a class='go' href='/waves'>See the waves</a></div>"
-            )
-            todo.append(
                 "<div class='gate'><h2>Find a shape's wave"
                 "<span class='badge done'>live</span></h2>"
                 "<p>Your photo beside our finished drawing — tap any shape on "
                 "either one and we'll tell you which wave builds it.</p>"
                 "<a class='go' href='/inspect'>Tap a shape</a></div>"
+            )
+            todo.append(
+                "<div class='gate'><h2>What's it made of?"
+                "<span class='badge done'>live</span></h2>"
+                "<p>See the handful of shapes your whole picture is built from — "
+                "and help us tidy up the ones that are really the same shape "
+                "(all those little kites).</p>"
+                "<a class='go' href='/simplify'>See the shapes</a></div>"
             )
         if (analysis_dir / "swatch-sheet.png").exists():
             if not palette_agreed:
@@ -1371,6 +1892,182 @@ def main() -> None:
             f"<header><h1>Your review list</h1><p>{head}</p>"
             f"<p class='muted'>Pattern: {html.escape(s.get('name', ''))}</p></header>"
             f"<main>{''.join(todo)}</main></body></html>"
+        )
+
+    # ---- Simplify experience (#44): the post-waves "what is this made of?" phase ----
+    # After the waves reproduce the photo, this page lets the owner collapse the
+    # near-identical shapes (the kites!) into one canonical shape and SEE the pattern's
+    # true vocabulary. The clusterer (cluster_shapes.py) writes clusters.json with the
+    # canonical classes + the borderline merge PROPOSALS; here we read it and run a
+    # propose-and-confirm loop — the TOOL proposes "these two look the same?", the OWNER
+    # confirms. Verdicts persist to merge-verdicts.json in the iteration dir; this NEVER
+    # touches session.json's structure gate (that stays the owner's separate call).
+
+    def simplify_clusters_path() -> Path | None:
+        it = best_iter()
+        if it is None:
+            return None
+        p = session_dir / "iterations" / str(it) / "wave-ghosts" / "clusters.json"
+        return p if p.exists() else None
+
+    def merge_verdicts_path() -> Path | None:
+        it = best_iter()
+        if it is None:
+            return None
+        return session_dir / "iterations" / str(it) / "wave-ghosts" / "merge-verdicts.json"
+
+    def simplify_gt_path() -> Path | None:
+        # The engine-emitted truth (Tenet 23) the clusters were built from — same
+        # iteration as clusters.json. Used to trace each cluster member's TRUE outline
+        # so the modal can highlight every copy in place on the full render.
+        it = best_iter()
+        if it is None:
+            return None
+        p = session_dir / "iterations" / str(it) / "pattern.gt.json"
+        return p if p.exists() else None
+
+    def load_merge_verdicts() -> dict:
+        p = merge_verdicts_path()
+        if p and p.exists():
+            return json.loads(p.read_text())
+        return {}
+
+    def simplify_swatch_svg(outline, color, size=120) -> str:
+        # One shape silhouette as inline SVG, normalized to fill the box. The browser
+        # renders it crisp at any zoom — no PIL, no per-class file on disk.
+        xs = [p[0] for p in outline]
+        ys = [p[1] for p in outline]
+        w = (max(xs) - min(xs)) or 1
+        h = (max(ys) - min(ys)) or 1
+        pad = 12
+        s = (size - 2 * pad) / max(w, h)
+        cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+        pts = " ".join(
+            f"{size/2 + (p[0]-cx)*s:.1f},{size/2 + (p[1]-cy)*s:.1f}" for p in outline
+        )
+        fill = color if color and color != "None" else "#CCCCCC"
+        return (
+            f"<svg viewBox='0 0 {size} {size}' width='{size}' height='{size}'>"
+            f"<polygon points='{pts}' fill='{fill}' stroke='#2A2A2A' "
+            f"stroke-width='1.2'/></svg>"
+        )
+
+    def _edge_words(edges) -> str:
+        # Turn the normalized edge-length list into a plain phrase the owner can read:
+        # how many sides, and whether they're all-equal / two-equal / all-different.
+        if not edges:
+            return ""
+        n = len(edges)
+        uniq = len({round(e, 2) for e in edges})
+        if uniq == 1:
+            kind = "all sides equal"
+        elif uniq == 2:
+            kind = "two side-lengths"
+        else:
+            kind = f"{uniq} different side-lengths"
+        return f"{n} sides · {kind}"
+
+    def simplify_html() -> str:
+        cp = simplify_clusters_path()
+        if cp is None:
+            return (
+                "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                f"<title>What's it made of?</title><style>{HUB_CSS}</style></head><body>"
+                "<header><h1>What's your pattern made of?</h1>"
+                "<p class='muted'>We'll be able to show this once the build is far "
+                "enough along. <a href='/'>Back to your review list</a></p></header>"
+                "</body></html>"
+            )
+        data = json.loads(cp.read_text())
+        clusters = data["clusters"]
+        by_id = {c["cluster_id"]: c for c in clusters}
+        proposals = data.get("proposals", [])
+        verdicts = load_merge_verdicts()
+
+        # Map each cluster member's id -> its TRUE outline (gt pixel space), so the
+        # click-to-see modal can trace every copy of a shape on the full render.
+        # Coords rounded to ints — 675 outlines, payload stays lean. Image dims come
+        # from gt so the overlay shares the render's coordinate box exactly.
+        gt_outlines: dict[str, list] = {}
+        img_w, img_h = 1024, 1024
+        gp = simplify_gt_path()
+        if gp is not None:
+            gt = json.loads(gp.read_text())
+            img = gt.get("image", {})
+            img_w = int(img.get("width_px") or 1024)
+            img_h = int(img.get("height_px") or 1024)
+            for s in gt.get("shapes", []):
+                o = (s.get("evidence") or {}).get("outline")
+                if o:
+                    gt_outlines[s["id"]] = [[round(p[0]), round(p[1])] for p in o]
+
+        # Vocabulary strip: one card per canonical shape, biggest count first, circles
+        # last (they're a different family). Plain caption: count + side description.
+        cards = []
+        polys = [c for c in clusters if c["kind"] == "polygon"]
+        circs = [c for c in clusters if c["kind"] == "circle"]
+        for c in polys + circs:
+            if c["kind"] == "circle":
+                sw = (f"<svg viewBox='0 0 120 120' width='120' height='120'>"
+                      f"<circle cx='60' cy='60' r='48' fill='#CCCCCC' "
+                      f"stroke='#2A2A2A' stroke-width='1.2'/></svg>")
+                desc = "round"
+            else:
+                sw = simplify_swatch_svg(c["representative_outline"], c["dominant_color"])
+                desc = _edge_words(c.get("edge_evidence"))
+            cards.append(
+                f"<figure class='shape' data-cid='{c['cluster_id']}' "
+                f"title='Click to see where this shape sits in the picture'>{sw}"
+                f"<figcaption><b>{c['count']}×</b><br>"
+                f"<span class='muted'>{html.escape(desc)}</span></figcaption></figure>"
+            )
+
+        # Proposal queue: borderline pairs not yet judged. Each is shown one at a time.
+        pending = [
+            p for p in proposals
+            if f"{p['a']}|{p['b']}" not in verdicts
+        ]
+        n_total = len(proposals)
+        n_done = n_total - len(pending)
+
+        n_poly = len(polys)
+        n_circ = len(circs)
+        vocab_line = (
+            f"Right now we count <b>{n_poly}</b> different straight-sided shapes"
+            + (f" plus <b>{n_circ}</b> round one" + ("s" if n_circ != 1 else "")
+               if n_circ else "")
+            + f", repeated to fill the whole picture ({data['n_shapes']} pieces in all)."
+        )
+
+        payload = {
+            "proposals": proposals,
+            "image": {"w": img_w, "h": img_h},
+            "clusters": {cid: {
+                "outline": by_id[cid]["representative_outline"]
+                if by_id[cid]["kind"] == "polygon" else None,
+                "color": by_id[cid]["dominant_color"],
+                "count": by_id[cid]["count"],
+                "edges": by_id[cid].get("edge_evidence"),
+                "kind": by_id[cid]["kind"],
+                # Where every copy of this shape sits on the full render — true gt
+                # outlines for polygons; member centers (for circles, which carry no
+                # polygon outline) so the modal can still ring them.
+                "members": [gt_outlines[m] for m in by_id[cid].get("member_ids", [])
+                            if m in gt_outlines],
+                "centers": [[round(x), round(y)]
+                            for x, y in by_id[cid].get("member_centers", [])],
+            } for cid in by_id},
+            "verdicts": verdicts,
+        }
+
+        return (
+            SIMPLIFY_HTML
+            .replace("__CSS__", HUB_CSS)
+            .replace("__VOCAB__", vocab_line)
+            .replace("__CARDS__", "".join(cards))
+            .replace("__NDONE__", str(n_done))
+            .replace("__NTOTAL__", str(n_total))
+            .replace("__PAYLOAD__", json.dumps(payload))
         )
 
     class Handler(SimpleHTTPRequestHandler):
@@ -1404,7 +2101,13 @@ def main() -> None:
                 self._send_html(hub_html())
                 return
             if self.path == "/iterate":
-                self._send_html(iterate_html())
+                # Merged into /waves (owner 2026-06-15: "merge the experiences").
+                # The waves page now carries the gold-outlined hero, the vote,
+                # the history filmstrip and the copy-to-continue that used to
+                # live here. Redirect so old links/bookmarks still land.
+                self.send_response(301)
+                self.send_header("Location", "/waves")
+                self.end_headers()
                 return
             if self.path == "/slides" or self.path.startswith("/slides?"):
                 # reveal.js routes its deck position via the URL hash/query;
@@ -1422,6 +2125,23 @@ def main() -> None:
                 if not p.exists():
                     p = session_dir / "iterations" / str(it) / "render.png"
                 if not p.exists():
+                    self.send_error(404)
+                    return
+                data = p.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+                return
+            if self.path.split("?", 1)[0] == "/simplify/pattern.png":
+                # The render gt.json was emitted against (image.filename == render.png).
+                # The /simplify modal overlays gt outlines on THIS exact raster, so it
+                # must be render.png — not render.cairo.png, whose pixel box differs.
+                it = best_iter()
+                p = (session_dir / "iterations" / str(it) / "render.png"
+                     if it is not None else None)
+                if p is None or not p.exists():
                     self.send_error(404)
                     return
                 data = p.read_bytes()
@@ -1520,6 +2240,9 @@ def main() -> None:
                 return
             if self.path == "/inspect":
                 self._send_html(inspect_html())
+                return
+            if self.path == "/simplify":
+                self._send_html(simplify_html())
                 return
             if self.path == "/wave-options":
                 # Renamed to /waves (owner, 2026-06-15: "i don't want a
@@ -1672,6 +2395,26 @@ def main() -> None:
                     struct["approved"] = None
                     struct["approved_at_iter"] = None
                 save_session(s)
+                self._send_ok()
+            elif self.path == "/api/merge-verdict":
+                # The owner's per-pair "same shape?" call from /simplify. Persisted to
+                # merge-verdicts.json in the iteration dir — NOT session.json, and it
+                # NEVER touches the structure gate. Keyed "a|b" so a re-judgement just
+                # overwrites. state ∈ {"same","different","skip"} (skip not stored).
+                data = json.loads(self._read_body())
+                a, b = str(data["a"]), str(data["b"])
+                state = data.get("state", "")
+                mp = merge_verdicts_path()
+                if mp is None:
+                    self.send_error(404, "no iteration to record against")
+                    return
+                v = load_merge_verdicts()
+                key = f"{a}|{b}"
+                if state == "skip":
+                    v.pop(key, None)            # an explicit skip clears any prior call
+                else:
+                    v[key] = {"state": state, "date": date.today().isoformat()}
+                mp.write_text(json.dumps(v, indent=1))
                 self._send_ok()
             else:
                 self.send_error(404)
