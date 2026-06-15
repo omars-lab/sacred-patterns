@@ -14,3 +14,4 @@ drift from the doc. For the "authoritative-per-tag / dead-ends" view see
 | 2026-05-23 — [unblock-critical-path-workstream](2026-05-23-unblock-critical-path-workstream.md) | ACCEPTED | B | `critical-path-workstream` |
 | 2026-06-07 — [loop-terminal-condition](2026-06-07-loop-terminal-condition.md) | ACCEPTED | C | `loop-terminal-condition` |
 | 2026-06-10 — [portal-hypothesis-handoff](2026-06-10-portal-hypothesis-handoff.md) | ACCEPTED | A | `portal-hypothesis-handoff` |
+| 2026-06-15 — [session-artifact-storage](2026-06-15-session-artifact-storage.md) | ACCEPTED | A | `session-artifact-storage` |

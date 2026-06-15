@@ -1,0 +1,77 @@
+# Medallion-10: Iteration 41 — wave-1 gate: explicit central star (2026-06-11)
+#
+# DELTA-FROM-ITER-40: one construction idea — keep the shells-1 field, add an
+# explicit central {10/4} star in layer 1 inside the field's empty central
+# decagon, and blank that decagon to white (it was a solid navy slab flooding
+# the wave-1 envelope). Star size measured from the reference: tip radius
+# 29.5px / 739px medallion = 0.0399 -> 22.6 pattern units on our 565.75-unit
+# medallion. Requires the cross-layer dedup fix (bikar c0aa77e, task #52):
+# without it the star's own central decagon collides with the field's
+# decoration decagon at (0,0)/10-edges and is silently dropped (hole).
+# Hypothesis + falsifier: iterations/41/hypothesis.md
+
+blueprint center_star
+  circle C0 center(0,0) radius 22.6
+  divide C0 into 10
+
+pattern medallion10_iter41 on center_star
+  girih field decagonal 62 shells 1 pockets star
+
+  # Wave-1 overlay: the reference's navy center star, drawn explicitly as a
+  # {10/4} star polygon (two superimposed pentagrams) in its own layer so its
+  # faces extract independently of the field (multi-layer extraction).
+  layer 1
+  connect every 4 on C0
+  layer 0
+
+  # The field emits strapwork segments; voids detect closes them into faces so
+  # the gt-emitter has shapes to measure (without this, gt.json has 0 shapes).
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #262E3D
+      navy = #132A61
+      royal = #2B61B7
+      cobalt = #32B0CA
+      turquoise = #BBC5D5
+      white = #FFFFFF
+
+  # Classify rules give every face a face_class — bikar's gt-emitter drops
+  # unclassified polygons, so without these the field renders but exports 0
+  # shapes (the iter-33 first-render finding, 2026-05-28).
+  classify .center_star where layer == 1
+  classify .pocket where source == _girih_hexagon_star and area >= 360
+  classify .deep_navy where sides == 10
+  classify .royal where sides == 4
+  classify .turquoise where sides == 3
+  classify .cobalt where sides == 5
+  classify .navy where sides >= 6
+
+  # First-match-wins cascade. The two wave-1 rules lead: every layer-1 face is
+  # part of the star silhouette (31 faces tile the solid star — Tier-0
+  # witness), and the field's central decoration decagon (the only layer-0
+  # 10-sided face at ring 0) becomes the star's white canvas.
+  fill void where layer == 1 color navy
+  fill void where ring == 0 and sides == 10 color white
+  fill void where source == _girih_hexagon_star and area >= 360 color cobalt
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 5 and area >= 360 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 5 color cobalt
+  fill void where sides >= 6 color navy
+
+  # Edges near-invisible: the white strapwork bands carry the line work now, so
+  # the tile/decoration edge strokes would only add clutter under the bands.
+  edges color deep_navy width 0.2
+  # The star's construction circle would otherwise rasterize as a dark ring
+  # through the wave-1 envelope.
+  circles color #FFFFFF width 0.1
+
+  # Slice-4 overlay: weave the decoration centerlines into white interlacing
+  # bands. Deco-only weaving (bikar#653 kernel change) excludes tile outlines
+  # AND the layer-1 star segments (non-girih), so the star stays crisp.
+  strapwork
+      width 8
+      crossing alternating
+      color #FFFFFF

@@ -1,0 +1,100 @@
+# Medallion-10: Iteration 16 — Re-attempt strapwork with symmetry-preserving crossing
+#
+# Iter 14 baseline (KEPT): composite=0.7842
+# Iter 15 (strapwork width 5 alternating): composite=0.6604, REVERTED.
+#   Failure mode: alternating crossings broke 10-fold symmetry
+#   (A2 cv 0.067 -> 0.1325) AND fragmented voids into 185 unmatched
+#   extras. Net composite -0.124.
+#
+# Mechanical edit: same strapwork block as iter-15 but `crossing over`
+# instead of `crossing alternating`. The over-mode renders every
+# strand-segment as an over-strand, making the over/under decision
+# uniform across all crossings — preserves rotational symmetry exactly.
+# Visually flat (no interlace illusion) but should keep A2 stable
+# while still rendering bands (so A5 PARTIAL gain from iter-15 is
+# preserved).
+#
+# Requires bikar PR1 (sacred-patterns/.claude/plans/bikar-symmetry-
+# preserving-crossing.md) — adds `crossing over` and `crossing under`
+# tokens. Built locally; not yet pushed to qiyas:dev image.
+#
+# Translation table mapping:
+# - "iter 15 strapwork regression: A5 advanced one notch but A2 cv
+#   doubled and 185 extras spawned" = use a symmetry-preserving
+#   crossing mode instead of alternating.
+#
+# Predicted Δ vs iter 14 (NOT vs iter 15):
+#   - A5: BROKEN -> PARTIAL preserved (~+0.03 svg-audit lift since
+#     PARTIAL = 0.5 of 1.0 binary)
+#   - A2: cv 0.067 (no degradation, since over-mode is rotation-invariant)
+#   - extras: still spawn ~150-185 fragments, but the WARNING ranker
+#     should now correctly attribute the regression to extras, not
+#     to symmetry — informational signal for #109 (counterfactual tax)
+#   - composite: vs iter-14 expect 0.74-0.79 (small dip from extras
+#     dominates the small A5 lift; tax-aware warnings would have
+#     predicted this)
+#
+# This iter is also a CONFIRMATORY EXPERIMENT for plan #108: does
+# `crossing over` preserve A2 cv while rendering bands? If A2 cv
+# stays under 0.08 we have proof that the new mode works as designed.
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  circle C1 center(0,0) radius 30
+  divide C1 into 10
+  circle Cmid2 center(0,0) radius 50
+  divide Cmid2 into 10
+  circle Cmid center(0,0) radius 80
+  divide Cmid into 10
+  repeat at C0 depth 1
+    circle center($point) radius 0.3 * $radius
+    divide into 10
+
+pattern medallion on medallion
+  layer 0
+    connect every 4 on C1
+    connect every 3 on C1
+
+  layer 1
+    connect every 4 on @0.0
+    connect every 4 on @0.1
+    connect every 4 on @0.2
+    connect every 4 on @0.3
+    connect every 4 on @0.4
+    connect every 4 on @0.5
+    connect every 4 on @0.6
+    connect every 4 on @0.7
+    connect every 4 on @0.8
+    connect every 4 on @0.9
+
+  layer 2
+    connect every 3 on Cmid
+
+  layer 3
+    connect every 4 on Cmid2
+
+  # NEW iter 16: same strapwork as iter-15 but with `crossing over`
+  # to preserve 10-fold rotational symmetry. Renders all crossings
+  # with the same over/under choice (uniform over-strands), which
+  # is rotationally invariant.
+  strapwork
+      width 5
+      crossing over
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 20 color navy
+  fill void where sides >= 5 color cobalt
+
+  edges color navy width 0.5

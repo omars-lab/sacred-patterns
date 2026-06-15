@@ -1,0 +1,27 @@
+# Medallion-10: Iteration 9 — Zone 0: Center rosette only
+# Zone-by-zone approach: nail the center before adding satellites
+# Center rosette: {10/4} star via connect every 4 on C0
+# No satellites, no strapwork — just the center
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+
+pattern medallion on medallion
+  connect every 4 on C0
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 20 color navy
+
+  edges color navy width 0.5

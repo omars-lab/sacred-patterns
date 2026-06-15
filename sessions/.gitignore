@@ -1,0 +1,22 @@
+# Session-artifact storage — code in git, rendered output in Dropbox.
+# See docs/decisions/2026-06-15-session-artifact-storage.md (tag: session-artifact-storage).
+#
+# Only AUTHORED artifacts belong here (.bkr / .py / .md / session.json). RENDERED
+# artifacts live in Dropbox; this ignore is a belt-and-braces catch for a stray
+# render accidentally written under sessions/ so it never bloats git history.
+*.png
+*.svg
+*.jpg
+*.jpeg
+*.gif
+*.log
+*.err
+*.pyc
+__pycache__/
+.DS_Store
+# Large generated JSON (geometry truth + cluster output) — regenerable, stays in Dropbox.
+pattern.gt.json
+clusters.json
+*.gt.json
+# Backups
+*.bak

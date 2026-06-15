@@ -1,0 +1,120 @@
+# Medallion-10: Iteration 25 — Add central 20-pointed star (inner-star zone)
+#
+# iter-24 captured A6 vs the demanding input/baseline.json:
+#   - Score 0/18 — none of the rich inner-shape constructions implemented yet
+#   - inner-star--star-v20 MISSING (expected 1, found 0)
+#   - inner-star--star-v8 MISSING (expected 6)
+#   - inner-star--star-v6 MISSING (expected 2)
+#   - inner-star--rhombus-v4 MISSING (expected 10)
+#   - rosette--star-v6 MISSING (expected 28), and several more
+#
+# iter-25 attacks the FOUNDATION of the inner-star zone: the central
+# 20-pointed star. This is the topologically simplest of the missing
+# shapes (1 instance, fully central, no compositional dependency on the
+# extended satellites or strapwork). If this construction emits the
+# expected v20 shape, we have proof that:
+#   - the DSL can construct {20/k} stars at the center
+#   - the encoder picks them up via qiyas encode + svg-audit
+#   - the A6 audit's zone-classifier resolves a centered shape into
+#     'inner-star' as expected
+#
+# Construction:
+#   - circle Cstar20 center(0,0) radius 20
+#   - divide Cstar20 into 20
+#   - layer 0 (where the other central shapes live): connect every 3 on Cstar20
+#     -- A {20/3} star polygon (pointy 20-pointed star) is the canonical
+#        "central 20-pointed star" of medallion patterns; if it doesn't
+#        match the reference, try {20/7} (more star-like) or {20/9}
+#        (very pointy) in a follow-up iter.
+#
+# Predicted Δ vs iter-24:
+#   - A6: 0/18 → 1/18 (PASS for inner-star--star-v20)
+#   - A2/A4/A5: should stay close to iter-24 (small shape, 10-fold-symmetric
+#     contribution, but in a zone iter-24 didn't have shapes in — so
+#     APPROXIMATE → still APPROXIMATE; COMPLETE → still COMPLETE)
+#   - total_shapes: +1 (the 20-star itself) + however many strapwork
+#     bands extra crossings produce
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  circle C1 center(0,0) radius 30
+  divide C1 into 10
+  # NEW iter-25: central 20-pointed star scaffold
+  circle Cstar20 center(0,0) radius 20
+  divide Cstar20 into 20
+  circle Cmid2 center(0,0) radius 50
+  divide Cmid2 into 10
+  circle Cmid center(0,0) radius 80
+  divide Cmid into 10
+  # iter-22 named satellites for extend+clip
+  circle S0 center(C0.cpt0) radius 30
+  divide S0 into 10
+  circle S1 center(C0.cpt1) radius 30
+  divide S1 into 10
+  circle S2 center(C0.cpt2) radius 30
+  divide S2 into 10
+  circle S3 center(C0.cpt3) radius 30
+  divide S3 into 10
+  circle S4 center(C0.cpt4) radius 30
+  divide S4 into 10
+  circle S5 center(C0.cpt5) radius 30
+  divide S5 into 10
+  circle S6 center(C0.cpt6) radius 30
+  divide S6 into 10
+  circle S7 center(C0.cpt7) radius 30
+  divide S7 into 10
+  circle S8 center(C0.cpt8) radius 30
+  divide S8 into 10
+  circle S9 center(C0.cpt9) radius 30
+  divide S9 into 10
+  boundary outline = union(C0, S0, S1, S2, S3, S4, S5, S6, S7, S8, S9)
+
+pattern medallion on medallion
+  layer 0
+    connect every 4 on C1
+    connect every 3 on C1
+    connect every 2 on C1
+    # NEW iter-25: central 20-pointed star
+    connect every 3 on Cstar20
+
+  layer 1
+    extend connect every 4 on S0 beyond 1.5
+    extend connect every 4 on S1 beyond 1.5
+    extend connect every 4 on S2 beyond 1.5
+    extend connect every 4 on S3 beyond 1.5
+    extend connect every 4 on S4 beyond 1.5
+    extend connect every 4 on S5 beyond 1.5
+    extend connect every 4 on S6 beyond 1.5
+    extend connect every 4 on S7 beyond 1.5
+    extend connect every 4 on S8 beyond 1.5
+    extend connect every 4 on S9 beyond 1.5
+
+  layer 2
+    connect every 3 on Cmid
+
+  layer 3
+    connect every 4 on Cmid2
+
+  clip pattern to outline
+
+  strapwork
+      width 5
+      crossing over
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 20 color navy
+  fill void where sides >= 5 color cobalt
+
+  edges color navy width 0.5

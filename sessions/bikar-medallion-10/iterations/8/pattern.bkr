@@ -1,0 +1,57 @@
+# Medallion-10: Iteration 8 — 11 rosettes all using connect every 4
+# Root cause fix: connect every 4 on C0 was broken by repeat division points
+#   splitting center chords. Solution: use layers to isolate center from repeat circles.
+#   Layer 0 gets its own intersection graph = clean center rosette.
+# No strapwork — structure first
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  repeat at C0 depth 1
+    circle center($point) radius 0.3 * $radius
+    divide into 10
+
+pattern medallion on medallion
+  # Layer 0: Central {10/4} rosette — explicitly target C0
+  layer 0
+    connect every 4 on C0
+
+  # Layer 1: 10 satellite {10/4} rosettes
+  layer 1
+    connect every 4 on @0.0
+    connect every 4 on @0.1
+    connect every 4 on @0.2
+    connect every 4 on @0.3
+    connect every 4 on @0.4
+    connect every 4 on @0.5
+    connect every 4 on @0.6
+    connect every 4 on @0.7
+    connect every 4 on @0.8
+    connect every 4 on @0.9
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      cerulean = #5DADE2
+      turquoise = #48C9B0
+
+  # Decagonal center voids — darkest
+  fill void where sides == 10 color deep_navy
+
+  # Kites
+  fill void where sides == 4 color royal
+
+  # Triangles
+  fill void where sides == 3 color turquoise
+
+  # Large polygons (star outlines)
+  fill void where sides == 20 color navy
+
+  # Everything else
+  fill void where sides >= 5 color cobalt
+
+  edges color navy width 0.5

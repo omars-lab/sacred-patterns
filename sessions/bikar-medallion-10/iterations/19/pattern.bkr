@@ -1,0 +1,106 @@
+# Medallion-10: Iteration 19 — extend satellite stars beyond their natural radius
+#                              to populate the partial-shape inter-satellite regions
+#
+# Iter 14 baseline:                   composite=0.7842
+# Iter 18 (slice-1 re-render gate):   composite=0.7985 (A2 cv 0.27→0.127, +0.11)
+# Iter 19 directive: partial-shape cascade #106. Top warning rotated to
+#   missing-shapes (39, sev=error). Apply the bikar `extend connect ... beyond F`
+#   primitive on the 10 satellite stars so they reach into adjacent satellite space,
+#   closing the "ref has half-rosette tips but recon stops at the satellite circle"
+#   gap. See iter-19/guidance.md for predictions + stop conditions.
+#
+# Iter 14's warnings[0] (from validation/validation.json):
+#   "missing-shapes: 45 ref shapes not found in recon" (cf_delta=+0.0667)
+#   But diff-level "missing-shapes" is encoder-vocabulary noise (per iter-14
+#   guidance.md and CLAUDE.md tenet 6). Real signal is A6:
+#     inner-star--star-v20 MISSING 0/1
+#     inner-star--star-v8 MISSING 0/6
+#     inner-star--rhombus-v4 MISSING 0/10  (NOTE: iter-14 added {10/3} for this; still 0?)
+#     transition--star-v8 MISSING 0/4
+#     rosette--star-v8 MISSING 0/2
+#     ...11 MISSING + 4 PARTIAL total
+#
+# Mechanical edit: add `connect every 2 on C1`. The {10/2} on a 10-divided circle
+# is a single 10-pointed star (decagram-2) whose outline traces 20 vertices
+# (10 outer tips, 10 inner valleys) — exactly inner-star--star-v20 (expected 1).
+#
+# Secondary effect: the {10/2} edges intersect the existing {10/4}+{10/3} edges
+# at additional points in the inner-star zone. After `voids detect` those
+# intersections create new sub-faces, some of which may be 4-pointed stars
+# (8-vertex, addressing inner-star--star-v8 MISSING 0/6).
+#
+# Translation table mapping:
+# - "A6 inner-star--star-v20 MISSING 0/1" = baseline-shape-missing
+#   Fix: connect every 2 on C1 → produces a {10/2} = 10-pointed star
+#   whose outline is a 20-vertex polygon when classified by the encoder.
+#
+# Predicted Δcomposite vs iter 14: +0.03 to +0.06
+#   - A6 inner-star--star-v20: MISSING -> PASS (~+0.03 structural rollup)
+#   - Possible secondary: inner-star--star-v8 MISSING -> PARTIAL (~+0.01)
+#   - rhombus-v4: iter-14 added {10/3} but still MISSING — adding {10/2}
+#     creates more intersections that may finally produce the rhombi (~+0.02)
+# Predicted Δstructural: 1/18 -> 2/18 or 3/18
+# Predicted A2 cv: stays at iter-14's 0.067 (no strapwork added,
+#   so assignStrands rotation issue cannot trigger)
+# Predicted extras: minimal increase (no band fragments — closed polygon
+#   intersections are well-paired by qiyas)
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  circle C1 center(0,0) radius 30
+  divide C1 into 10
+  circle Cmid2 center(0,0) radius 50
+  divide Cmid2 into 10
+  circle Cmid center(0,0) radius 80
+  divide Cmid into 10
+  repeat at C0 depth 1
+    circle center($point) radius 0.3 * $radius
+    divide into 10
+
+pattern medallion on medallion
+  # Layer 0: Central {10/4} + {10/3} (iter 14) + NEW {10/2} (iter 17)
+  # The three decagrams ({10/4}, {10/3}, {10/2}) on C1 produce a dense
+  # intersection mesh. {10/2} alone creates the missing star-v20.
+  layer 0
+    connect every 4 on C1
+    connect every 3 on C1
+    connect every 2 on C1
+
+  layer 1
+    # iter-19: extend each satellite star beyond its natural 0.3*R circle
+    # so the edges reach into adjacent satellites — populates the partial
+    # inter-satellite shapes that the reference image shows.
+    extend connect every 4 on @0.0 beyond 1.5
+    extend connect every 4 on @0.1 beyond 1.5
+    extend connect every 4 on @0.2 beyond 1.5
+    extend connect every 4 on @0.3 beyond 1.5
+    extend connect every 4 on @0.4 beyond 1.5
+    extend connect every 4 on @0.5 beyond 1.5
+    extend connect every 4 on @0.6 beyond 1.5
+    extend connect every 4 on @0.7 beyond 1.5
+    extend connect every 4 on @0.8 beyond 1.5
+    extend connect every 4 on @0.9 beyond 1.5
+
+  layer 2
+    connect every 3 on Cmid
+
+  layer 3
+    connect every 4 on Cmid2
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 20 color navy
+  fill void where sides >= 5 color cobalt
+
+  edges color navy width 0.5

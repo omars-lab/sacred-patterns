@@ -1,0 +1,116 @@
+# Medallion-10: Iteration 28 — Tiny central {20/3} star with spatial isolation
+#
+# iter-25/26/27 fell into a Tenet 7 stop on variants of "place a v20
+# shape in the central zone." Each failed for a different mechanism
+# reason (chord subdivision / strapwork crossings / encoder collapse).
+# The cross-repo memory entry feedback_a6_baseline_construction_philosophy_mismatch
+# names this as a philosophy mismatch and says stop iterating the
+# v20 verdict with this construction approach.
+#
+# But: re-reading baseline.json reveals the inner-star--star-v20
+# expectation has `distance_from_center.max = 0.0686` — the
+# expected v20 is a TINY central star within 6.86% of pattern
+# radius. Cstar20 at r=20 (= 20% pattern radius) is way too big.
+#
+# iter-28 ships a genuinely different mechanism: shrink Cstar20 to
+# r=6 (within the 6.86% central region) and use {20/3} chords in an
+# isolated layer. At r=6 the chords are all SHORT and live entirely
+# within a central disk that no other layer reaches — they cannot
+# intersect C1 (r=30) chords, Cmid chords, satellite chords, etc.
+# The spatial isolation may protect the v20 face from subdivision
+# without relying on layer-isolation alone.
+#
+# This is NOT a 4th variant of the same construction — it differs
+# in spatial scope (small) AND layer (isolated). It addresses the
+# baseline's actual expected size which the prior iters got wrong.
+#
+# Predicted Δ vs iter-27:
+#   - A6 inner-star--star-v20: MISSING → PASS (count=1, within
+#     distance_from_center.max=0.0686 and area_ratio close to 0.001823)
+#   - A6 score: 0/18 → 1/18
+#   - A2/A4/A5 hold near iter-27 ceilings
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  circle C1 center(0,0) radius 30
+  divide C1 into 10
+  # iter-28: tiny central scaffold (r=6, matches baseline's 0.0686 distance_from_center.max)
+  circle Cstar20 center(0,0) radius 6
+  divide Cstar20 into 20
+  circle Cmid2 center(0,0) radius 50
+  divide Cmid2 into 10
+  circle Cmid center(0,0) radius 80
+  divide Cmid into 10
+  circle S0 center(C0.cpt0) radius 30
+  divide S0 into 10
+  circle S1 center(C0.cpt1) radius 30
+  divide S1 into 10
+  circle S2 center(C0.cpt2) radius 30
+  divide S2 into 10
+  circle S3 center(C0.cpt3) radius 30
+  divide S3 into 10
+  circle S4 center(C0.cpt4) radius 30
+  divide S4 into 10
+  circle S5 center(C0.cpt5) radius 30
+  divide S5 into 10
+  circle S6 center(C0.cpt6) radius 30
+  divide S6 into 10
+  circle S7 center(C0.cpt7) radius 30
+  divide S7 into 10
+  circle S8 center(C0.cpt8) radius 30
+  divide S8 into 10
+  circle S9 center(C0.cpt9) radius 30
+  divide S9 into 10
+  boundary outline = union(C0, S0, S1, S2, S3, S4, S5, S6, S7, S8, S9)
+
+pattern medallion on medallion
+  layer 0
+    connect every 4 on C1
+    connect every 3 on C1
+    connect every 2 on C1
+
+  layer 1
+    extend connect every 4 on S0 beyond 1.5
+    extend connect every 4 on S1 beyond 1.5
+    extend connect every 4 on S2 beyond 1.5
+    extend connect every 4 on S3 beyond 1.5
+    extend connect every 4 on S4 beyond 1.5
+    extend connect every 4 on S5 beyond 1.5
+    extend connect every 4 on S6 beyond 1.5
+    extend connect every 4 on S7 beyond 1.5
+    extend connect every 4 on S8 beyond 1.5
+    extend connect every 4 on S9 beyond 1.5
+
+  layer 2
+    connect every 3 on Cmid
+
+  layer 3
+    connect every 4 on Cmid2
+
+  # iter-28: tiny central {20/3} in spatially-isolated layer 4
+  layer 4
+    connect every 3 on Cstar20
+
+  clip pattern to outline
+
+  strapwork
+      width 5
+      crossing over
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 20 color navy
+  fill void where sides >= 5 color cobalt
+
+  edges color navy width 0.5

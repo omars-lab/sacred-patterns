@@ -1,0 +1,76 @@
+# Medallion-10: Iteration 39 — Hankin star motif in lens pockets (2026-06-10)
+#
+# DELTA-FROM-ITER-38: one construction idea — the lens hexagons' fixed 3-chord
+# pair-table decoration is swapped for the Hankin 54° star motif via the new
+# `pockets star` variant (bikar a0680d8). iter-38's verdict routed the 74.2%
+# plateau as STRUCTURAL: the reference shows genuine star motifs inside every
+# decagon-overlap lens, which midpoint chords cannot express. The star motif
+# is a closed 10-segment loop through all 6 lens-edge midpoints (4 interior
+# star points at the 144° corners + 2 straight midpoint chords at the 72°
+# corners), tagged `_girih_hexagon_star`, woven by the strapwork pass like any
+# other decoration line.
+#
+# Final form chosen BY ABLATION (see iterations/39/visual-verdict.md):
+# (1) `pockets` -> `pockets star`; (2)+(3) the pocket classify/fill keep
+# iter-38's shape (cobalt on the big in-lens faces, small slivers fall through
+# to the sides rules) with the source retargeted to `_girih_hexagon_star` and
+# the stale sides==3 guard dropped (the star vocabulary has ~12 faces/lens of
+# mixed side counts; a bare source guard floods the whole field cyan because
+# lenses tile the inter-rosette field — area>=360 keeps the ~610 big faces).
+# TRIED AND REVERTED: a two-role split via the new `!=` comparator (enclosed
+# star faces cobalt / corner faces navy) — looked closer to the reference's
+# navy field to the eye, but ablation measured it at -2.3 pixel vs this form
+# (72.4 vs 74.7). Same lesson as iter-38's kite remap: only an ablation render
+# validates a remap. The debugging also surfaced + fixed a parser bug: queried
+# source names were never registered, so kernel-applied tags
+# (`_girih_outline`) resolved as "absent" for every face, making `!=`
+# vacuously true (bikar task #31; regression test in evaluator.test.ts).
+#
+# Carried from iter-38 (unchanged): kite remap REVERTED BY ABLATION (-0.9
+# alone — center samples lied for kites); white-majority buckets never
+# remapped (metric-temptation guard); area threshold 360 model-units ~= 400px^2
+# at the 996px render still gates the big-pentagon royal split.
+
+pattern medallion10_iter39
+  girih field decagonal 62 shells 2 pockets star
+
+  # The field emits strapwork segments; voids detect closes them into faces so
+  # the gt-emitter has shapes to measure (without this, gt.json has 0 shapes).
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #262E3D
+      navy = #132A61
+      royal = #2B61B7
+      cobalt = #32B0CA
+      turquoise = #BBC5D5
+
+  # Classify rules give every face a face_class — bikar's gt-emitter drops
+  # unclassified polygons, so without these the field renders but exports 0
+  # shapes (the iter-33 first-render finding, 2026-05-28).
+  classify .pocket where source == _girih_hexagon_star and area >= 360
+  classify .deep_navy where sides == 10
+  classify .royal where sides == 4
+  classify .turquoise where sides == 3
+  classify .cobalt where sides == 5
+  classify .navy where sides >= 6
+
+  fill void where source == _girih_hexagon_star and area >= 360 color cobalt
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 5 and area >= 360 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 5 color cobalt
+  fill void where sides >= 6 color navy
+
+  # Edges near-invisible: the white strapwork bands carry the line work now, so
+  # the tile/decoration edge strokes would only add clutter under the bands.
+  edges color deep_navy width 0.2
+
+  # Slice-4 overlay: weave the decoration centerlines into white interlacing
+  # bands. Deco-only weaving (bikar#653 kernel change) excludes tile outlines so
+  # the band network traces the rosette motif, not the tiling scaffold.
+  strapwork
+      width 8
+      crossing alternating
+      color #FFFFFF

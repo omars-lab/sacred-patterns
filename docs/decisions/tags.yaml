@@ -22,6 +22,7 @@ ci-coverage-telemetry: CI gates, coverage scope, telemetry snapshots, fixtures, 
 bikar-construction: bikar-side construction primitives (clip / fill-void / merge / line / girih / mirror-rotate).
 
 # --- sacred-patterns-specific problem domains (orchestrator-level) ---
+session-artifact-storage: Where reconstruction-session artifacts live — code (.bkr/.py/.md/session.json) in git sessions/<name>/, images (.png/.svg/big .json) in Dropbox, handoff+plans in .claude/ (the mirror-layout split).
 dsl-tagging: Universal DSL tagging — the producer-of-record metadata contract.
 critical-path-workstream: Unblocking / sequencing the critical-path workstream across repos.
 loop-terminal-condition: What "done" means for the autonomous iteration / learn-new-pattern loop — the converged/stagnation/budget terminal states and the idle-vs-blocked distinction.

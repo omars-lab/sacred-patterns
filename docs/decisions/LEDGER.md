@@ -15,6 +15,7 @@ problem (present-options skill §0). Schema: `docs/decision-schema.md`.
 | `dsl-tagging` | docs/decisions/2026-05-20-universal-dsl-tagging.md | ACCEPTED | A | ★ | — |
 | `loop-terminal-condition` | docs/decisions/2026-06-07-loop-terminal-condition.md | ACCEPTED | C | ★ | — |
 | `portal-hypothesis-handoff` | docs/decisions/2026-06-10-portal-hypothesis-handoff.md | ACCEPTED | A | ★ | — |
+| `session-artifact-storage` | docs/decisions/2026-06-15-session-artifact-storage.md | ACCEPTED | A | ★ | — |
 
 _★ = the live authoritative doc for that tag (ACCEPTED, not superseded)._
 

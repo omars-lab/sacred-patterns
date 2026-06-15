@@ -1,0 +1,77 @@
+# Medallion-10: Iteration 13 — Tune Cmid radius + add second middle ring
+#
+# Iter 12 baseline (from validation/svg-audit.json):
+#   A6 1/18 PASS (binary score didn't change), but net +3 shape statuses improved.
+#   Major win: transition--star-v8 0/4 -> 2/4 PASS, transition star-v6 closer.
+#   Major regression: rosette--star-v6 13/28 -> 4/28 (the Cmid ring at radius 65
+#   crossed through the rosette zone and fragmented its 6-pt stars).
+#
+# Mechanical edit: move Cmid further out (radius 80) so it sits IN the
+# transition zone instead of cutting through the rosette zone. Add a
+# second middle ring Cmid2 at radius 50 to address inner-star polygon-v0
+# (currently 18/21, very close to PASS — one more construction line should
+# close it).
+#
+# Translation table mapping:
+# - "rosette star-v6 regression" = wrong-shape / param-drift on radius.
+#   Fix: adjust the radius parameter on Cmid.
+# - "inner-star polygon-v0 PARTIAL 18/21" = baseline-shape-partial almost-PASS.
+#   Fix: add construction at appropriate radius to close the gap.
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  circle C1 center(0,0) radius 30
+  divide C1 into 10
+  # Cmid2: inner middle ring (NEW iter 13) — radius 50, between C1 and Cmid
+  circle Cmid2 center(0,0) radius 50
+  divide Cmid2 into 10
+  # Cmid: middle ring (was 65 in iter 12, now 80 to sit IN transition zone)
+  circle Cmid center(0,0) radius 80
+  divide Cmid into 10
+  repeat at C0 depth 1
+    circle center($point) radius 0.3 * $radius
+    divide into 10
+
+pattern medallion on medallion
+  # Layer 0: Central {10/4} rosette on C1
+  layer 0
+    connect every 4 on C1
+
+  # Layer 1: 10 satellite {10/4} rosettes
+  layer 1
+    connect every 4 on @0.0
+    connect every 4 on @0.1
+    connect every 4 on @0.2
+    connect every 4 on @0.3
+    connect every 4 on @0.4
+    connect every 4 on @0.5
+    connect every 4 on @0.6
+    connect every 4 on @0.7
+    connect every 4 on @0.8
+    connect every 4 on @0.9
+
+  # Layer 2: middle ring {10/3} (moved from radius 65 to 80)
+  layer 2
+    connect every 3 on Cmid
+
+  # Layer 3: NEW — inner middle ring {10/4} (close the inner-star polygon gap)
+  layer 3
+    connect every 4 on Cmid2
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 20 color navy
+  fill void where sides >= 5 color cobalt
+
+  edges color navy width 0.5

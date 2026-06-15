@@ -1,0 +1,117 @@
+# Medallion-10: Iteration 30 — Target inner-star rhombus-v4 verdict via new mid-band circle
+#
+# Pivot per iter-29 evaluation: stop chasing v20/star verdicts (cascade
+# philosophy mismatch per feedback_a6_baseline_construction_philosophy_mismatch).
+# Target a tractable A6 verdict: inner-star--rhombus-v4 (expected 10,
+# count_tolerance 2 → need ≥8 PASS).
+#
+# Inspection of iter-24 encoding.json:
+#   - 20 4-vertex shapes already exist in inner-star zone, all at
+#     distance_ratio 0.10–0.20 (centroids of C1 chord-rhombi at r≈25–50px).
+#   - Baseline expects rhombus-v4 at distance_ratio [0.251, 0.3877].
+#   - All 20 candidates fail the distance filter (after_filter=0).
+#
+# Hypothesis: a chord-rhombus on a circle at r=R has its centroid at
+# ~R/2 distance ratio. C1 (r=30) chord rhombi land at ratio ~0.10–0.20.
+# To produce 10 rhombi with centroids in [0.251, 0.3877], introduce a
+# new circle at r≈60–65 with `connect every 4`. Centroids of every-4
+# chords on a 10-divided circle of radius 60 land at ratio ~0.30,
+# inside the target band.
+#
+# Cinner1 r=60, divide into 10, connect every 4 produces 10 chord-
+# crossings forming the rhombus-v4 pattern. Each rhombus has 4
+# vertices (2 from chord crossings on Cinner1 + chord intersections).
+#
+# Predicted Δ vs iter-25 (cascade local-optimum base):
+#   - A6 inner-star--rhombus-v4: MISSING (0/10) → PASS (target ≥8)
+#   - A6 score: depends on 18-shape baseline scoring — at minimum +1/18
+#   - A2/A4/A5: hold near iter-25 ceilings (cv 0.0365, FULL, COMPLETE)
+#   - Risk: new chord layer subdivides existing faces → may degrade
+#     other verdicts (polygon-v0 PARTIAL, polygon-v3 EXCESS)
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  circle C1 center(0,0) radius 30
+  divide C1 into 10
+  # iter-30: rhombus-v4 distance-filter probe circle
+  # r=60 chosen so chord-rhombus centroids land at distance_ratio ~0.30
+  # (inside baseline's [0.251, 0.3877] inner-star rhombus-v4 band)
+  circle Crhom center(0,0) radius 60
+  divide Crhom into 10
+  circle Cmid2 center(0,0) radius 50
+  divide Cmid2 into 10
+  circle Cmid center(0,0) radius 80
+  divide Cmid into 10
+  circle S0 center(C0.cpt0) radius 30
+  divide S0 into 10
+  circle S1 center(C0.cpt1) radius 30
+  divide S1 into 10
+  circle S2 center(C0.cpt2) radius 30
+  divide S2 into 10
+  circle S3 center(C0.cpt3) radius 30
+  divide S3 into 10
+  circle S4 center(C0.cpt4) radius 30
+  divide S4 into 10
+  circle S5 center(C0.cpt5) radius 30
+  divide S5 into 10
+  circle S6 center(C0.cpt6) radius 30
+  divide S6 into 10
+  circle S7 center(C0.cpt7) radius 30
+  divide S7 into 10
+  circle S8 center(C0.cpt8) radius 30
+  divide S8 into 10
+  circle S9 center(C0.cpt9) radius 30
+  divide S9 into 10
+  boundary outline = union(C0, S0, S1, S2, S3, S4, S5, S6, S7, S8, S9)
+
+pattern medallion on medallion
+  layer 0
+    connect every 4 on C1
+    connect every 3 on C1
+    connect every 2 on C1
+
+  layer 1
+    extend connect every 4 on S0 beyond 1.5
+    extend connect every 4 on S1 beyond 1.5
+    extend connect every 4 on S2 beyond 1.5
+    extend connect every 4 on S3 beyond 1.5
+    extend connect every 4 on S4 beyond 1.5
+    extend connect every 4 on S5 beyond 1.5
+    extend connect every 4 on S6 beyond 1.5
+    extend connect every 4 on S7 beyond 1.5
+    extend connect every 4 on S8 beyond 1.5
+    extend connect every 4 on S9 beyond 1.5
+
+  layer 2
+    connect every 3 on Cmid
+
+  layer 3
+    connect every 4 on Cmid2
+
+  # iter-30: rhombus-v4 probe — connect every 4 on Crhom (r=60)
+  layer 5
+    connect every 4 on Crhom
+
+  clip pattern to outline
+
+  strapwork
+      width 5
+      crossing over
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 20 color navy
+  fill void where sides >= 5 color cobalt
+
+  edges color navy width 0.5

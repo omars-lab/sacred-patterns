@@ -1,0 +1,67 @@
+# Medallion-10: Iteration 35 — bold straps: width 6 → 8 (portal gap, 2026-06-10)
+#
+# iter-33 (commit ddb2e98 girih field) converged the gap-free decagonal field
+# but renders it as flat blue filled faces — A5 band-integrity scored 0 BY
+# DESIGN because no strapwork is woven. iter-34 is the deferred Slice-4 half of
+# the girih-ceiling decision (bikar docs/decisions/2026-05-28-medallion10-girih-
+# ceiling.md, close-2): a RENDER-STYLE upgrade that draws the SAME decoration
+# centerlines the field already emits as white interlacing strapwork bands —
+# recovering the reference's defining white-lattice-over-blue-stars look and
+# making A5 live.
+#
+# Per memory feedback_girih_strapwork_is_render_style_not_geometry: strapwork is
+# HOW the decoration lines are drawn (woven over/under bands), NOT new tile
+# geometry or pocket-filling. computeStrapwork (evaluator.ts:631) runs over the
+# full edgeGraph; girihTileSegments(tile, withDecoration=true) already pushed the
+# decoration centerlines into env.segments (evaluator.ts:2183), so the band
+# weaver has lines to weave with no construction change.
+#
+# DELTA-FROM-ITER-34: strapwork width 6 -> 8 only (probed 12 and 10 first; both wash out the dense center). The deco-only weave fixed
+# the strand COUNT (5640 -> 2790); the portal reviewer still read the bands as
+# "far too fine — dense mesh instead of bold straps". Measured strap-to-rosette
+# ratio: reference ~6%, iter-34 ~2.5-3%. Width 12 (the ratio-matching guess) merges
+# bands into white mass at the dense center; width 8 is the widest setting that
+# keeps the center star and ring tiles legible — the residual gap to the
+# reference's boldness is network DENSITY (deferred pocket-stars), not width. Field
+# geometry, palette, classify, fill, edges all unchanged from iter-34.
+
+pattern medallion10_iter35
+  girih field decagonal 62 shells 2
+
+  # The field emits strapwork segments; voids detect closes them into faces so
+  # the gt-emitter has shapes to measure (without this, gt.json has 0 shapes).
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  # Classify rules give every face a face_class — bikar's gt-emitter drops
+  # unclassified polygons, so without these the field renders but exports 0
+  # shapes (the iter-33 first-render finding, 2026-05-28).
+  classify .deep_navy where sides == 10
+  classify .royal where sides == 4
+  classify .turquoise where sides == 3
+  classify .cobalt where sides == 5
+  classify .navy where sides >= 6
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 5 color cobalt
+  fill void where sides >= 6 color navy
+
+  # Edges near-invisible: the white strapwork bands carry the line work now, so
+  # the tile/decoration edge strokes would only add clutter under the bands.
+  edges color deep_navy width 0.2
+
+  # Slice-4 overlay: weave the decoration centerlines into white interlacing
+  # bands. Deco-only weaving (bikar#653 kernel change) excludes tile outlines so
+  # the band network traces the rosette motif, not the tiling scaffold.
+  strapwork
+      width 8
+      crossing alternating
+      color #FFFFFF

@@ -1,0 +1,78 @@
+# Medallion-10: Iteration 23 — Slice 2 validation of bikar#114 PR1
+#
+# Re-runs iter-16's exact pattern (`crossing over`, width 5) against
+# bikar HEAD with commit 8bc6735 (canonicalEdgeOrder in assignStrands).
+#
+# Iter 16 (pre-fix): composite=0.6089, A2 cv=0.2671 (BROKEN), 247
+# sector-fragmenting strapwork extras. Root cause: assignStrands outer
+# loop seeded by graph.edges insertion order — rotation permutes the
+# array but the seed picker doesn't, so the same physical edge ended
+# up in different strands across rotated copies.
+#
+# Iter 23 hypothesis (Slice 2 validation):
+#   - A2 cv drops from 0.2671 back toward iter-14's 0.067.
+#   - A5 holds PARTIAL.
+#   - 247 sector-fragmenting extras decreases substantially.
+#   - composite recovers above iter-16's 0.6089 (target: > 0.74).
+#
+# If A2 cv < 0.10 → PR1 validated end-to-end, Slice 2 complete,
+# bikar#114 ready to mark RESOLVED.
+# If A2 cv ≥ 0.10 → PR1 tie-breaks misbehave on medallion-10's
+# polar geometry; trigger PR2 (orbit detection per approach B).
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  circle C1 center(0,0) radius 30
+  divide C1 into 10
+  circle Cmid2 center(0,0) radius 50
+  divide Cmid2 into 10
+  circle Cmid center(0,0) radius 80
+  divide Cmid into 10
+  repeat at C0 depth 1
+    circle center($point) radius 0.3 * $radius
+    divide into 10
+
+pattern medallion on medallion
+  layer 0
+    connect every 4 on C1
+    connect every 3 on C1
+
+  layer 1
+    connect every 4 on @0.0
+    connect every 4 on @0.1
+    connect every 4 on @0.2
+    connect every 4 on @0.3
+    connect every 4 on @0.4
+    connect every 4 on @0.5
+    connect every 4 on @0.6
+    connect every 4 on @0.7
+    connect every 4 on @0.8
+    connect every 4 on @0.9
+
+  layer 2
+    connect every 3 on Cmid
+
+  layer 3
+    connect every 4 on Cmid2
+
+  strapwork
+      width 5
+      crossing over
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 20 color navy
+  fill void where sides >= 5 color cobalt
+
+  edges color navy width 0.5

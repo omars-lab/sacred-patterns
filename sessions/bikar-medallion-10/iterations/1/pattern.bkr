@@ -1,0 +1,38 @@
+# Medallion-10: Iteration 1 — Central Star Attempt
+# Reference: 10-fold medallion with satellite rosettes
+# Analysis: {10/4} primary star, white strapwork, 5-shade blue palette
+#
+# Approach: depth-1 only (no satellites yet), focus on central star
+#   connect every 4 for primary star + connect every 2 for secondary
+#   strapwork for white interlaced bands
+#   face-type coloring (sides-based) for the blue palette
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  polygon decagon
+      [C0.cpt0 C0.cpt1 C0.cpt2 C0.cpt3 C0.cpt4 C0.cpt5 C0.cpt6 C0.cpt7 C0.cpt8 C0.cpt9]
+  repeat at C0 depth 1
+    circle center($point) radius $radius
+    divide into 10
+
+pattern medallion on medallion
+  connect every 4
+  connect every 2
+  edges from decagon
+  strapwork
+      width 6
+      crossing alternating
+  voids detect
+  palette persian_blue
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      cerulean = #5DADE2
+      turquoise = #48C9B0
+  fill void where sides == 10 color navy
+  fill void where sides == 3 color turquoise
+  fill void where sides == 4 color cobalt
+  fill void where sides == 5 color royal
+  fill void where sides >= 6 color cerulean
+  edges color navy width 0

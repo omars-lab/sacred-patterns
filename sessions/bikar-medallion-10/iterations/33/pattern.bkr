@@ -1,0 +1,50 @@
+# Medallion-10: Iteration 33 — gap-free decagonal girih field (2026-05-28)
+#
+# Per the girih-ceiling decision doc (bikar docs/decisions/2026-05-28-
+# medallion10-girih-ceiling.md, Option C″) and the Slice-3 plan
+# (bikar .claude/plans/girih-substitution-rule-engine.md): iters 13-18 hit a
+# ceiling because the connect-on-circle construction can't produce the
+# φ-interlocked overlapping-decagon field the medallion-10 reference actually
+# is. iter-33 replaces that approach with the new `girih field decagonal` DSL
+# statement (bikar Slice 2, commit ddb2e98), which grows a gap-free field
+# outward from a central decagon by attaching tiles to every exposed edge
+# (shell-BFS via the tested attachGirihTile seam-solver).
+#
+# This answers decision-doc Q1: does a real gap-free field clear the A6 zone
+# bands, or is A5 (band-network) still the right metric?
+#
+# DELTA-FROM-ITER-18: total construction change — connect/{10/k}-overlay
+# replaced by girih field. Edge length 62 puts the central decagon circumradius
+# at ~100 (matches the iter-13..18 C0 radius); shells 2 grows the field to
+# ~radius 160 to cover the satellite-rosette ring.
+
+pattern medallion10_iter33
+  girih field decagonal 62 shells 2
+
+  # The field emits strapwork segments; voids detect closes them into faces so
+  # the gt-emitter has shapes to measure (without this, gt.json has 0 shapes).
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  # Classify rules give every face a face_class — bikar's gt-emitter drops
+  # unclassified polygons, so without these the field renders but exports 0
+  # shapes (the iter-33 first-render finding, 2026-05-28).
+  classify .deep_navy where sides == 10
+  classify .royal where sides == 4
+  classify .turquoise where sides == 3
+  classify .cobalt where sides == 5
+  classify .navy where sides >= 6
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 5 color cobalt
+  fill void where sides >= 6 color navy
+
+  edges color navy width 0.5

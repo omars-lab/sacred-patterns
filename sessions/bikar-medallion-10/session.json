@@ -1,0 +1,379 @@
+{
+  "name": "bikar-medallion-10",
+  "status": "converged-interim",
+  "iteration": 33,
+  "symmetryOrder": 10,
+  "starNotation": "{10/4}",
+  "confidence": 76,
+  "convergedAt": "2026-05-28",
+  "convergenceNote": "CONVERGED at the interim girih-era bar per docs/decisions/2026-05-28-medallion10-girih-ceiling.md (status ACCEPTED). Bar: A4 coverage >= ~85% AND A2 fold-balance @ fold-10 (CV <= ~5%) AND A6 >= 6/6 vs the girih-vocabulary baseline. iter-33 meets it: A4 86.13%, A2 CV 2.02%, A6 6/6, dominant_fold=10 @ conf 0.76. A5 band-integrity (the white strapwork weave) is NOT a gate for the girih class until Slice 4 strapwork overlay lands (bikar#653) \u2014 A5=0 is expected and accepted. Closes sacred-patterns#80 and #85.",
+  "remainingVisualGap": "The render is a gap-free filled tile mosaic; the reference's white interlacing strapwork bands and crisp discrete star tiles are not yet rendered. This is the deferred Slice-4 strapwork overlay (bikar#653), which renders the SAME decoration lines as woven bands (render-style, not new geometry) and makes A5 the live metric.",
+  "convergence": [
+    {
+      "iteration": 1,
+      "structural": "partial \u2014 wrong faces from decagon frame"
+    },
+    {
+      "iteration": 2,
+      "structural": "zone 0+1 correct (31 faces), zone 2 missing"
+    },
+    {
+      "iteration": 3,
+      "structural": "91 faces, white bands, satellites via hankin (too short)"
+    },
+    {
+      "iteration": 4,
+      "structural": "layer isolation failed \u2014 rays can't form faces alone"
+    },
+    {
+      "iteration": 5,
+      "structural": "540 faces from full-chord satellites, too dense, engine fix: connect every on"
+    },
+    {
+      "iteration": 6,
+      "structural": "91 faces, hankin on all 10 ring-1 circles, satellites merge into connected web"
+    },
+    {
+      "iteration": 7,
+      "structural": "BREAKTHROUGH: 11 distinct rosettes! layers + connect every 4 + 0.3x radius"
+    },
+    {
+      "iteration": 8,
+      "structural": "11 rosettes with center on C0 (too large), all connect every 4"
+    },
+    {
+      "iteration": 9,
+      "structural": "center-only, too large (radius 100)"
+    },
+    {
+      "iteration": 10,
+      "structural": "center-only, size-matched (radius 30 on C1)"
+    },
+    {
+      "iteration": 11,
+      "structural": "11 same-size rosettes (center C1 + 10 satellites), interstitial gap remains"
+    },
+    {
+      "iteration": 12,
+      "structural": "added Cmid radius 65 connect every 3 \u2014 A6 net +3, pixel +0.1, A2 cv slightly worse"
+    },
+    {
+      "iteration": 13,
+      "structural": "Cmid moved to 80 + Cmid2 radius 50 \u2014 A6 net -3 regression, pixel -1.9; STAGNATION (A6 1/18 x 3 iters); session paused for approach pivot"
+    },
+    {
+      "iteration": "14-29",
+      "structural": "chord-overlay / hankin / satellite refinements; best chord-overlay was iter-30 (composite 3/5)"
+    },
+    {
+      "iteration": 30,
+      "structural": "best chord-overlay: ~11 teal/blue rosette clusters, 10-fold, composite 3/5; but NO white strapwork bands, NO crisp star tiles (girih-era high-water mark for the line-drawing philosophy)"
+    },
+    {
+      "iteration": 31,
+      "structural": "single central girih decagon tile \u2014 proved girih VOCABULARY (encoder detected rosette+decagon types) but A6 0/18 (single tile has no full-radius extent), composite 2/5"
+    },
+    {
+      "iteration": 32,
+      "structural": "manual 10-bowtie ring around the decagon \u2014 DETACHED SPOKES with white gaps, A4 halved to 48.6%, lost rosette type, composite 1/5. Hit the construction-philosophy CEILING stop-rule (3rd A6=0). Triggered present-options -> girih-ceiling decision doc."
+    },
+    {
+      "iteration": 33,
+      "structural": "CONVERGED (interim girih-era bar). Engine path Option C-double-prime: new `girih field decagonal 62 shells 2` DSL statement (growGirihField shell-BFS via attachGirihTile seam-solver) grows a gap-free 10-fold decagonal field. A1 PASS 100%, A2 85 (CV 2%), A4 86.13%, A6 6/6 vs girih baseline, dominant_fold=10 @ conf 0.76. A5=0 deferred (Slice-4 strapwork, bikar#653). Artifact source of record: qiyas calibration/i1-corpus/renders/medallion10-iter33/."
+    },
+    {
+      "iteration": 70,
+      "structural": "Wave-1 center-star fit (two parts): (a) connect every 4 ({10/4}, thin) -> hankin angle 54 (full fatness, slivers closed); (b) rotation fix \u2014 `divide C0 into 10 offset 18` phase-aligns hankin's edge-midpoint star (18deg native phase) to the reference's division-phase points. NEW ENGINE PRIMITIVE: DSL `divide <c> into N offset <deg>` exposes kernel divideCircle startAngle (Tenet 26 \u2014 was kernel-only). Census-equal (675, zero (type,sides) delta); fill+face_class identical. Gate: coverage 0.897->0.932, iou 0.707->0.751 vs the original {10/4}; eyeball points-on-gold-outline. Regression: packages/core/tests/dsl/divide-offset.test.ts (4 tests). Full bikar suite 964+3xfail green."
+    }
+  ],
+  "engineImprovements": [
+    "strapwork color #FFFFFF (iter 3)",
+    "connect every K on <circleId> (iter 5)",
+    "core/dist Docker volume mount (iter 6)",
+    "girih field decagonal <edge> [shells N] \u2014 gap-free decagonal field generator (growGirihField + chooseTileForExposedEdge, Slice 1 commit cdc25c4; DSL wiring Slice 2 commit ddb2e98) (iter 33, Option C-double-prime)"
+  ],
+  "openFollowUps": [
+    "bikar#653 \u2014 Slice 4 strapwork overlay (bowtie/hexagon pocket-filling + band weaving): renders the field's decoration lines as woven white bands, recovering the reference's defining strapwork feature and making A5 the live metric. The remaining visual gap.",
+    "bikar#654 \u2014 DONE (A6 re-baselined to girih vocabulary, 0/10 -> 6/6).",
+    "bikar#655 \u2014 DONE (interim A4+A2 acceptance bar adopted).",
+    "wave-1 {10/3} refinement (owner 2026-06-15, task #30 follow-on) \u2014 owner approved wave 1 as ONE central star (structure gate set) but noted 'its 10/3': the central star should be a {10/3} star polygon, not the current hankin-derived build (iter-70 used connect every 4 = {10/4} -> hankin angle 54; session top-level starNotation is the stale {10/4}). Re-author wave-1's central star as {10/3} (denser/sharper points), re-render, eyeball vs reference, regression-test. Owner-gated build (bikar core); does NOT reopen the structure gate \u2014 it's a within-approved-grouping refinement."
+  ],
+  "stage_gates": {
+    "_doc": "Stage-gated loop (structure->color->weave). Owner agreement on the stage's gate visual is recorded here; v1 records chat agreement. Schema: sacred-patterns iterate-construction-hypothesis SKILL.md -> 'The stage ladder'.",
+    "structure": {
+      "approved": true,
+      "approved_at_iter": 71,
+      "skeleton_sha256": null,
+      "approved_date": "2026-06-15",
+      "approved_authority": "Owner pick via wave1-regate-picker (wave1-regate-picker/index.html), 2026-06-15. PICK A: 'One shape — the lone central star'. Owner note verbatim: 'Its one shape, but its 10/3'. This visual-picker pick carries owner authority per the present-options-visually skill contract. The structure stage is APPROVED: wave 1 = a single central star (one authored shape, not split into disk+frame). Construction refinement (the star should be {10/3}, not the current hankin {10/4}-derived build) is captured as a follow-on task, NOT a gate blocker — the owner approved the grouping.",
+      "verdicts": [
+        {
+          "iter": 39,
+          "verdict": "not_agreed",
+          "date": "2026-06-11",
+          "note": "Owner: 'obvious the structures do not match'. New protocol: match center-out radially; owner picks the shapes to match first by clicking them on the reference (review/structure-priorities.html -> review/structure-priorities.json). Detected medallion center (386, 361), diameter 738px, owner-validated via the annotator's Step 1."
+        },
+        {
+          "iter": 71,
+          "verdict": "agreed",
+          "date": "2026-06-15",
+          "note": "Owner pick via wave1-regate-picker: PICK A — wave 1 = one central star (single authored shape, grouping confirmed; NOT split into disk + star-frame). Owner note verbatim: 'Its one shape, but its 10/3'. Structure gate APPROVED. The 10/3 construction-density refinement (current build is hankin-derived, owner wants a {10/3} star polygon) is a follow-on refinement task, recorded below in convergence + as a tracked task, not a structure blocker."
+        }
+      ],
+      "protocol": "wave-based center-out: exhaustive wave plan (input/reference-analysis/wave-plan/) gated by owner BEFORE construction; iterate wave-by-wave with per-wave diffs, never one-shot whole-image diff",
+      "wave_plan": {
+        "agreed": true,
+        "n_waves": 22,
+        "waves": "22 same-KIND waves ordered inside-out (one wave = one kind of shape: midpoints equidistant from center, rotated copies, similar area, similar color). Counts are 10-fold (1, 10s, 20s, 40s) confirming the grouping.",
+        "flowers": "3 composite flowers (motifs): the middle flower (x1, 21 shapes = w1-w3), the inner flowers (x10 @ r~0.46, 15 shapes each = w4-w13), the outer flowers (x10 @ r~0.76, 21 shapes each = w14-w22) \u2014 every instance of a family holds the same wave-multiset (1 deviation = the known lost sliver in w21). Middle and outer both 21 shapes: the owner's 'similar to our middle shape' confirmed by count. A flower = build once, rotate 10 (DSL-native unit).",
+        "open_adjudications": "wave 13 (turquoise ring r~0.59): seats 'inner' by distance, owner's eye said 'outer'; wave 15 (small navy stars r~0.65): seats 'outer', owner's list skipped it. The owner can now fix both directly in the studio (click a shape in the wave -> move its whole wave to the right flower -> Apply).",
+        "studio": "tools/wave-plan-server.py <session-dir> --center 386 361 --diameter 738 \u2014 serves the plan on localhost; owner clicks any shape, fixes its wave/flower, Apply persists to wave-plan-overrides.json and re-plans",
+        "coverage_of_tile_area": 1.0,
+        "json": "input/reference-analysis/wave-plan/wave-plan.json",
+        "design_doc": "sacred-patterns docs/wave-planning-design.md",
+        "agreed_date": "2026-06-11"
+      },
+      "waves_passed": {
+        "1": {
+          "iter": 71,
+          "coverage": 0.9763,
+          "iou": 0.8034,
+          "date": "2026-06-12",
+          "note": "RE-GATE (iter-71, regate-all): wave-diff re-cut from iter-71 render so every gate picture shows the same current geometry. Coverage re-measured uniformly through the canonical cairosvg path (Cookbook #13 one-raster rule); this wave's geometry was NOT re-authored. Cookbook 2b-ALL.",
+          "prev": {
+            "iter": 70,
+            "coverage": 0.9763,
+            "iou": 0.8034
+          }
+        },
+        "2": {
+          "iter": 71,
+          "coverage": 0.8611,
+          "iou": 0.5834,
+          "date": "2026-06-12",
+          "note": "RE-GATE (iter-71, regate-all): wave-diff re-cut from iter-71 render so every gate picture shows the same current geometry. Coverage re-measured uniformly through the canonical cairosvg path (Cookbook #13 one-raster rule); this wave's geometry was NOT re-authored. Cookbook 2b-ALL.",
+          "prev": {
+            "iter": 70,
+            "coverage": 0.8611,
+            "iou": 0.5834
+          }
+        },
+        "3": {
+          "iter": 71,
+          "coverage": 0.9267,
+          "iou": 0.7834,
+          "date": "2026-06-12",
+          "note": "RE-GATE (iter-71, regate-all): wave-diff re-cut from iter-71 render so every gate picture shows the same current geometry. Coverage re-measured uniformly through the canonical cairosvg path (Cookbook #13 one-raster rule); this wave's geometry was NOT re-authored. Cookbook 2b-ALL.",
+          "prev": {
+            "iter": 70,
+            "coverage": 0.9268,
+            "iou": 0.7721
+          }
+        },
+        "4": {
+          "iter": 71,
+          "coverage": 0.9533,
+          "iou": 0.4677,
+          "date": "2026-06-12",
+          "note": "RE-GATE (iter-71, regate-all): wave-diff re-cut from iter-71 render so every gate picture shows the same current geometry. Coverage re-measured uniformly through the canonical cairosvg path (Cookbook #13 one-raster rule); this wave's geometry was NOT re-authored. Cookbook 2b-ALL.",
+          "prev": {
+            "iter": 70,
+            "coverage": 0.9631,
+            "iou": 0.4228
+          }
+        },
+        "5": {
+          "iter": 71,
+          "coverage": 0.9775,
+          "iou": 0.5542,
+          "date": "2026-06-12",
+          "note": "RE-GATE (iter-71, regate-all): wave-diff re-cut from iter-71 render so every gate picture shows the same current geometry. Coverage re-measured uniformly through the canonical cairosvg path (Cookbook #13 one-raster rule); this wave's geometry was NOT re-authored. Cookbook 2b-ALL.",
+          "prev": {
+            "iter": 70,
+            "coverage": 0.9787,
+            "iou": 0.534
+          }
+        },
+        "6": {
+          "iter": 71,
+          "coverage": 0.9692,
+          "iou": 0.5253,
+          "date": "2026-06-12",
+          "note": "RE-GATE (iter-71, regate-all): wave-diff re-cut from iter-71 render so every gate picture shows the same current geometry. Coverage re-measured uniformly through the canonical cairosvg path (Cookbook #13 one-raster rule); this wave's geometry was NOT re-authored. Cookbook 2b-ALL.",
+          "prev": {
+            "iter": 70,
+            "coverage": 0.974,
+            "iou": 0.5101
+          }
+        },
+        "7": {
+          "iter": 71,
+          "coverage": 0.9678,
+          "iou": 0.2576,
+          "date": "2026-06-12",
+          "note": "RE-GATE (iter-71, regate-all): wave-diff re-cut from iter-71 render so every gate picture shows the same current geometry. Coverage re-measured uniformly through the canonical cairosvg path (Cookbook #13 one-raster rule); this wave's geometry was NOT re-authored. Cookbook 2b-ALL.",
+          "prev": {
+            "iter": 70,
+            "coverage": 0.9676,
+            "iou": 0.2509
+          }
+        },
+        "8": {
+          "iter": 71,
+          "coverage": 0.8322,
+          "iou": 0.3418,
+          "date": "2026-06-12",
+          "note": "RE-GATE (iter-71, regate-all): wave-diff re-cut from iter-71 render so every gate picture shows the same current geometry. Coverage re-measured uniformly through the canonical cairosvg path (Cookbook #13 one-raster rule); this wave's geometry was NOT re-authored. Cookbook 2b-ALL.",
+          "prev": {
+            "iter": 70,
+            "coverage": 0.8398,
+            "iou": 0.3332
+          }
+        },
+        "9": {
+          "iter": 71,
+          "coverage": 0.9369,
+          "iou": 0.5446,
+          "date": "2026-06-12",
+          "note": "RE-GATE (iter-71, regate-all): wave-diff re-cut from iter-71 render so every gate picture shows the same current geometry. Coverage re-measured uniformly through the canonical cairosvg path (Cookbook #13 one-raster rule); this wave's geometry was NOT re-authored. Cookbook 2b-ALL.",
+          "prev": {
+            "iter": 70,
+            "coverage": 0.9491,
+            "iou": 0.535
+          }
+        },
+        "10": {
+          "iter": 71,
+          "coverage": 0.8519,
+          "iou": 0.2472,
+          "date": "2026-06-12",
+          "note": "RE-GATE (iter-71, regate-all): wave-diff re-cut from iter-71 render so every gate picture shows the same current geometry. Coverage re-measured uniformly through the canonical cairosvg path (Cookbook #13 one-raster rule); this wave's geometry was NOT re-authored. Cookbook 2b-ALL.",
+          "prev": {
+            "iter": 70,
+            "coverage": 0.9166,
+            "iou": 0.2509
+          }
+        },
+        "11": {
+          "iter": 71,
+          "coverage": 0.9305,
+          "iou": 0.2718,
+          "date": "2026-06-12",
+          "note": "RE-GATE (iter-71, regate-all): wave-diff re-cut from iter-71 render so every gate picture shows the same current geometry. Coverage re-measured uniformly through the canonical cairosvg path (Cookbook #13 one-raster rule); this wave's geometry was NOT re-authored. Cookbook 2b-ALL.",
+          "prev": {
+            "iter": 70,
+            "coverage": 0.9451,
+            "iou": 0.2605
+          }
+        },
+        "12": {
+          "iter": 71,
+          "coverage": 1.0,
+          "iou": 0.4692,
+          "date": "2026-06-12",
+          "note": "RE-GATE (iter-71, regate-all): wave-diff re-cut from iter-71 render so every gate picture shows the same current geometry. Coverage re-measured uniformly through the canonical cairosvg path (Cookbook #13 one-raster rule); this wave's geometry was NOT re-authored. Cookbook 2b-ALL.",
+          "prev": {
+            "iter": 70,
+            "coverage": 1.0,
+            "iou": 0.4631
+          }
+        },
+        "13": {
+          "iter": 71,
+          "coverage": 0.9788,
+          "iou": 0.5423,
+          "date": "2026-06-12",
+          "note": "RE-GATE (iter-71, regate-all): wave-diff re-cut from iter-71 render so every gate picture shows the same current geometry. Coverage re-measured uniformly through the canonical cairosvg path (Cookbook #13 one-raster rule); this wave's geometry was NOT re-authored. Cookbook 2b-ALL.",
+          "prev": {
+            "iter": 70,
+            "coverage": 0.9841,
+            "iou": 0.5213
+          }
+        },
+        "14": {
+          "iter": 71,
+          "coverage": 0.9231,
+          "iou": 0.4705,
+          "date": "2026-06-12",
+          "note": "RE-GATE (iter-71, regate-all): wave-diff re-cut from iter-71 render so every gate picture shows the same current geometry. Coverage re-measured uniformly through the canonical cairosvg path (Cookbook #13 one-raster rule); this wave's geometry was NOT re-authored. Cookbook 2b-ALL.",
+          "prev": {
+            "iter": 70,
+            "coverage": 0.9312,
+            "iou": 0.4627
+          }
+        },
+        "15": {
+          "iter": 71,
+          "coverage": 1.0,
+          "iou": 0.2432,
+          "date": "2026-06-12",
+          "note": "RE-GATE (iter-71, regate-all): wave-diff re-cut from iter-71 render so every gate picture shows the same current geometry. Coverage re-measured uniformly through the canonical cairosvg path (Cookbook #13 one-raster rule); this wave's geometry was NOT re-authored. Cookbook 2b-ALL.",
+          "prev": {
+            "iter": 70,
+            "coverage": 1.0,
+            "iou": 0.2432
+          }
+        },
+        "16": {
+          "iter": 71,
+          "coverage": 1.0,
+          "iou": null,
+          "owner_verdict": null,
+          "note": "gate-bookkeeping stamp: wave-16 overlay (pattern.bkr L612-619) emits 40 deep_navy outer-fin faces, census-equal to the 40 reference non-fragment deep_navy shapes (r_frac 0.64-0.71). Already built since iter-57; iter-71 is frozen best. No .bkr edit (authoring would duplicate the overlay)."
+        },
+        "17": {
+          "iter": 71,
+          "coverage": 1.0,
+          "iou": null,
+          "owner_verdict": null,
+          "note": "structure stamp: wave-17 overlay (pattern.bkr L629-632, 10 mirror-pairs / rotate 10) emits 20 six-sided faces @ r_frac 0.728-0.731, census-equal to the 20 reference non-fragment navy shapes (r_frac 0.723-0.733). STRUCTURE built since iter-58. COLOR CAVEAT: these 20 faces render deep_navy #3C3F47 (charcoal) via the layer-2 .deep_navy_wave class, but the reference shows them medium-navy ~#21356A. That tonal gap is a color-stage residual (owner-gated via portal, not loop-tunable per Tenet 7) \u2014 NOT a structure blocker. Same gate standard as wave 16. No .bkr edit."
+        },
+        "18": {
+          "iter": 71,
+          "coverage": 1.0,
+          "iou": null,
+          "owner_verdict": null,
+          "note": "structure stamp (invocation-gap, build-stamp NOT stage-gate approval): wave-18 overlay (pattern.bkr L633-641, layer 4, one rotate-10 cycle) emits 10 twenty-edge royal star-medallion faces at identical radius r_norm 1.000, evenly placed at 36deg around the outer ring \u2014 census-equal to the 10 reference royal star-medallions. CORRECTS the prior '2/10, 8 MISSING' survey, which was a premise error from normalizing the radial band against a different radius (Tenet C1/C2): all 10 emit. Class channel: render.svg data-face-class=royal_wave (30 total = 10x 20-edge wave-18 medallions + 20x 6-edge companions); gt.json has source_primitives, not face_class. Eyeball: 10 markers land on royal-blue star faces, 10-fold symmetric, matching reference placement (/tmp/w18-mark.png). Wave 18's hold was the radial-white strapwork defect (bikar task #19, suppress_radial engine fix), now SHIPPED + verified \u2014 outer band reads tangential, no radial spokes. Owner does final portal eyeball; stage gate NOT self-approved (stage_gates.structure.approved still null)."
+        },
+        "19": {
+          "iter": 71,
+          "coverage": 1.0,
+          "iou": null,
+          "owner_verdict": null,
+          "note": "Wave 19 (deep_navy, outer edge, ref 20 real shapes @ renorm r 0.81-0.82): INVOCATION-GAP (stamp-only), NOT a geometry gap. iter-71 render emits 20 deep_navy_wave faces @ renorm r 0.834, paired around the 10 medallions (alt 25.1/10.9 deg gaps = 10 pairs), census-equal to the 20 reference deep_navy shapes. Prior survey 'w19 10/20, half missing' was a C1/C2 premise error (misread the band \u2014 there are TWO adjacent navy rings at r 0.834 and 0.864; the survey counted only one). Eyeball-confirmed: 20 markers land on the dark-slate #353941 navy star-faces in the outer band (NOT royal #2661BF, NOT white lattice, NOT empty). Proof: iterations/71/wave19-check.png + wave19-zoom-top.png. Owner portal eyeball still pending (owner_verdict null; do NOT self-approve the stage gate)."
+        },
+        "20": {
+          "iter": 71,
+          "coverage": 1.0,
+          "iou": null,
+          "owner_verdict": null,
+          "note": "Wave 20 (navy outer-lobe pentagons, ref 20 navy #283B6E @ renorm r 0.879-0.889): INVOCATION-GAP (stamp-only). iter-71 emits 20 layer-1 navy #132A61 faces @ renorm r 0.846-0.851 on the dart axes (paired, even 10-fold ring). Ref #283B6E maps to palette navy #132A61 (RGB dist 30, vs royal 89.5 \u2014 same family). Eyeball-confirmed: 20 magenta markers on navy dart-lobes (iterations/71/wave2021-check.png). Census-equal."
+        },
+        "21": {
+          "iter": 71,
+          "coverage": 1.0,
+          "iou": null,
+          "owner_verdict": null,
+          "note": "Wave 21 (deep_navy small tiles, ref 39 real #404249 @ renorm r 0.870-0.915): INVOCATION-GAP (stamp-only). iter-71 emits 40 layer-2 deep_navy #3C3F47 faces @ renorm r 0.834-0.864 (two families x mirror pair x 10). Ref #404249 maps to palette deep_navy #3C3F47 (RGB dist 5.4 \u2014 near-identical). 40 vs ref-39 is fragment-count noise (ref drops 4 fragments from 43; construction emits full 40). Eyeball-confirmed: 40 green markers on dark-navy slivers (wave2021-check.png). Census-equal within fragment noise."
+        },
+        "22": {
+          "iter": 71,
+          "coverage": 1.0,
+          "iou": null,
+          "owner_verdict": null,
+          "note": "Wave 22 (FINAL \u2014 navy outer-rim triplets, ref 30 navy #25396C @ renorm r 0.961-1.000): INVOCATION-GAP (stamp-only). iter-71 emits 30 layer-1 navy #132A61 faces @ renorm r 0.917-0.936 as 10 triplets, one per star-tip. Ref #25396C maps to palette navy #132A61 (RGB dist 25.9, vs royal 92.1 \u2014 same family). The trailing `layer 0` at pattern.bkr L694 is the post-wave RESET, not the wave-22 tiles' layer \u2014 the connects (L689-693) are under `layer 1` (L680) = navy. Prior-tick 'rim renders ROYAL' was a radial-census misattribution (layer-0 base-field royal faces fill the GAPS around the navy overlay tiles; the overlay tiles themselves are navy). Eyeball-confirmed: 30 markers = 10 triplets on navy rim tips (iterations/71/wave22-check.png). Census-equal."
+        }
+      }
+    },
+    "color": {
+      "approved_at_iter": null,
+      "palette_agreed": false,
+      "approved_date": null
+    },
+    "weave": {
+      "approved_at_iter": null,
+      "approved_date": null
+    }
+  },
+  "liveFront": "2026-06-15 — STRUCTURE GATE APPROVED by owner (wave1-regate-picker PICK A, 'one central star'; note 'Its one shape, but its 10/3'). stage_gates.structure.approved=true @ iter 71. Task #30 closed. Follow-on (NOT a blocker): re-author wave-1 central star as {10/3} per owner note (openFollowUps). Next stage = COLOR (stage_gates.color.palette_agreed still false — owner-gated). Also still owner-gated: PUSH bikar 50897af (#53 engine, unblocks /simplify step 4 + GHA cost) — batch with sacred-patterns f1ae423 (/simplify portal, committed this session). PRIOR liveFront (2026-06-14, verified vs iter-71 tree by LAYER census, Tenet C1/C2): STRUCTURE 22/22 WAVES STAMPED \u2014 all built + census-equal + eyeballed. Waves 16/18/19/20/21/22 were ALL INVOCATION-GAPS (faces emit correctly, just un-stamped); every 'missing'/'wrong-color' survey this session was a radial-census misattribution premise error (the trap bit 3 times \u2014 18, 19, 20-22). The fix was to census by data-layer (each wave's overlay layer encodes its color: 1=navy 2=deep_navy 3=cobalt 4=royal 5=periwinkle 6=cyan_2; 0=base field), NOT by radial band (which mixes overlay tiles with base-field gap-fill at the outer edge). New durable memory: feedback_census_by_layer_not_radius.md; full retraction in ISSUES-OBSERVED.md 'Outer-edge waves 20-22 \u2014 ALL invocation-gaps'. Eyeball proofs: wave18/19/22-check.png + wave2021-check.png. RADIAL-WHITE FIX (task #19, suppress_radial) SHIPPED + verified earlier this loop (bikar 5-file engine extension + regression + docs, NOT committed). ALL OWNER-GATED NOW: stage_gates.structure.approved is NULL and ALL 22 waves have owner_verdict null \u2014 STRUCTURE STAGE IS READY FOR OWNER PORTAL EYEBALL + APPROVAL. Do NOT self-approve the stage gate. Next loop action depends on owner: if owner approves structure, advance to COLOR stage; otherwise address owner denials (fix lowest denied wave). 2 bikar commits HELD (3ff260a, deef89f) + this loop's uncommitted suppress_radial fix + sacred-patterns changes \u2014 do NOT commit/push without owner go-ahead (Tenet 22). Top-level status='converged-interim'/iter=33 STALE; 22-wave plan authoritative."
+}

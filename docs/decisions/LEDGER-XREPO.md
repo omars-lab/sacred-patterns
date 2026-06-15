@@ -66,6 +66,7 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `scale-invariant-matching` | qiyas | qiyas/docs/decisions/2026-06-10-scale-invariant-param-drift.md | ACCEPTED | B | ★ |
 | `scope-rescope` | qiyas | qiyas/docs/decisions/2026-05-22-138-rescope-after-empirical-delta.md | ACCEPTED | G | ★ |
 | `serialization-d4` | qiyas | qiyas/docs/decisions/2026-05-23-362-phase-1-d4-cutover-serialization.md | ACCEPTED | B | ★ |
+| `session-artifact-storage` | sacred-patterns | sacred-patterns/docs/decisions/2026-06-15-session-artifact-storage.md | ACCEPTED | A | ★ |
 | `shape-vocab-typed-params` | qiyas | qiyas/docs/decisions/2026-05-16-typed-shape-params-vs-object-bag.md | ACCEPTED | C | ★ |
 | `shape-vocab-typed-params` | qiyas | qiyas/docs/decisions/2026-05-18-shape-discriminated-union-migration-sequencing.md | SUPERSEDED | — | — |
 | `shape-vocabulary` | qiyas | qiyas/docs/decisions/2026-05-18-shape-vocabulary-vs-detector-tolerances.md | ACCEPTED | D | ★ |

@@ -1,0 +1,107 @@
+# Medallion-10: Iteration 24 — Compose strapwork (iter-23) with extend+clip (iter-22)
+#
+# Two cascades shipped recently, each validated independently:
+#   - sacred-patterns#106 Option I  → iter-22  (extend+clip, A5 BROKEN — no strapwork)
+#   - bikar#114 PR1                 → iter-23  (`crossing over` strapwork, A5 COMPLETE)
+#
+# iter-24 composes them: iter-22's named-satellite extend+clip silhouette
+# AND iter-23's `crossing over` strapwork.
+#
+# Predicted Δ vs iter-23:
+#   - A5 status: remain COMPLETE (strapwork mode unchanged from iter-23)
+#   - A2 cv: rises slightly from 0.0526 → ~0.06–0.09 (extra clipped fragments
+#     from extend+clip add structural diversity per-sector)
+#   - A4 coverage: should remain 100% (silhouette still C0+S0..S9 union)
+#   - 10 inner-star MISSING shapes from iter-22 should now have strapwork
+#     band fragments crossing through them, possibly converting MISSING→PARTIAL
+#     on the A6 verdict (when baseline is provided)
+#
+# Hypothesis test: do the two cascades' fixes compose, or does combining
+# them resurface either bug?
+#   - If A5 stays COMPLETE → composition is clean, both cascades closed
+#   - If A5 drops to BROKEN/PARTIAL → strapwork interaction with clipped
+#     partial faces creates new strand-walking edge cases (file new task)
+#   - If A2 cv jumps > 0.15 → extend+clip + strapwork interaction creates
+#     sector imbalance (file new task)
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  circle C1 center(0,0) radius 30
+  divide C1 into 10
+  circle Cmid2 center(0,0) radius 50
+  divide Cmid2 into 10
+  circle Cmid center(0,0) radius 80
+  divide Cmid into 10
+  # iter-22 named satellites (S0..S9) so they participate in boundary union
+  circle S0 center(C0.cpt0) radius 30
+  divide S0 into 10
+  circle S1 center(C0.cpt1) radius 30
+  divide S1 into 10
+  circle S2 center(C0.cpt2) radius 30
+  divide S2 into 10
+  circle S3 center(C0.cpt3) radius 30
+  divide S3 into 10
+  circle S4 center(C0.cpt4) radius 30
+  divide S4 into 10
+  circle S5 center(C0.cpt5) radius 30
+  divide S5 into 10
+  circle S6 center(C0.cpt6) radius 30
+  divide S6 into 10
+  circle S7 center(C0.cpt7) radius 30
+  divide S7 into 10
+  circle S8 center(C0.cpt8) radius 30
+  divide S8 into 10
+  circle S9 center(C0.cpt9) radius 30
+  divide S9 into 10
+  boundary outline = union(C0, S0, S1, S2, S3, S4, S5, S6, S7, S8, S9)
+
+pattern medallion on medallion
+  layer 0
+    connect every 4 on C1
+    connect every 3 on C1
+    connect every 2 on C1
+
+  layer 1
+    # iter-22's extends, targeting named satellites
+    extend connect every 4 on S0 beyond 1.5
+    extend connect every 4 on S1 beyond 1.5
+    extend connect every 4 on S2 beyond 1.5
+    extend connect every 4 on S3 beyond 1.5
+    extend connect every 4 on S4 beyond 1.5
+    extend connect every 4 on S5 beyond 1.5
+    extend connect every 4 on S6 beyond 1.5
+    extend connect every 4 on S7 beyond 1.5
+    extend connect every 4 on S8 beyond 1.5
+    extend connect every 4 on S9 beyond 1.5
+
+  layer 2
+    connect every 3 on Cmid
+
+  layer 3
+    connect every 4 on Cmid2
+
+  # iter-22 clip to silhouette
+  clip pattern to outline
+
+  # iter-23 strapwork (now safe — canonicalEdgeOrder is rotation-invariant)
+  strapwork
+      width 5
+      crossing over
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 20 color navy
+  fill void where sides >= 5 color cobalt
+
+  edges color navy width 0.5
