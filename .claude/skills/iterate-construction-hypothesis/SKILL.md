@@ -217,7 +217,7 @@ The `.bkr` statement vocabulary partitions natively by stage:
 - **Stage entry gates:** Stage 2 opens only after BOTH the structure gate
   AND the owner's palette-swatch agreement (`tools/analyze-reference.py`
   swatch sheet); Stage 3 opens after the color gate. The weave gate is the
-  80% expert-review gate.
+  80% expert-review gate — fleshed out in "Stage 3 is studio-iterated" below.
 - **Tooling:** `tools/make-structure.py` (pattern.bkr → structure.bkr),
   `tools/structure-diff.sh` (skeleton render + edge maps + structure
   similarity + gate side-by-sides; skeleton SVGs must rasterize via
@@ -237,7 +237,8 @@ The `.bkr` statement vocabulary partitions natively by stage:
   the per-wave build review — each built wave shows its gate crop + history
   filmstrip beside an approve / "Needs work" + comment panel
   (`POST /api/wave-verdict`, auto-reconnects on a server restart); `/palette`
-  is the colour gate),
+  is the colour gate; `/weave-studio` is the WEAVE gate — see "Stage 3 is
+  studio-iterated" below),
   `tools/wave-feedback.py` (the loop's reader for the `/iterate` verdicts —
   prints denied waves + their fix-instruction notes, exit 2 when work is
   owed; run it at every loop pickup before advancing construction).
@@ -293,10 +294,17 @@ omitted they are detected from the medallion mask and printed to confirm):
    `rotate` fold times. Full algorithm, thresholds, and witnessed dead
    ends: `docs/wave-planning-design.md`.
 5. **Owner gates the plan in the wave-plan STUDIO** — run
-   `tools/wave-plan-server.py <session-dir>` (qiyas venv;
-   `--center`/`--diameter` optional overrides, auto-detected otherwise;
-   `start-session.py` launches this for you on a new image) and send the
-   owner the printed localhost URL. The page has
+   `tools/wave-plan-server.py <dropbox-session-dir> --session-json <git-session-dir>/session.json`
+   (qiyas venv; `--center`/`--diameter` optional overrides, auto-detected
+   otherwise; `start-session.py` launches this for you on a new image) and
+   send the owner the printed localhost URL. **Always pass `--session-json`
+   pointed at the GIT `sessions/<slug>/session.json`** so the owner's gate
+   verdicts (palette / per-wave / weave) write to source-of-record, not the
+   Dropbox render copy — the `<session-dir>` positional stays the Dropbox
+   path so reference.jpg + renders still resolve (the two args bridge the
+   authored-in-git / rendered-in-Dropbox split). Omitting `--session-json`
+   defaults verdicts to `<session-dir>/session.json` and silently drifts from
+   git. The page has
    the flip-through (flowers row + waves row, one group bright per frame,
    colored maps) AND an inspector: click any shape → see its wave + flower
    in plain language → move it to a different wave/flower (or its whole
@@ -312,6 +320,56 @@ omitted they are detected from the medallion mask and printed to confirm):
    CROPPED/MASKED to that wave's region. Wave N must pass its visual check
    before wave N+1 opens — the whole-image structure_similarity is logged
    for trend, not steered by.
+
+### Stage 3 is studio-iterated — dial the band knobs live, never one-shot the weave
+
+Plain English: the weave (the woven white ribbons + the clean outline around
+each outer petal) is a real stage with its own knobs — band width, band color,
+over/under, outer-edge closure, radial-spoke suppression — and each knob needs
+*render → look → adjust → look again*, exactly like structure had its 22 waves
+and color had its palette gate. It is NOT a quick on/off toggle at the tail of
+color. Two things make that explicit (medallion-10, bikar#23,
+`bikar/docs/decisions/2026-06-16-weave-stage.md`):
+
+1. **The weave can be invisible as authored.** When the bands are white and sit
+   in the white gaps between colored shapes, weave-on and weave-off look almost
+   identical — the eye reads "the gaps got wider", not "ribbons woven over the
+   pattern". Don't gate weave by a whole-image pixel delta; gate it by the
+   owner's eye on the band crossings and the outer-petal outline against the
+   reference. (Red-recolor proof to confirm the band network exists is a debug
+   trick, not the gate.)
+2. **The outer edge must close.** The reference outlines each outer petal with
+   one continuous mitred ribbon; the naive emit ends each ribbon in a ragged
+   perpendicular stub at the degree-2 petal turns. The bikar engine now mitres
+   degree-1/2 strapwork terminal nodes into a continuous turn
+   (`strapwork.ts mitreBandCorners` + `svg-renderer.ts computeTerminalMitres`,
+   with a `MITER_LIMIT = 2.0` clamp so shallow outer-ring turns fall back to a
+   flat cap instead of shooting a runaway radial spike). Rendering-only, no DSL
+   change. If a future weave shows open outer edges, that's the regression
+   `bikar/tests/kernel/strapwork-outer-edge.test.ts` guards.
+
+**The gate surface is `/weave-studio`** (`tools/wave-plan-server.py`): the photo
+(left) vs our live render (right), grandma-plain dials — "Ribbon thickness",
+"Ribbon colour", "Trim the spokes" (radial suppression), edge-fix — each change
+debounced to a live `POST /api/preview` that writes a transient weave-variant
+`.bkr` (the flat source-of-record `pattern.bkr` stays flat — the studio appends
+the strapwork block to a TEMP copy, never the committed file), runs the bikar
+CLI render, rasterizes, and swaps the image in ~1–2s. The owner dials the knobs
+against the photo and clicks **"This looks right"** →
+`POST /api/weave-verdict` writes `session.json stage_gates.weave`
+(`{approved, approved_at_iter, approved_date, approved_authority, weave_params:
+{width, color, suppress_*, edge_fix}, verdicts: [...]}`). `approved` is set
+**only** on that owner click (`approved_authority: "owner (weave studio)"`) —
+NEVER self-approved, same rule as every other gate. Only once the owner approves
+the weave params is the strapwork block landed into `pattern.bkr` (uncommented
+with the chosen width/color/suppression).
+
+**Live render is a shared primitive.** `POST /api/preview`
+(`{source_variant, params}` → transient `.bkr` → CLI render → rasterize → PNG
+URL) is built once and designed reusable; it's wired for the weave studio first
+(the loop's blocker), and the merge→code-diff `/simplify`, shape-inspect, and
+gate-review A/B surfaces are follow-on consumers (bikar#13/#27/#45) — each
+wired as its own task, not a four-surface refactor up front.
 
 ## Cookbook — proven tricks from the medallion-10 wave run (iters 41–55)
 

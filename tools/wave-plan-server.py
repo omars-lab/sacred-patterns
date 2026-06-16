@@ -46,11 +46,28 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import os
+import re
 import subprocess
 import sys
+import tempfile
 from datetime import date
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
+
+# ── Live render: where the bikar CLI + Node live (env-overridable) ──────────
+# Plain English: the weave studio re-renders the pattern every time a slider
+# moves. To do that it shells out to the bikar command-line renderer, which
+# needs Node 22. These two paths are the same ones the continue-prompt tells a
+# cold session to export (search "Node 22 for bikar render" below). Override
+# with BIKAR_NODE_BIN / BIKAR_CLI_JS if your checkout lives elsewhere.
+BIKAR_NODE_BIN = os.environ.get(
+    "BIKAR_NODE_BIN", "/Users/omareid/.nvm/versions/node/v22.22.3/bin/node"
+)
+BIKAR_CLI_JS = os.environ.get(
+    "BIKAR_CLI_JS",
+    "/Users/omareid/Workspace/git/bikar/packages/cli/dist/index.js",
+)
 
 # Mirrors the design tokens in plan-waves.py's studio CSS — one design system
 # across every page the owner touches (hub, plan, palette).
@@ -323,6 +340,153 @@ PALETTE_HTML = """<!DOCTYPE html>
        document.getElementById('notesaved').textContent = 'saved ✓';
      } catch { document.getElementById('notesaved').textContent = "couldn't save — try again"; }
    }, 600);
+ });
+</script>
+</body></html>"""
+
+
+# The weave studio (#23): the third reconstruction stage after structure and
+# colour. The woven white ribbons get their own iteration surface — the photo
+# on the left, OUR render on the right, and a few plain-language dials the owner
+# drags while the render updates live. Grandma-plain (Tenet 27): no
+# "strapwork"/"suppress_radial"/"halfWidth" anywhere she reads; the dials are
+# "Ribbon thickness", "Ribbon colour", "Trim the spokes", "Clean the outer
+# edges". One "This looks right" button records the weave-gate verdict.
+WEAVE_STUDIO_HTML = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Does the weave look right?</title>
+<style>__CSS__
+ .stage { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+ .stage figure { margin: 0; }
+ .stage img { width: 100%; display: block; border-radius: 10px; background: #fff;
+              border: 1px solid var(--line); min-height: 200px; }
+ .stage figcaption { font-size: 14px; color: var(--muted); margin: 6px 2px; font-weight: 600; }
+ .dials { margin-top: 18px; display: grid; gap: 18px; }
+ .dial label { display: block; font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+ .dial .hint { font-weight: 400; color: var(--muted); font-size: 13.5px; }
+ .dial input[type=range] { width: 100%; }
+ .dial .val { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 700; }
+ .swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+ .swatch { width: 40px; height: 40px; border-radius: 8px; border: 2px solid var(--line);
+           cursor: pointer; }
+ .swatch.sel { outline: 3px solid var(--accent); outline-offset: 1px; }
+ .toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; }
+ button { font: inherit; font-size: 15px; font-weight: 600; color: #fff;
+          display: inline-flex; align-items: center; height: 38px; padding: 0 20px;
+          border-radius: 999px; border: 1px solid var(--agree); background: var(--agree);
+          cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
+ button:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+ button:disabled { opacity: .65; cursor: default; transform: none; box-shadow: none; }
+ textarea { width: 100%; font: inherit; font-size: 14.5px; padding: 10px 12px;
+            border-radius: 10px; border: 1px solid var(--line); background: var(--card);
+            color: var(--ink); resize: vertical; }
+ .spin { display: inline-block; font-size: 13px; color: var(--muted); margin-left: 10px; }
+ #ours.loading { opacity: .55; transition: opacity .2s ease; }
+</style></head><body>
+<header>
+ <h1>Does the weave look right?</h1>
+ <p class="muted">The white ribbons that weave over the pattern are the last
+  thing to get right. Drag the dials below — the picture on the right updates so
+  you can match it to your photo on the left. When it looks right, say so.
+  <a href="/">Back to your review list</a></p>
+</header>
+<main>
+ <div class="gate">
+  <div class="stage">
+   <figure><img src="/reference.jpg" alt="your photo"><figcaption>your photo</figcaption></figure>
+   <figure><img id="ours" alt="our weave"><figcaption>ours</figcaption><span id="spin" class="spin"></span></figure>
+  </div>
+ </div>
+
+ <div class="gate">
+  <div class="dials">
+   <div class="dial">
+    <label>Ribbon thickness <span class="hint">— how bold the white ribbons are</span>
+     <span class="val" id="widthVal"></span></label>
+    <input type="range" id="width" min="4" max="18" step="0.5" value="10">
+   </div>
+   <div class="dial">
+    <label>Ribbon colour <span class="hint">— the photo's ribbons are a soft off-white</span></label>
+    <div class="swatches" id="swatches"></div>
+   </div>
+   <div class="dial">
+    <label class="toggle"><input type="checkbox" id="suppress" checked>
+     Trim the spokes <span class="hint">— stop ribbons from spiking straight out at the rim</span></label>
+   </div>
+  </div>
+ </div>
+
+ <div class="gate" id="gatebox">
+  <h2>Your verdict</h2>
+  <p><button id="agree">This looks right</button><span id="saved" class="spin"></span></p>
+  <p class="muted">Anything still off? Say it your way — "the ribbons are too thin",
+   "the outer edge is still ragged" — it saves with your verdict.</p>
+  <textarea id="note" rows="3" placeholder="The ribbons are a touch too thin…">__NOTE__</textarea>
+ </div>
+</main>
+<script>
+ const SWATCHES = ['#FCFDFD', '#FFFFFF', '#F2EEE6', '#EAE3D6'];
+ const state = { width: 10, color: '#FCFDFD', suppress: true };
+ if (__APPROVED__) {
+   const b = document.getElementById('agree');
+   b.disabled = true; b.textContent = 'Recorded — the weave is agreed ✓';
+ }
+ // Build the colour swatches.
+ const sw = document.getElementById('swatches');
+ SWATCHES.forEach((c, i) => {
+   const d = document.createElement('div');
+   d.className = 'swatch' + (i === 0 ? ' sel' : '');
+   d.style.background = c; d.title = c; d.dataset.color = c;
+   d.addEventListener('click', () => {
+     document.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
+     d.classList.add('sel'); state.color = c; preview();
+   });
+   sw.appendChild(d);
+ });
+ const widthEl = document.getElementById('width');
+ const widthVal = document.getElementById('widthVal');
+ const suppressEl = document.getElementById('suppress');
+ const ours = document.getElementById('ours');
+ const spin = document.getElementById('spin');
+ function syncLabels() { widthVal.textContent = state.width.toFixed(1); }
+ // Live render: debounce so dragging a slider only fires one render at rest.
+ let t = null;
+ function preview() {
+   clearTimeout(t);
+   spin.textContent = 'updating…'; ours.classList.add('loading');
+   t = setTimeout(async () => {
+     try {
+       const r = await fetch('/api/preview', {
+         method: 'POST', headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ source_variant: 'weave', params: state }),
+       });
+       if (!r.ok) throw new Error(await r.text());
+       const { url } = await r.json();
+       ours.onload = () => { spin.textContent = ''; ours.classList.remove('loading'); };
+       ours.src = url;
+     } catch (e) {
+       spin.textContent = "couldn't render — " + e.message; ours.classList.remove('loading');
+     }
+   }, 300);
+ }
+ widthEl.addEventListener('input', () => { state.width = parseFloat(widthEl.value); syncLabels(); preview(); });
+ suppressEl.addEventListener('change', () => { state.suppress = suppressEl.checked; preview(); });
+ // First render on load.
+ syncLabels(); preview();
+
+ const agreeBtn = document.getElementById('agree');
+ agreeBtn.addEventListener('click', async () => {
+   agreeBtn.disabled = true;
+   try {
+     await fetch('/api/weave-verdict', {
+       method: 'POST', headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ state: 'approved', note: document.getElementById('note').value, params: state }),
+     });
+     agreeBtn.textContent = 'Recorded — the weave is agreed ✓';
+     document.getElementById('saved').textContent = 'saved ✓';
+   } catch (e) {
+     agreeBtn.disabled = false;
+     document.getElementById('saved').textContent = "couldn't save — try again";
+   }
  });
 </script>
 </body></html>"""
@@ -639,12 +803,34 @@ def main() -> None:
         help="override the planner's auto-detected medallion diameter",
     )
     ap.add_argument("--port", type=int, default=8765)
+    # Why a SEPARATE path for session.json instead of always session_dir/session.json:
+    # session.json is an AUTHORED artifact (the owner's gate verdicts) and its
+    # source-of-record lives in git (sacred-patterns/sessions/<slug>/), while the
+    # RENDERED artifacts the portal displays (render.png, reference.jpg, gt.json,
+    # crops) live in Dropbox. session_dir therefore points at Dropbox (so renders
+    # resolve), but --session-json lets the verdict file be read+written in the
+    # git tree, so every portal verdict (palette / per-wave / weave) lands on
+    # source-of-record directly instead of drifting in a Dropbox-only copy that
+    # then needs manual mirroring. Defaults to session_dir/session.json so
+    # existing single-root launches are unchanged.
+    ap.add_argument(
+        "--session-json",
+        type=Path,
+        default=None,
+        help="path to the AUTHORED session.json (git source-of-record); "
+        "defaults to <session_dir>/session.json. Use this to keep renders in "
+        "Dropbox while verdicts write to git.",
+    )
     args = ap.parse_args()
 
     session_dir = args.session_dir.resolve()
     analysis_dir = session_dir / "input" / "reference-analysis"
     plan_dir = (analysis_dir / "wave-plan").resolve()
-    session_json = session_dir / "session.json"
+    session_json = (
+        args.session_json.resolve()
+        if args.session_json is not None
+        else session_dir / "session.json"
+    )
     note_path = analysis_dir / "palette-feedback.txt"
     tools_dir = Path(__file__).resolve().parent
 
@@ -717,6 +903,121 @@ def main() -> None:
 
     def save_session(s: dict) -> None:
         session_json.write_text(json.dumps(s, indent=2) + "\n")
+
+    # ── Weave studio: live-render the woven lattice with the owner's knobs ───
+    #
+    # Plain English: the woven white ribbons (strapwork) are the third
+    # reconstruction stage after structure and colour. They have a few dials —
+    # ribbon thickness, ribbon colour, whether to trim the radial "spokes", and
+    # the outer-edge closure the engine fix just landed. The studio is a page
+    # where the owner drags those dials and sees the pattern re-render live,
+    # then says "this looks right". These helpers are the render side of that.
+    #
+    # The source pattern (sessions/.../iterations/<it>/pattern.bkr) ships FLAT
+    # (strapwork disabled, owner 2026-06-14). To preview a weave we append a
+    # parameterised `strapwork` block to a TRANSIENT copy and render that — the
+    # source-of-record stays flat until the owner approves the params at the
+    # gate (then a separate step lands them; this never writes pattern.bkr).
+
+    preview_dir = Path(tempfile.gettempdir()) / "bikar-weave-preview"
+    preview_dir.mkdir(exist_ok=True)
+
+    def _strip_strapwork(bkr: str) -> str:
+        # Drop any existing (commented or live) strapwork block so re-enabling
+        # is idempotent — the studio owns the block it appends. The source's
+        # block is a run of `#`-commented lines starting at `# strapwork`; live
+        # patterns would have an indented `strapwork` statement block. We cut
+        # from the first strapwork marker to the end of its indented body.
+        lines = bkr.splitlines()
+        out: list[str] = []
+        skipping = False
+        for ln in lines:
+            stripped = ln.strip().lstrip("#").strip()
+            if stripped.startswith("strapwork"):
+                skipping = True
+                continue
+            if skipping:
+                # A strapwork body line is either a comment, or indented deeper
+                # than a top-level statement. Stop skipping at the first line
+                # that is neither (a dedented, non-comment statement) — but the
+                # source's block runs to EOF, so in practice we skip to the end.
+                if ln.strip() == "" or ln.lstrip().startswith("#") or ln.startswith(("    ", "\t")):
+                    continue
+                skipping = False
+            out.append(ln)
+        return "\n".join(out).rstrip() + "\n"
+
+    def build_weave_variant(src_bkr: str, params: dict) -> str:
+        # Append a live `strapwork` block built from the owner's dials to a
+        # flat source. Every value is the owner's choice (or the iter-71
+        # derived default) — no magic numbers invented here; the defaults are
+        # the measured ones documented in the source's commented block.
+        width = float(params.get("width", 10))
+        color = str(params.get("color", "#FCFDFD"))
+        suppress = bool(params.get("suppress", True))
+        suppress_tol = float(params.get("suppress_tol", 22))
+        suppress_beyond = float(params.get("suppress_beyond", 0.69))
+        # color must be a hex literal — the lexer treats bare `#` as a comment,
+        # so a hex colour only parses after the `color ` keyword (see MEMORY).
+        if not re.fullmatch(r"#[0-9A-Fa-f]{6}", color):
+            color = "#FCFDFD"
+        body = [
+            "  # ── weave studio live preview (transient — source stays flat) ──",
+            "  strapwork",
+            f"    width {width:g}",
+            "    crossing alternating",
+            f"    color {color}",
+        ]
+        if suppress:
+            body.append(f"    suppress_radial {suppress_tol:g} beyond {suppress_beyond:g}")
+        flat = _strip_strapwork(src_bkr)
+        # The strapwork block belongs inside the `pattern` body, at the same
+        # indent as the other pattern statements. The source's pattern block is
+        # the last top-level block, so appending the indented block at EOF lands
+        # it inside the pattern (the evaluator scopes by indent).
+        return flat.rstrip() + "\n" + "\n".join(body) + "\n"
+
+    def _rasterize_svg(svg_path: Path, png_path: Path, height: int) -> None:
+        # SVG -> PNG. Prefer rsvg-convert / ImageMagick `magick` (subprocess,
+        # no native-cairo-python dependency) so the studio renders under
+        # whatever python runs the server — the conda env on this box lacks
+        # libcairo for the cairosvg module, but rsvg-convert/magick are present
+        # (same choice qiyas-diff.py makes). cairosvg is the last resort.
+        import shutil
+
+        if shutil.which("rsvg-convert"):
+            subprocess.run(
+                ["rsvg-convert", "-h", str(height), "-o", str(png_path), str(svg_path)],
+                check=True, capture_output=True, text=True,
+            )
+            return
+        if shutil.which("magick"):
+            subprocess.run(
+                ["magick", "-background", "none", "-density", "192",
+                 str(svg_path), "-resize", f"x{height}", str(png_path)],
+                check=True, capture_output=True, text=True,
+            )
+            return
+        import cairosvg  # last resort: needs native libcairo
+        cairosvg.svg2png(url=str(svg_path), write_to=str(png_path), output_height=height)
+
+    def render_weave_png(params: dict, height: int = 1024) -> bytes:
+        # The shared live-render primitive: params -> a fresh PNG of the woven
+        # pattern. Writes a transient .bkr, runs the bikar CLI to SVG, rasterises
+        # to PNG (rsvg-convert/magick). Returns PNG bytes.
+        src = bkr_text(best_iter())
+        if not src:
+            raise FileNotFoundError("no source pattern.bkr for the current best iteration")
+        variant = build_weave_variant(src, params)
+        with tempfile.TemporaryDirectory() as td:
+            bkr_path = Path(td) / "weave-variant.bkr"
+            svg_path = Path(td) / "weave-variant.svg"
+            png_path = Path(td) / "weave-variant.png"
+            bkr_path.write_text(variant)
+            cmd = [BIKAR_NODE_BIN, BIKAR_CLI_JS, "render", str(bkr_path), "-o", str(svg_path)]
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+            _rasterize_svg(svg_path, png_path, height)
+            return png_path.read_bytes()
 
     def latest_gate_sbs(wave: int) -> Path | None:
         # The newest iteration that ran a wave-diff for this wave owns the
@@ -1880,6 +2181,27 @@ def main() -> None:
                     "<p>Colours agreed. You can still "
                     "<a href='/palette'>see them</a>.</p></div>"
                 )
+        # Stage 3 — the weave. Only surfaced once colours are agreed (the stage
+        # ladder is structure → colour → weave); the white woven ribbons are the
+        # last thing to dial in against the photo.
+        weave_approved = bool(gates.get("weave", {}).get("approved"))
+        if palette_agreed:
+            if not weave_approved:
+                todo.append(
+                    "<div class='gate'><h2>3 — The weave"
+                    "<span class='badge open'>needs you</span></h2>"
+                    "<p>The white ribbons that weave over the pattern. Drag a "
+                    "couple of dials until they match your photo, then say it "
+                    "looks right.</p>"
+                    "<a class='go' href='/weave-studio'>Open the weave studio</a></div>"
+                )
+            else:
+                todo.append(
+                    "<div class='gate done'><h2>3 — The weave"
+                    "<span class='badge done'>agreed ✓</span></h2>"
+                    "<p>Weave agreed. You can still "
+                    "<a href='/weave-studio'>open the studio</a>.</p></div>"
+                )
         n_open = sum("needs you" in t for t in todo)
         head = (
             f"{n_open} thing{'s' if n_open != 1 else ''} need your eyes today."
@@ -2244,6 +2566,34 @@ def main() -> None:
             if self.path == "/simplify":
                 self._send_html(simplify_html())
                 return
+            if self.path == "/weave-studio":
+                gates = session().get("stage_gates", {})
+                approved = bool(gates.get("weave", {}).get("approved"))
+                note = (gates.get("weave", {}).get("note") or "")
+                self._send_html(
+                    WEAVE_STUDIO_HTML.replace("__CSS__", HUB_CSS)
+                    .replace("__APPROVED__", json.dumps(approved))
+                    .replace("__NOTE__", html.escape(note))
+                )
+                return
+            # Live-render output: a transient PNG written by POST /api/preview,
+            # served by its opaque id. Path-guarded to the preview dir.
+            if self.path.startswith("/preview/") and self.path.split("?", 1)[0].endswith(".png"):
+                name = self.path.split("/preview/", 1)[1].split("?")[0]
+                if "/" in name or ".." in name:
+                    self.send_error(404)
+                    return
+                p = preview_dir / name
+                if not p.exists():
+                    self.send_error(404)
+                    return
+                data = p.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+                return
             if self.path == "/wave-options":
                 # Renamed to /waves (owner, 2026-06-15: "i don't want a
                 # 'wave-options' page ... rather a waves page"). Redirect so old
@@ -2415,6 +2765,75 @@ def main() -> None:
                 else:
                     v[key] = {"state": state, "date": date.today().isoformat()}
                 mp.write_text(json.dumps(v, indent=1))
+                self._send_ok()
+            elif self.path == "/api/preview":
+                # The SHARED live-render primitive (#23). Body:
+                # {source_variant, params} -> renders a fresh PNG, returns its
+                # URL. Built once for the weave studio; designed reusable — a
+                # different source_variant (merge-diff, shape-inspect, gate A/B)
+                # plugs in its own variant builder here without touching the
+                # client debounce loop. Today only "weave" is wired.
+                try:
+                    data = json.loads(self._read_body())
+                except json.JSONDecodeError:
+                    self.send_error(400, "body must be JSON")
+                    return
+                variant = data.get("source_variant", "weave")
+                params = data.get("params", {})
+                if variant != "weave":
+                    self.send_error(400, f"unknown source_variant '{variant}'")
+                    return
+                try:
+                    png = render_weave_png(params)
+                except subprocess.CalledProcessError as e:
+                    # Surface the bikar CLI's own error so a bad param (e.g. a
+                    # colour the lexer rejects) reads as a fixable message, not
+                    # an opaque 500 (Tenet 3 — surface, don't hide).
+                    self.send_error(500, f"render failed: {(e.stderr or e.stdout or str(e)).strip()[:300]}")
+                    return
+                except Exception as e:
+                    self.send_error(500, f"preview failed: {e}")
+                    return
+                # Opaque, content-addressed-ish name so the browser cache busts
+                # on every distinct param set without us tracking a counter.
+                pid = f"{abs(hash(json.dumps(params, sort_keys=True))) & 0xFFFFFFFF:08x}"
+                (preview_dir / f"{pid}.png").write_bytes(png)
+                body = json.dumps({"url": f"/preview/{pid}.png?t={pid}"}).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            elif self.path == "/api/weave-verdict":
+                # The owner's weave-gate call, recorded where the loop reads it
+                # (session.json stage_gates.weave) — no chat transcription.
+                # state ∈ {"approved","needs_work",""}. On approval we stamp the
+                # chosen params + authority + date, mirroring the structure /
+                # colour gate shape. This is owner-authority only (never
+                # self-approved); the server just persists what the owner clicks.
+                data = json.loads(self._read_body())
+                state = data.get("state", "")
+                note = (data.get("note") or "").strip()
+                params = data.get("params", {})
+                s = session()
+                w = s["stage_gates"].setdefault("weave", {})
+                w["state"] = state
+                w["note"] = note
+                w["weave_params"] = params
+                w["date"] = date.today().isoformat()
+                if state == "approved":
+                    w["approved"] = True
+                    w["approved_date"] = date.today().isoformat()
+                    w["approved_authority"] = "owner (weave studio)"
+                    w["approved_at_iter"] = best_iter()
+                else:
+                    w["approved"] = None
+                # Append to the verdict history (idempotent log, newest last).
+                w.setdefault("verdicts", []).append({
+                    "state": state, "note": note, "params": params,
+                    "date": date.today().isoformat(),
+                })
+                save_session(s)
                 self._send_ok()
             else:
                 self.send_error(404)
