@@ -296,6 +296,22 @@ PALETTE_HTML = """<!DOCTYPE html>
             background: var(--card); color: var(--ink); resize: vertical; }
  textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
  #saved { color: var(--agree); font-size: 14px; margin-left: 10px; }
+ .ab { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+ .ab figure { margin: 0; }
+ .ab figcaption { font-size: 13.5px; color: var(--muted); margin-bottom: 6px;
+                  font-weight: 600; }
+ .pairs { display: flex; gap: 14px; flex-wrap: wrap; }
+ .pair { width: 96px; text-align: center; }
+ .chip { height: 44px; border-radius: 8px 8px 0 0; border: 1px solid var(--line);
+         border-bottom: none; }
+ .chip.ref { border-radius: 0 0 8px 8px; border-top: 1px dashed var(--line); }
+ .pair .lab { font-size: 12px; color: var(--ink); margin-top: 5px;
+              text-transform: capitalize; }
+ .pair .tag { font-size: 11.5px; font-weight: 700; margin-top: 3px;
+              display: inline-block; padding: 1px 7px; border-radius: 999px; }
+ .tag.good { background: #DCEFE4; color: #1F6E4C; }
+ .tag.close { background: #FBF1D6; color: #8A6D17; }
+ .tag.off { background: #F6DCDF; color: #93303B; }
 </style></head><body>
 <header>
  <h1>Do the colours look right?</h1>
@@ -304,6 +320,23 @@ PALETTE_HTML = """<!DOCTYPE html>
   paint with these. <a href="/">Back to your review list</a></p>
 </header>
 <main>
+ <div class="gate">
+  <h2>Your picture, beside our drawing</h2>
+  <p class="muted">Same size, side by side — do the colours feel like the same
+   picture?</p>
+  <div class="ab">
+   <figure><figcaption>Your picture</figcaption>
+    <img src="/reference.jpg" alt="your reference photo"></figure>
+   <figure><figcaption>Our drawing</figcaption>
+    <img src="/current-best.png" alt="our current render"></figure>
+  </div>
+ </div>
+ <div class="gate">
+  <h2>Each colour, matched to your picture</h2>
+  <p class="muted">Top is the colour we paint with; underneath is the closest
+   colour in your photo. The little tag says how well they match.</p>
+  <div class="pairs" id="pairs"><span class="muted">loading…</span></div>
+ </div>
  <div class="gate"><img src="/swatch-sheet.png" alt="the colours next to your picture"></div>
  <div class="gate" id="gatebox">
   <h2>Your verdict</h2>
@@ -316,6 +349,26 @@ PALETTE_HTML = """<!DOCTYPE html>
  </div>
 </main>
 <script>
+ // The per-colour pairing strip: each DSL colour over its nearest reference
+ // colour, with a plain-words match tag. Plain labels only (Tenet 27).
+ const TAGWORD = { good: 'matches well', close: 'a bit off', off: 'off' };
+ (async () => {
+   const box = document.getElementById('pairs');
+   try {
+     const pairs = await (await fetch('/api/color-pairs')).json();
+     if (!pairs.length) { box.innerHTML = '<span class="muted">no colours found</span>'; return; }
+     box.innerHTML = pairs.map(p => {
+       const ref = p.ref_hex
+         ? `<div class="chip ref" style="background:${p.ref_hex}"></div>`
+           + `<div class="lab">in your photo${p.share ? ' · ' + p.share : ''}</div>`
+         : '<div class="lab muted">no match</div>';
+       const tag = p.verdict && p.verdict !== 'unknown'
+         ? `<span class="tag ${p.verdict}">${TAGWORD[p.verdict]}</span>` : '';
+       return `<div class="pair"><div class="chip" style="background:${p.dsl_hex}"></div>`
+         + `${ref}<div class="lab">${p.dsl_name.replace(/_/g,' ')}</div>${tag}</div>`;
+     }).join('');
+   } catch (e) { box.innerHTML = '<span class="muted">couldn\\u2019t load the colours</span>'; }
+ })();
  const agreed = __AGREED__;
  const agreeBtn = document.getElementById('agree');
  if (agreed) { agreeBtn.disabled = true; agreeBtn.textContent = 'Recorded — these colours are agreed ✓'; }
@@ -359,6 +412,12 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
  .stage figure { margin: 0; }
  .stage img { width: 100%; display: block; border-radius: 10px; background: #fff;
               border: 1px solid var(--line); min-height: 200px; }
+ .stage .oursvg { width: 100%; display: block; border-radius: 10px; background: #fff;
+              border: 1px solid var(--line); min-height: 200px; overflow: hidden; }
+ .stage .oursvg svg { width: 100%; height: auto; display: block; }
+ /* every ribbon is a click target; the picked strand lights up amber */
+ .oursvg [data-strand] { cursor: pointer; }
+ .oursvg [data-strand].picked { stroke: #FF8A00 !important; }
  .stage figcaption { font-size: 14px; color: var(--muted); margin: 6px 2px; font-weight: 600; }
  .dials { margin-top: 18px; display: grid; gap: 18px; }
  .dial label { display: block; font-weight: 600; font-size: 15px; margin-bottom: 6px; }
@@ -370,6 +429,12 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
            cursor: pointer; }
  .swatch.sel { outline: 3px solid var(--accent); outline-offset: 1px; }
  .toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; }
+ .styletoggle { display: inline-flex; gap: 8px; }
+ .styopt { font: inherit; font-weight: 600; font-size: 14.5px; height: 38px; padding: 0 16px;
+           border-radius: 999px; border: 1px solid var(--line); background: #fff;
+           color: var(--ink, #333); cursor: pointer; }
+ .styopt.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+ .ringchecks { display: flex; flex-wrap: wrap; gap: 10px 18px; }
  button { font: inherit; font-size: 15px; font-weight: 600; color: #fff;
           display: inline-flex; align-items: center; height: 38px; padding: 0 20px;
           border-radius: 999px; border: 1px solid var(--agree); background: var(--agree);
@@ -393,7 +458,7 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
  <div class="gate">
   <div class="stage">
    <figure><img src="/reference.jpg" alt="your photo"><figcaption>your photo</figcaption></figure>
-   <figure><img id="ours" alt="our weave"><figcaption>ours</figcaption><span id="spin" class="spin"></span></figure>
+   <figure><div id="ours" class="oursvg"></div><figcaption>ours <span id="pickLbl" class="hint"></span></figcaption><span id="spin" class="spin"></span></figure>
   </div>
  </div>
 
@@ -412,6 +477,34 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
     <label class="toggle"><input type="checkbox" id="suppress" checked>
      Trim the spokes <span class="hint">— stop ribbons from spiking straight out at the rim</span></label>
    </div>
+   <div class="dial">
+    <label>Weave style <span class="hint">— do the ribbons cross over and under like the photo?</span></label>
+    <div class="styletoggle">
+     <button type="button" id="styleFlat" class="styopt sel">Flat lattice</button>
+     <button type="button" id="styleCross" class="styopt">Interwoven ribbons</button>
+    </div>
+   </div>
+   <div class="dial" id="ringsDial" style="display:none">
+    <label>Which rings weave <span class="hint">— turn each ring's woven star on or off</span></label>
+    <div class="ringchecks" id="ringchecks"></div>
+   </div>
+   <div class="dial" id="stepDial" style="display:none">
+    <label>How full the weave <span class="hint">— fuller = more crossings, busier star</span>
+     <span class="val" id="stepVal"></span></label>
+    <input type="range" id="step" min="2" max="4" step="1" value="3">
+   </div>
+   <div class="dial" id="shadowDial" style="display:none">
+    <label>Shadow darkness <span class="hint">— how dark the gap is where one ribbon dips under another</span>
+     <span class="val" id="shadowVal"></span></label>
+    <input type="range" id="shadow" min="0" max="100" step="5" value="0">
+   </div>
+   <div class="dial" id="netDial" style="display:none">
+    <label class="toggle"><input type="checkbox" id="network">
+     Show the crossings <span class="hint">— pink rings mark every spot where ribbons cross (debug)</span></label>
+   </div>
+   <div class="dial" id="pickHint" style="display:none">
+    <label>Inspect a ribbon <span class="hint">— click any ribbon in the picture to light up its whole strand</span></label>
+   </div>
   </div>
  </div>
 
@@ -425,7 +518,30 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
 </main>
 <script>
  const SWATCHES = ['#FCFDFD', '#FFFFFF', '#F2EEE6', '#EAE3D6'];
- const state = { width: 10, color: '#FCFDFD', suppress: true };
+ // Ring keys + plain labels mirror WEAVE_RINGS (server side). Order = inner→outer.
+ const WEAVE_RINGS = [
+   ['center', 'Centre star'],
+   ['petal_base', 'Petal base'],
+   ['petal_tip', 'Petal tips'],
+   ['outer', 'Outer frame'],
+ ];
+ const state = {
+   width: 10, color: '#FCFDFD', suppress: true,
+   style: 'flat',                                   // 'flat' | 'crossing'
+   step: 3,                                          // {n/k} fullness
+   rings: { center: true, petal_base: true, petal_tip: true, outer: true },
+   shadow: 0,                                        // 0 = auto (engine-derived); >0 = explicit darkness %
+   casing: '',                                       // resolved hex from shadow %, '' = auto
+   network: false,                                   // show crossing markers
+ };
+ // Shadow darkness % → a grey hex. 0 keeps casing='' (engine auto-derives a
+ // darkened band shade); >0 maps to a grey from light (#B0B0B0) to black.
+ function shadowHex(pct) {
+   if (pct <= 0) return '';
+   const v = Math.round(0xB0 * (1 - pct / 100));    // 0%→0xB0 grey … 100%→0x00 black
+   const h = v.toString(16).padStart(2, '0');
+   return '#' + h + h + h;
+ }
  if (__APPROVED__) {
    const b = document.getElementById('agree');
    b.disabled = true; b.textContent = 'Recorded — the weave is agreed ✓';
@@ -447,31 +563,101 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
  const suppressEl = document.getElementById('suppress');
  const ours = document.getElementById('ours');
  const spin = document.getElementById('spin');
+ const pickLbl = document.getElementById('pickLbl');
  function syncLabels() { widthVal.textContent = state.width.toFixed(1); }
  // Live render: debounce so dragging a slider only fires one render at rest.
- let t = null;
+ // We fetch INLINE SVG (not a PNG) so the debug knobs work on the DOM — click a
+ // ribbon to highlight its strand, and the crossing-network markers are live.
+ let t = null, pickedStrand = null;
  function preview() {
    clearTimeout(t);
    spin.textContent = 'updating…'; ours.classList.add('loading');
+   state.casing = shadowHex(state.shadow);
    t = setTimeout(async () => {
      try {
-       const r = await fetch('/api/preview', {
+       const r = await fetch('/api/preview-svg', {
          method: 'POST', headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify({ source_variant: 'weave', params: state }),
        });
        if (!r.ok) throw new Error(await r.text());
-       const { url } = await r.json();
-       ours.onload = () => { spin.textContent = ''; ours.classList.remove('loading'); };
-       ours.src = url;
+       ours.innerHTML = await r.text();
+       wireStrandPicks();
+       spin.textContent = ''; ours.classList.remove('loading');
      } catch (e) {
        spin.textContent = "couldn't render — " + e.message; ours.classList.remove('loading');
      }
    }, 300);
  }
+ // Click a ribbon → highlight every path sharing its data-strand. Re-applied
+ // after each render because innerHTML replaces the SVG DOM.
+ function wireStrandPicks() {
+   const paths = ours.querySelectorAll('[data-strand]');
+   paths.forEach(el => el.addEventListener('click', () => {
+     const id = el.getAttribute('data-strand');
+     const already = (pickedStrand === id);
+     ours.querySelectorAll('[data-strand].picked').forEach(p => p.classList.remove('picked'));
+     if (already) { pickedStrand = null; pickLbl.textContent = ''; return; }
+     pickedStrand = id;
+     ours.querySelectorAll('[data-strand="' + id + '"]').forEach(p => p.classList.add('picked'));
+     pickLbl.textContent = '— ribbon #' + id + ' highlighted (click it again to clear)';
+   }));
+   // re-apply a sticky pick across re-renders
+   if (pickedStrand !== null) {
+     ours.querySelectorAll('[data-strand="' + pickedStrand + '"]').forEach(p => p.classList.add('picked'));
+   }
+ }
  widthEl.addEventListener('input', () => { state.width = parseFloat(widthEl.value); syncLabels(); preview(); });
  suppressEl.addEventListener('change', () => { state.suppress = suppressEl.checked; preview(); });
+
+ // ── Weave-style toggle (Flat lattice ↔ Interwoven ribbons) ──
+ const styleFlat = document.getElementById('styleFlat');
+ const styleCross = document.getElementById('styleCross');
+ const ringsDial = document.getElementById('ringsDial');
+ const stepDial = document.getElementById('stepDial');
+ const stepEl = document.getElementById('step');
+ const stepVal = document.getElementById('stepVal');
+ const shadowDial = document.getElementById('shadowDial');
+ const shadowEl = document.getElementById('shadow');
+ const shadowVal = document.getElementById('shadowVal');
+ const netDial = document.getElementById('netDial');
+ const networkEl = document.getElementById('network');
+ const pickHint = document.getElementById('pickHint');
+ function syncStyle() {
+   const cross = state.style === 'crossing';
+   styleCross.classList.toggle('sel', cross);
+   styleFlat.classList.toggle('sel', !cross);
+   // The crossing-ring + debug controls only matter for the interwoven style.
+   ringsDial.style.display = cross ? '' : 'none';
+   stepDial.style.display = cross ? '' : 'none';
+   shadowDial.style.display = cross ? '' : 'none';
+   netDial.style.display = cross ? '' : 'none';
+   pickHint.style.display = cross ? '' : 'none';
+ }
+ function syncShadow() { shadowVal.textContent = state.shadow <= 0 ? 'auto' : state.shadow + '%'; }
+ shadowEl.addEventListener('input', () => { state.shadow = parseInt(shadowEl.value, 10); syncShadow(); preview(); });
+ networkEl.addEventListener('change', () => { state.network = networkEl.checked; preview(); });
+ styleFlat.addEventListener('click', () => { state.style = 'flat'; syncStyle(); preview(); });
+ styleCross.addEventListener('click', () => { state.style = 'crossing'; syncStyle(); preview(); });
+
+ // ── Per-ring on/off checkboxes ──
+ const ringchecks = document.getElementById('ringchecks');
+ WEAVE_RINGS.forEach(([key, label]) => {
+   const lab = document.createElement('label');
+   lab.className = 'toggle';
+   const cb = document.createElement('input');
+   cb.type = 'checkbox'; cb.checked = state.rings[key];
+   cb.addEventListener('change', () => { state.rings[key] = cb.checked; preview(); });
+   lab.appendChild(cb);
+   lab.appendChild(document.createTextNode(' ' + label));
+   ringchecks.appendChild(lab);
+ });
+
+ // ── Fullness {n/k} step slider ──
+ stepEl.addEventListener('input', () => { state.step = parseInt(stepEl.value, 10); stepVal.textContent = '{10/' + state.step + '}'; preview(); });
+
  // First render on load.
- syncLabels(); preview();
+ stepVal.textContent = '{10/' + state.step + '}';
+ syncShadow(); syncStyle(); syncLabels(); preview();
 
  const agreeBtn = document.getElementById('agree');
  agreeBtn.addEventListener('click', async () => {
@@ -488,6 +674,114 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
      document.getElementById('saved').textContent = "couldn't save — try again";
    }
  });
+</script>
+</body></html>"""
+
+
+# The /animate endpoint (#14): watch the medallion ASSEMBLE itself — centre first,
+# then each wave flying in from the rim and settling into place, wave by wave. The
+# live SVG carries its own per-face @keyframes (radial_assemble), so the build-in
+# PLAYS in the browser; "Play again" re-injects the SVG to restart from frame 0.
+# Three plain dials (start distance / wave gap / settle speed) re-render live.
+# Grandma-plain (Tenet 27): one picture, one obvious button, no engine jargon.
+ANIMATE_HTML = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Watch it build itself</title>
+<style>__CSS__
+ .stage { display: block; }
+ .frame { width: 100%; max-width: 640px; margin: 0 auto; display: block;
+          border-radius: 12px; background: #fff; border: 1px solid var(--line);
+          min-height: 320px; overflow: hidden; }
+ .frame svg { width: 100%; height: auto; display: block; }
+ .frame.loading { opacity: .55; transition: opacity .2s ease; }
+ .controls { margin-top: 22px; text-align: center; }
+ .controls button { font: inherit; font-size: 16px; font-weight: 700; color: #fff;
+          height: 46px; padding: 0 28px; border-radius: 999px;
+          border: 1px solid var(--agree); background: var(--agree); cursor: pointer;
+          transition: transform .15s ease, box-shadow .15s ease; }
+ .controls button:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+ .dials { margin-top: 26px; display: grid; gap: 20px; max-width: 520px;
+          margin-left: auto; margin-right: auto; }
+ .dial label { display: block; font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+ .dial .hint { font-weight: 400; color: var(--muted); font-size: 13.5px; }
+ .dial input[type=range] { width: 100%; }
+ .dial .val { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 700; }
+ .spin { display: block; text-align: center; font-size: 13px; color: var(--muted); margin-top: 10px; }
+</style></head><body>
+<header>
+ <h1>Watch your pattern build itself</h1>
+ <p class="muted">The middle appears first, then each ring of shapes flies in from
+  the edge and settles into place — ring by ring, out to the rim. Press
+  <b>Play again</b> to watch it from the start, or drag the sliders to change how it
+  feels. <a href="/">Back to your review list</a></p>
+</header>
+<main>
+ <div class="gate">
+  <div class="stage">
+   <div id="frame" class="frame"></div>
+   <div id="spin" class="spin"></div>
+  </div>
+  <div class="controls">
+   <button id="play">&#9654; Play again</button>
+  </div>
+ </div>
+
+ <div class="gate">
+  <div class="dials">
+   <div class="dial">
+    <label>How far out the shapes start
+     <span class="hint">&mdash; bigger = they sweep in from further away</span>
+     <span class="val" id="spreadV"></span></label>
+    <input type="range" id="spread" min="1.2" max="2.6" step="0.1" value="1.8">
+   </div>
+   <div class="dial">
+    <label>Gap between waves
+     <span class="hint">&mdash; bigger = each ring waits longer before flying in</span>
+     <span class="val" id="staggerV"></span></label>
+    <input type="range" id="stagger" min="0.06" max="0.4" step="0.02" value="0.18">
+   </div>
+   <div class="dial">
+    <label>How fast each shape settles
+     <span class="hint">&mdash; smaller = snappier, bigger = slower glide</span>
+     <span class="val" id="durV"></span></label>
+    <input type="range" id="dur" min="0.6" max="2.4" step="0.1" value="1.4">
+   </div>
+  </div>
+ </div>
+</main>
+<script>
+ const frame = document.getElementById('frame');
+ const spin = document.getElementById('spin');
+ const ctl = { spread: document.getElementById('spread'),
+               stagger: document.getElementById('stagger'),
+               dur: document.getElementById('dur') };
+ const lbl = { spread: document.getElementById('spreadV'),
+               stagger: document.getElementById('staggerV'),
+               dur: document.getElementById('durV') };
+ function syncLabels() {
+   lbl.spread.textContent = (+ctl.spread.value).toFixed(1) + '\\u00d7';
+   lbl.stagger.textContent = (+ctl.stagger.value).toFixed(2) + 's';
+   lbl.dur.textContent = (+ctl.dur.value).toFixed(1) + 's';
+ }
+ let timer = null;
+ async function render() {
+   syncLabels();
+   const params = { spread: +ctl.spread.value, stagger: +ctl.stagger.value, dur: +ctl.dur.value };
+   frame.classList.add('loading');
+   spin.textContent = 'building\\u2026';
+   try {
+     const r = await fetch('/api/preview-buildin-svg', {
+       method: 'POST', headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ params }) });
+     if (!r.ok) { spin.textContent = 'could not build the picture \\u2014 try again'; return; }
+     frame.innerHTML = await r.text();
+     spin.textContent = '';
+   } catch (e) { spin.textContent = 'could not build the picture \\u2014 try again'; }
+   finally { frame.classList.remove('loading'); }
+ }
+ function debounced() { clearTimeout(timer); timer = setTimeout(render, 250); }
+ for (const k in ctl) ctl[k].addEventListener('input', () => { syncLabels(); debounced(); });
+ document.getElementById('play').addEventListener('click', render);
+ render();
 </script>
 </body></html>"""
 
@@ -947,34 +1241,106 @@ def main() -> None:
             out.append(ln)
         return "\n".join(out).rstrip() + "\n"
 
+    # The medallion's principal concentric rings that can carry a woven
+    # star-polygon overlay, keyed by the studio's plain-language ring name.
+    # Each entry: (blueprint circle id, fold/division count). Only LOW-fold
+    # rings are exposed — a {n/k} star on a 400/800-fold ring packs crossings
+    # sub-pixel and reads as a solid disc (the v1-draft lesson, 2026-06-16).
+    # `default_step` is the {n/k} skip that makes adjacent chords cross into a
+    # woven star (k≈n/2-1 for a dense interlace; k=3 for a clean 10-point star).
+    WEAVE_RINGS = {
+        "center": {"circle": "C0", "fold": 10, "default_step": 3, "label": "Centre star"},
+        "petal_base": {"circle": "C4", "fold": 10, "default_step": 3, "label": "Petal base"},
+        "petal_tip": {"circle": "C7", "fold": 10, "default_step": 3, "label": "Petal tips"},
+        "outer": {"circle": "C17", "fold": 10, "default_step": 3, "label": "Outer frame"},
+    }
+
     def build_weave_variant(src_bkr: str, params: dict) -> str:
-        # Append a live `strapwork` block built from the owner's dials to a
-        # flat source. Every value is the owner's choice (or the iter-71
-        # derived default) — no magic numbers invented here; the defaults are
-        # the measured ones documented in the source's commented block.
+        # Append a live weave to a flat source from the owner's dials. Two
+        # styles (the owner picks via the studio toggle):
+        #   - "flat"     : the legacy painted-lattice `strapwork` over the whole
+        #                  tile graph (band width / colour / spoke-trim dials).
+        #   - "crossing" : the crossing-network re-author (2026-06-16) — overlay
+        #                  self-crossing {n/k} star chords on chosen rings so the
+        #                  strapwork weaver genuinely interlaces them over/under.
+        # Every value is the owner's choice or a measured default — no invented
+        # magic numbers (the defaults are the iter-71 measured ones / the
+        # WEAVE_RINGS construction folds).
         width = float(params.get("width", 10))
         color = str(params.get("color", "#FCFDFD"))
         suppress = bool(params.get("suppress", True))
         suppress_tol = float(params.get("suppress_tol", 22))
         suppress_beyond = float(params.get("suppress_beyond", 0.69))
+        style = str(params.get("style", "flat"))
+        # Casing = the interlace shadow colour. Empty / "auto" → let the engine
+        # derive a darkened band shade (the default); a hex value is the owner's
+        # "make the shadows darker/lighter" dial. The 2026-06-17 fix: white-into-
+        # white casing carved an invisible gap, so the weave read as a solid disc.
+        casing = str(params.get("casing", "")).strip()
+        # debug_network = overlay markers at every degree-4 crossing so the owner
+        # can SEE where the ribbons actually weave (studio-only; never shipped).
+        debug_network = bool(params.get("network", False))
         # color must be a hex literal — the lexer treats bare `#` as a comment,
         # so a hex colour only parses after the `color ` keyword (see MEMORY).
         if not re.fullmatch(r"#[0-9A-Fa-f]{6}", color):
             color = "#FCFDFD"
-        body = [
+        if casing and not re.fullmatch(r"#[0-9A-Fa-f]{6}", casing):
+            casing = ""
+
+        overlay: list[str] = []
+        if style == "crossing":
+            # Which rings the owner toggled on, and the {n/k} fullness slider.
+            enabled = params.get("rings") or {}
+            step = int(params.get("step", 3))
+            if step < 1:
+                step = 1
+            # The `weave` primitive scopes the weaver to ONLY these ring chords
+            # (WEAVE_OVERLAY_TAG wins highest precedence in strapworkSourceGraph),
+            # so the 22-wave tile lattice is NOT repainted — the failure mode of
+            # plain strapwork that drove Path A (bikar#653; verified 2026-06-16,
+            # /tmp/m10-weave-contrast.png). One `weave` block, one `ring` line
+            # per toggled-on ring; the strapwork block below renders the weave.
+            ring_lines: list[str] = []
+            for key, ring in WEAVE_RINGS.items():
+                # default: all rings on if the owner sent no explicit map.
+                on = enabled.get(key, True) if enabled else True
+                if not on:
+                    continue
+                # clamp step into a valid {n/k} range for this ring's fold.
+                k = max(1, min(step, ring["fold"] // 2))
+                ring_lines.append(f"    ring every {k} on {ring['circle']}")
+            if ring_lines:
+                overlay.append("  # ── crossing-network weave overlay (transient) ──")
+                overlay.append("  # `weave` scopes the weaver to ONLY these ring chords")
+                overlay.append("  # (degree-4 self-crossings) — the tile lattice is untouched.")
+                overlay.append("  weave .weave_overlay")
+                overlay.extend(ring_lines)
+
+        body = list(overlay)
+        body += [
             "  # ── weave studio live preview (transient — source stays flat) ──",
             "  strapwork",
             f"    width {width:g}",
             "    crossing alternating",
             f"    color {color}",
         ]
-        if suppress:
+        # Casing shadow colour (the interlace gap). Omitted → engine derives a
+        # darkened band shade; set → the owner's explicit shadow-darkness dial.
+        if casing:
+            body.append(f"    casing {casing}")
+        if debug_network:
+            body.append("    debug_network")
+        # Spoke-trim only applies to the flat lattice; crossing chords are
+        # mostly tangential, so suppress_radial would wrongly drop them.
+        if suppress and style == "flat":
             body.append(f"    suppress_radial {suppress_tol:g} beyond {suppress_beyond:g}")
         flat = _strip_strapwork(src_bkr)
-        # The strapwork block belongs inside the `pattern` body, at the same
-        # indent as the other pattern statements. The source's pattern block is
-        # the last top-level block, so appending the indented block at EOF lands
-        # it inside the pattern (the evaluator scopes by indent).
+        # The block belongs inside the `pattern` body, at the same indent as the
+        # other pattern statements. The source's pattern block is the last
+        # top-level block, so appending the indented block at EOF lands it inside
+        # the pattern (the evaluator scopes by indent). The overlay must precede
+        # `voids detect` to be woven — but appending after also works because the
+        # evaluator collects all segments before the single voids/strapwork pass.
         return flat.rstrip() + "\n" + "\n".join(body) + "\n"
 
     def _rasterize_svg(svg_path: Path, png_path: Path, height: int) -> None:
@@ -1018,6 +1384,101 @@ def main() -> None:
             subprocess.run(cmd, check=True, capture_output=True, text=True)
             _rasterize_svg(svg_path, png_path, height)
             return png_path.read_bytes()
+
+    def render_weave_svg(params: dict) -> str:
+        # Same live-render primitive as render_weave_png, but returns the raw SVG
+        # text instead of a rasterised PNG. The studio embeds this inline so the
+        # debugging knobs work on the DOM: every ribbon carries data-strand="N"
+        # (click-to-highlight), and a network overlay can be drawn over the same
+        # coordinate space. PNG can't carry either — hence the SVG path.
+        src = bkr_text(best_iter())
+        if not src:
+            raise FileNotFoundError("no source pattern.bkr for the current best iteration")
+        variant = build_weave_variant(src, params)
+        with tempfile.TemporaryDirectory() as td:
+            bkr_path = Path(td) / "weave-variant.bkr"
+            svg_path = Path(td) / "weave-variant.svg"
+            bkr_path.write_text(variant)
+            cmd = [BIKAR_NODE_BIN, BIKAR_CLI_JS, "render", str(bkr_path), "-o", str(svg_path)]
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+            return svg_path.read_text()
+
+    def build_buildin_variant(src_bkr: str, params: dict) -> str:
+        # Bolt the `radial_assemble` build-in animation onto the flat source so the
+        # medallion ASSEMBLES itself on load: the centre seats first, then each wave
+        # flies in from the rim along its own radial axis and settles into place,
+        # ring by ring (the owner's 2026-06-16 request). The source stays flat — this
+        # is a transient overlay, same contract as build_weave_variant.
+        #
+        # Three dials, every default a measured value (no magic numbers):
+        #   spread  — how far out each face starts, as a multiple of its centroid
+        #             distance (from <spread>; 1.8 = start 1.8x out so the rim begins
+        #             off-frame). to 0 = seated home.
+        #   stagger — delay_per_layer; the per-distance-ring step. 0.18s × ~26 medallion
+        #             distance bins ≈ 4.6s of staggered build before the rim settles.
+        #   dur     — each face's own settle duration once its turn arrives.
+        spread = float(params.get("spread", 1.8))
+        stagger = float(params.get("stagger", 0.18))
+        dur = float(params.get("dur", 1.4))
+        easing = str(params.get("easing", "ease_out"))
+        if easing not in ("ease_out", "ease_in", "ease_in_out", "linear"):
+            easing = "ease_out"
+
+        # `[sides >= 3]` matches every polygon face, so all 22 waves participate;
+        # delay_per_layer reads faceRings (centroid-distance bin), so inner waves
+        # seat before outer waves regardless of the DSL `layer` colouring tags.
+        animate_block = (
+            "# ── build-in assembly (transient — source stays flat) ──\n"
+            "# radial_assemble: each face flies in from its own outward radial offset;\n"
+            "# delay_per_layer reads the centroid-distance ring (centre-first/rim-last).\n"
+            "animate buildin\n"
+            "  keyframes assemble\n"
+            "    target [sides >= 3]\n"
+            "    property radial_assemble\n"
+            f"    from {spread:g}\n"
+            "    to 0\n"
+            f"    duration {dur:g}s\n"
+            f"    delay_per_layer {stagger:g}s\n"
+            f"    easing {easing}\n\n"
+        )
+
+        flat = _strip_strapwork(src_bkr)
+        # Prepend the animate declaration as a clean top-level sibling, just before
+        # the first `blueprint` block; insert the one-line `animate buildin` reference
+        # into the pattern body right after `voids detect` (mirrors the proven
+        # animate-buildin/build_medallion_buildin.py generator).
+        marker = "\nblueprint "
+        idx = flat.find(marker)
+        if idx == -1:
+            # no blueprint marker (unexpected) — just prepend; the evaluator still
+            # reads the top-level animate, and the bare reference below wires it.
+            out = animate_block + flat
+        else:
+            out = flat[:idx] + "\n" + animate_block + flat[idx:].lstrip("\n")
+        vd = "\n  voids detect\n"
+        if vd in out:
+            out = out.replace(vd, vd + "  animate buildin\n", 1)
+        else:
+            # fall back to appending the reference at EOF inside the pattern body.
+            out = out.rstrip() + "\n  animate buildin\n"
+        return out
+
+    def render_buildin_svg(params: dict) -> str:
+        # The build-in live-render primitive: dials -> a fresh SVG whose embedded
+        # <style> carries the per-face @keyframes, so the assembly PLAYS in the
+        # browser (a PNG would freeze at the seated end-state — radial_assemble is
+        # motion, not a static frame). Same CLI seam as render_weave_svg.
+        src = bkr_text(best_iter())
+        if not src:
+            raise FileNotFoundError("no source pattern.bkr for the current best iteration")
+        variant = build_buildin_variant(src, params)
+        with tempfile.TemporaryDirectory() as td:
+            bkr_path = Path(td) / "buildin-variant.bkr"
+            svg_path = Path(td) / "buildin-variant.svg"
+            bkr_path.write_text(variant)
+            cmd = [BIKAR_NODE_BIN, BIKAR_CLI_JS, "render", str(bkr_path), "-o", str(svg_path)]
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+            return svg_path.read_text()
 
     def latest_gate_sbs(wave: int) -> Path | None:
         # The newest iteration that ran a wave-diff for this wave owns the
@@ -1413,6 +1874,89 @@ def main() -> None:
             return ""
         p = session_dir / "iterations" / str(it) / "waves" / f"wave-{n}.bkr"
         return p.read_text() if p.exists() else ""
+
+    def color_gate_pairs() -> list[dict]:
+        # The colour gate's A/B evidence, computed live: pair every colour the
+        # DSL paints with (the `palette` block in the best-iter .bkr) against the
+        # nearest colour the reference photo actually uses (the standardized
+        # dominants in reference-analysis.md). This is the productized form of
+        # the hand-built color-gate-review strip the owner asked to "bake into
+        # the server" — DSL hex on top, nearest reference hex below, an RGB
+        # distance, and a plain-words "matches well / a bit off" verdict so the
+        # owner never reads a number to judge it.
+        #
+        # Both sides are AUTHORED data (no live magick sampling needed for the
+        # default view): the palette block is source-of-record, the dominants
+        # were extracted once into reference-analysis.md (Stage-2 entry gate).
+        def hex_to_rgb(h: str) -> tuple[int, int, int]:
+            h = h.lstrip("#")
+            return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+        def rgb_dist(a: tuple[int, int, int], b: tuple[int, int, int]) -> float:
+            return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2) ** 0.5
+
+        # DSL palette: `<name> = #HEX` lines inside the `palette …` block of the
+        # best iteration's .bkr. Stop at the first non-palette statement so we
+        # don't sweep up unrelated `= #HEX` colour aliases elsewhere.
+        dsl: list[tuple[str, str]] = []
+        in_block = False
+        for raw in bkr_text(best_iter()).splitlines():
+            line = raw.strip()
+            if line.startswith("palette "):
+                in_block = True
+                continue
+            if in_block:
+                m = re.match(r"^([A-Za-z_]\w*)\s*=\s*(#[0-9A-Fa-f]{6})$", line)
+                if m:
+                    dsl.append((m.group(1), m.group(2).upper()))
+                elif line and not line.startswith("#"):
+                    break  # left the palette block
+
+        # Reference dominants: the markdown table rows `| name | `#HEX` | share |`
+        # in reference-analysis.md. The `gray` rim cluster is excluded there by
+        # note (not a tile colour), so we honour the same skip.
+        ref: list[tuple[str, str, str]] = []
+        ra = analysis_dir / "reference-analysis.md"
+        if ra.exists():
+            txt = ra.read_text()
+            for line in txt.splitlines():
+                m = re.match(
+                    r"^\|\s*([A-Za-z_0-9]+)\s*\|\s*`(#[0-9A-Fa-f]{6})`\s*\|\s*([0-9.]+%)\s*\|$",
+                    line.strip(),
+                )
+                if m and m.group(1).lower() != "gray":
+                    ref.append((m.group(1), m.group(2).upper(), m.group(3)))
+            # The lattice line is measured separately (it's the white weave, not a
+            # tile fill) — add it so a near-white DSL colour pairs to the lattice
+            # rather than mis-matching to the closest tile colour.
+            lm = re.search(r"Lattice line:\*\*\s*`(#[0-9A-Fa-f]{6})`", txt)
+            if lm:
+                ref.append(("lattice line", lm.group(1).upper(), None))
+
+        pairs: list[dict] = []
+        for name, dhex in dsl:
+            drgb = hex_to_rgb(dhex)
+            best = None
+            for rname, rhex, share in ref:
+                d = rgb_dist(drgb, hex_to_rgb(rhex))
+                if best is None or d < best[3]:
+                    best = (rname, rhex, share, d)
+            if best is None:
+                # No reference table — still show the DSL colour, unpaired.
+                pairs.append({"dsl_name": name, "dsl_hex": dhex, "ref_name": None,
+                              "ref_hex": None, "share": None, "dist": None,
+                              "verdict": "unknown"})
+                continue
+            rname, rhex, share, dist = best
+            # Plain-words verdict (Tenet 27): the owner judges by the word, not
+            # the number. <25 reads as a match to the eye; >55 is visibly off.
+            verdict = "good" if dist < 25 else ("close" if dist < 55 else "off")
+            pairs.append({
+                "dsl_name": name, "dsl_hex": dhex,
+                "ref_name": rname, "ref_hex": rhex, "share": share,
+                "dist": round(dist, 1), "verdict": verdict,
+            })
+        return pairs
 
     def diff_panes(before: str, after: str) -> tuple[str, str]:
         # PR-style side-by-side: the before recipe with removed lines red,
@@ -2165,6 +2709,14 @@ def main() -> None:
                 "(all those little kites).</p>"
                 "<a class='go' href='/simplify'>See the shapes</a></div>"
             )
+            todo.append(
+                "<div class='gate'><h2>Watch it build itself"
+                "<span class='badge done'>live</span></h2>"
+                "<p>Press play and watch your pattern assemble — the middle "
+                "appears first, then each ring of shapes flies in from the edge "
+                "and settles into place, out to the rim.</p>"
+                "<a class='go' href='/animate'>Watch it build</a></div>"
+            )
         if (analysis_dir / "swatch-sheet.png").exists():
             if not palette_agreed:
                 todo.append(
@@ -2557,6 +3109,17 @@ def main() -> None:
                 self.end_headers()
                 self.wfile.write(data)
                 return
+            elif self.path == "/api/color-pairs":
+                # The colour-gate A/B data: each DSL colour paired to the nearest
+                # colour the reference photo uses, with a plain-words verdict.
+                # The /palette page fetches this to render the pairing strip.
+                body = json.dumps(color_gate_pairs()).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
             if self.path == "/waves":
                 self._send_html(waves_html())
                 return
@@ -2575,6 +3138,12 @@ def main() -> None:
                     .replace("__APPROVED__", json.dumps(approved))
                     .replace("__NOTE__", html.escape(note))
                 )
+                return
+            if self.path == "/animate":
+                # The build-in assembly viewer (#14): watch the medallion grow
+                # itself centre-first, wave-by-wave. The page fetches a live SVG
+                # whose embedded @keyframes play the radial_assemble build-in.
+                self._send_html(ANIMATE_HTML.replace("__CSS__", HUB_CSS))
                 return
             # Live-render output: a transient PNG written by POST /api/preview,
             # served by its opaque id. Path-guarded to the preview dir.
@@ -2804,6 +3373,55 @@ def main() -> None:
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)
+            elif self.path == "/api/preview-svg":
+                # Inline-SVG variant of /api/preview — returns the raw SVG text so
+                # the studio can attach the debugging knobs (click-a-ribbon-to-
+                # highlight via data-strand, and the crossing-network overlay).
+                try:
+                    data = json.loads(self._read_body())
+                except json.JSONDecodeError:
+                    self.send_error(400, "body must be JSON")
+                    return
+                params = data.get("params", {})
+                try:
+                    svg = render_weave_svg(params)
+                except subprocess.CalledProcessError as e:
+                    self.send_error(500, f"render failed: {(e.stderr or e.stdout or str(e)).strip()[:300]}")
+                    return
+                except Exception as e:
+                    self.send_error(500, f"preview failed: {e}")
+                    return
+                out = svg.encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/svg+xml")
+                self.send_header("Content-Length", str(len(out)))
+                self.end_headers()
+                self.wfile.write(out)
+            elif self.path == "/api/preview-buildin-svg":
+                # Live build-in render (#14): dials -> a fresh SVG whose embedded
+                # <style> carries the per-face @keyframes, so re-injecting it into
+                # the page restarts the assembly from frame 0. Same render seam as
+                # /api/preview-svg, just the radial_assemble variant.
+                try:
+                    data = json.loads(self._read_body())
+                except json.JSONDecodeError:
+                    self.send_error(400, "body must be JSON")
+                    return
+                params = data.get("params", {})
+                try:
+                    svg = render_buildin_svg(params)
+                except subprocess.CalledProcessError as e:
+                    self.send_error(500, f"render failed: {(e.stderr or e.stdout or str(e)).strip()[:300]}")
+                    return
+                except Exception as e:
+                    self.send_error(500, f"build-in preview failed: {e}")
+                    return
+                out = svg.encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/svg+xml")
+                self.send_header("Content-Length", str(len(out)))
+                self.end_headers()
+                self.wfile.write(out)
             elif self.path == "/api/weave-verdict":
                 # The owner's weave-gate call, recorded where the loop reads it
                 # (session.json stage_gates.weave) — no chat transcription.
