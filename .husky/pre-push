@@ -1,0 +1,21 @@
+#!/usr/bin/env sh
+# Cross-repo tenet 12 — defense-in-depth secret gate at PUSH time (sacred-patterns#345).
+#
+# The pre-commit hook scans staged hunks, so a normal `git commit` can't
+# introduce a secret. This pre-push hook adds the second layer: a full-history
+# scan (`gitleaks detect`) that also catches secrets slipped in by paths the
+# staged-hunk scan never sees — `commit --no-verify`, an interactive rebase that
+# reorders/squashes, a merge that pulls in another branch's leak, or a hunk
+# committed before this gate existed. Mirrors bikar's .husky/pre-push.
+#
+# Skipped silently if gitleaks isn't installed so pushes still work on machines
+# without it; CI / `make gitleaks` is the durable backstop.
+if command -v gitleaks >/dev/null 2>&1; then
+  echo "[pre-push] gitleaks full-history scan"
+  gitleaks detect --no-banner --redact || {
+    echo ""
+    echo "  Secret scan failed — push blocked. Inspect the finding above."
+    echo "  If it's a false positive, allowlist it in .gitleaks.toml."
+    exit 1
+  }
+fi
