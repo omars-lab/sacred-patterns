@@ -8,6 +8,7 @@
     "serve": "npx serve site",
     "test": "node test/regression/check.js",
     "test:visual": "playwright test",
+    "test:studio": "playwright test --config tools/tests/studio-visual/studio.config.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/ts",
     "prepare": "husky",
