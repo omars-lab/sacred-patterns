@@ -514,3 +514,28 @@ OR, on owner go-ahead, push the two batched commits / build #54. Idle-not-blocke
 trigger = owner go-ahead on push-vs-color-vs-#54.
 **Held:** bikar 1 (`50897af` committed, unpushed) / qiyas 0 / sacred-patterns 1
 (`f1ae423` committed, unpushed) — both held for one batched push per the GHA-budget tenet.
+
+---
+
+## 2026-06-17 — WEAVE-gate monitor (PID 87867) watches the WRONG json path; the loop self-wake is the real signal
+
+**Plain English:** the long-lived background monitor that's supposed to wake the loop when the owner
+approves the weave reads the wrong key in `session.json`, so it will never fire — even after a real
+approval. The loop's own periodic self-wake (which reads the correct key) is what actually catches the
+verdict; don't trust the monitor as the primary wake.
+
+**Detail:** monitor PID 87867 polls `d.get('weave',{})` — the **top-level** `weave` key, which does
+not exist (always `{}` → prints `None 0` forever, never changes, never fires). The authoritative gate
+is at `stage_gates.weave.approved` / `.verdicts`, written by `POST /api/weave-verdict`
+(`tools/wave-plan-server.py:3437`, `s["stage_gates"].setdefault("weave",{})`) and read back at
+:2739/:3134 as `gates.get("weave",{}).get("approved")` where `gates = stage_gates`. The loop prompt
+forbids re-arming the monitor, so the fix is NOT to re-arm — it's to keep reading
+`stage_gates.weave` directly each tick (already done) and rely on the ScheduleWakeup heartbeat, not
+the monitor, to land the owner verdict. A future re-arm (if ever authorized) must watch
+`d['stage_gates']['weave']`, not `d['weave']`.
+
+**FIXED 2026-06-17 (same day):** owner authorized the fix. Killed the mis-pathed monitor (PID 87867 /
+task bkxvggy7c) and re-armed a correct one — task **bt4dilwoq**, watching
+`d['stage_gates']['weave']` (approved / verdicts / note), emitting on any change AND on read errors so
+a crash can't masquerade as "no verdict." This monitor is now the dependable primary wake again; the
+ScheduleWakeup heartbeat remains the backstop.
