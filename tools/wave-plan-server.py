@@ -554,6 +554,55 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
    casing: '',                                       // resolved hex from shadow %, '' = auto
    network: false,                                   // show crossing markers
  };
+ // ── URL params — every knob is shareable/bookmarkable (owner 2026-06-17) ──
+ // Read on init (so a shared link reproduces the exact render); write on every
+ // change (so the address bar always reflects the live dials). Keys are short
+ // and stable; unknown/garbage values fall back to the state default.
+ const URL_KEYS = {
+   style:         { get: () => state.style,         set: v => { if (['flat','crossing','field'].includes(v)) state.style = v; } },
+   width:         { get: () => state.width,          set: v => { const n = parseFloat(v); if (!isNaN(n)) state.width = n; } },
+   color:         { get: () => state.color,          set: v => { if (/^#[0-9a-fA-F]{6}$/.test(v)) state.color = v; } },
+   step:          { get: () => state.step,           set: v => { const n = parseInt(v, 10); if (!isNaN(n)) state.step = n; } },
+   shadow:        { get: () => state.shadow,         set: v => { const n = parseInt(v, 10); if (!isNaN(n)) state.shadow = n; } },
+   network:       { get: () => state.network ? 1 : 0, set: v => { state.network = (v === '1' || v === 'true'); } },
+   field_angle:   { get: () => state.field_angle,    set: v => { const n = parseInt(v, 10); if (!isNaN(n)) state.field_angle = n; } },
+   field_ray:     { get: () => state.field_ray,      set: v => { const n = parseInt(v, 10); if (!isNaN(n)) state.field_ray = n; } },
+   field_wave_lo: { get: () => state.field_wave_lo,  set: v => { const n = parseInt(v, 10); if (!isNaN(n)) state.field_wave_lo = n; } },
+   field_wave_hi: { get: () => state.field_wave_hi,  set: v => { const n = parseInt(v, 10); if (!isNaN(n)) state.field_wave_hi = n; } },
+   // rings = comma-joined subset of {center,petal_base,petal_tip,outer} that are ON.
+   rings:         { get: () => WEAVE_RINGS.filter(([k]) => state.rings[k]).map(([k]) => k).join(','),
+                    set: v => { const on = new Set(v.split(',')); WEAVE_RINGS.forEach(([k]) => { state.rings[k] = on.has(k); }); } },
+ };
+ function loadFromURL() {
+   const q = new URLSearchParams(location.search);
+   for (const [key, h] of Object.entries(URL_KEYS)) {
+     if (q.has(key)) { try { h.set(q.get(key)); } catch (e) { /* keep default */ } }
+   }
+ }
+ function syncURL() {
+   const q = new URLSearchParams();
+   for (const [key, h] of Object.entries(URL_KEYS)) q.set(key, String(h.get()));
+   history.replaceState(null, '', location.pathname + '?' + q.toString());
+ }
+ // Mirror the loaded state onto every DOM control so the dials show what the URL
+ // asked for (otherwise the sliders read their HTML default while state differs).
+ function syncControlsFromState() {
+   widthEl.value = state.width;
+   suppressEl.checked = state.suppress;
+   stepEl.value = state.step;
+   shadowEl.value = state.shadow;
+   networkEl.checked = state.network;
+   fieldAngleEl.value = state.field_angle;
+   fieldRayEl.value = state.field_ray;
+   fieldWaveLoEl.value = state.field_wave_lo;
+   fieldWaveHiEl.value = state.field_wave_hi;
+   document.querySelectorAll('#ringchecks input[type=checkbox]').forEach((cb, i) => {
+     const key = WEAVE_RINGS[i][0]; cb.checked = state.rings[key];
+   });
+   document.querySelectorAll('.swatch').forEach(s => {
+     s.classList.toggle('sel', s.dataset.color === state.color);
+   });
+ }
  // Shadow darkness % → a grey hex. 0 keeps casing='' (engine auto-derives a
  // darkened band shade); >0 maps to a grey from light (#B0B0B0) to black.
  function shadowHex(pct) {
@@ -593,6 +642,7 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
    clearTimeout(t);
    spin.textContent = 'updating…'; ours.classList.add('loading');
    state.casing = shadowHex(state.shadow);
+   syncURL();   // keep the address bar in lock-step with the live dials
    t = setTimeout(async () => {
      try {
        const r = await fetch('/api/preview-svg', {
@@ -702,7 +752,10 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
  // ── Fullness {n/k} step slider ──
  stepEl.addEventListener('input', () => { state.step = parseInt(stepEl.value, 10); stepVal.textContent = '{10/' + state.step + '}'; preview(); });
 
- // First render on load.
+ // First render on load. Pull any shared-link params into state, then mirror
+ // them onto the controls so the dials match before the first preview fires.
+ loadFromURL();
+ syncControlsFromState();
  stepVal.textContent = '{10/' + state.step + '}';
  fieldAngleVal.textContent = state.field_angle + '°';
  fieldRayVal.textContent = state.field_ray;
@@ -3215,7 +3268,11 @@ def main() -> None:
             if self.path == "/simplify":
                 self._send_html(simplify_html())
                 return
-            if self.path == "/weave-studio":
+            if self.path.split("?", 1)[0] == "/weave-studio":
+                # Query string carries the shareable knob params (style, θ, ray,
+                # rings, …); the page's JS reads them client-side, so the route
+                # must match path-only (a bare `== "/weave-studio"` 404s on any
+                # `?…` link — the whole point of the URL-param feature).
                 gates = session().get("stage_gates", {})
                 approved = bool(gates.get("weave", {}).get("approved"))
                 note = (gates.get("weave", {}).get("note") or "")
