@@ -39,6 +39,7 @@ Plan `.claude/plans/dreamy-wandering-meerkat.md`; decision doc (pending #25)
 - [bikar] strapwork mitre degree-1/2 terminal band ends — outer-petal weave closes — commit `7007025`
 - [bikar] band-emitter interlace-collapse + stub-casing fixes; render woven bands ON TOP of colored layers (burial bug); CLI cssBlock fix so animations reach CLI SVG
 - [sp] weave studio in `tools/wave-plan-server.py`: Flat-lattice/Interwoven toggle, per-ring checkboxes, {10/k} fullness slider, debug knobs; verdicts write `session.json` weave gate via `POST /api/weave-verdict`
+- [sp] weave studio 3rd style **'Field weave (arms too)'** wires the field-Hankin primitive (`field angle θ on wave N ray L`) into `build_weave_variant` with θ/ray/wave-band dials — fixes owner-reported "no over/under on arms/perimeter": the ring weave crossed only at ring centres, field-Hankin distributes crossings BETWEEN tiles across the whole field (verified 17.9k crossings in the outer annulus, waves 13-22) — commit `6c8220e`; diagnosis + witnesses in `sessions/bikar-medallion-10/ISSUES-OBSERVED.md` (2026-06-17) + Dropbox `weave-studio-debug-2026-06-17/`
 - [sp] `/animate` radial_assemble build-in (grow medallion outer-edge inward, wave-by-wave)
 - [sp] portal verdicts → git source-of-record (`--session-json` flag, Option A)
 - [sp] #34 retarget two session-stale portal regressions to merged `/waves` — commit `afb9f19`
