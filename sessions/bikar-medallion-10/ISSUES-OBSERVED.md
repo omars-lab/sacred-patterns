@@ -539,3 +539,61 @@ task bkxvggy7c) and re-armed a correct one — task **bt4dilwoq**, watching
 `d['stage_gates']['weave']` (approved / verdicts / note), emitting on any change AND on read errors so
 a crash can't masquerade as "no verdict." This monitor is now the dependable primary wake again; the
 ScheduleWakeup heartbeat remains the backstop.
+
+---
+
+## 2026-06-17 — Weave studio "no over/under" is ILLEGIBILITY, not absence — bands too thin, casing reads as dashes, wrong crossing distribution
+
+**Plain English (owner report + screenshot):** the weave studio shows no over/under weaving on the
+bands, the shadow toggle seems to do nothing, and the perimeter / central star has an ugly thick grey
+doubled halo. The owner is right that it looks wrong — but the surprise from the render-and-look
+(Tenet 24) is that the over/under IS in the SVG; it's just visually illegible.
+
+**What the render-and-look actually found (three layers, simplest first):**
+
+1. **The engine over/under WORKS.** The canonical `patterns/Weave/Weave-8.bkr` witness renders a clean,
+   genuine basket weave — counting paths *inside the groups* (not the class string): 8 `strapwork-over`
+   / 8 `strapwork-under` / 8 `strapwork-casing` paths, with dark shadows carving each "this band dips
+   under that one." So casing/over-under emission is not broken. (Earlier mis-measurement: grepping
+   `strapwork-casing` as a substring returns 1 — it's a single `<g>` wrapper; the real count is the
+   `<path>`s *inside* that group.)
+
+2. **The studio's served weave DOES contain interlace** — 180 over / 180 under / 180 casing paths
+   (POST `/api/preview-svg` `{style:crossing, casing:#0A2240}`). The crossings are geometrically present.
+   So "no over/under" is **illegibility, not absence**: at a high-res arm crop the dark-navy casings
+   read as ISOLATED dashes/diamonds sitting between tiles, and the white bands are too THIN relative to
+   the tile gaps to read as continuous woven ribbons. In Weave-8 the bands are wide ribbons and the
+   casing is an obvious gap; here width 10 against the medallion's tile spacing is too thin and the
+   casing stubs don't connect into a ribbon-under-ribbon read.
+
+3. **The central star grey halo** (the owner's "perimeter" complaint): at the center crop, a thick
+   light-grey doubled outline traces the 10-point star, and the inner rosette's bands are so dense+thin
+   they merge into a white blob with no legible weave. The halo is the casing/outline rendering light
+   instead of the dark-navy it was asked for at the dense center where bands overdraw each other.
+
+**SECONDARY (distribution) root cause — the studio never invokes field-Hankin.**
+`build_weave_variant` (`tools/wave-plan-server.py:1316`) emits the OLD per-circle ring weave
+(`weave .weave_overlay` + `ring every k on <circle>`), NEVER the field-Hankin primitive
+(`weave … field angle θ on wave N` — built this session, present in `packages/core/dist` 3×, reachable
+through the CLI which imports the symlinked local core). Per-circle {n/k} chords cross only at each
+ring's CENTER, so crossings cluster centrally and the arms get a sparse, irregular scatter — which is
+exactly why the weave looks busiest in the middle and thin on the arms.
+
+**Verified field-Hankin RUNS but needs tuning:** a hand-authored proof
+(`field angle 36 on wave 1-9 ray 60`) rendered through the CLI and produced 32 690 crossings — proof
+the primitive fires end-to-end — but over-densified into tiny black tangles inside the rosettes because
+θ=36 / ray=60 were wrong and waves 1-9 are the inner rosette tiles, not the arms. The fix is correct
+per-wave θ (≈90−180/n for an n-gon edge) on the ARM/perimeter waves, with ray bounded to the local
+inradius.
+
+**NEXT (all owner-gated tuning in the studio — #23, NEVER self-approve):**
+- (a) `build_weave_variant` should emit `field angle θ on wave N` on the arm/perimeter waves so
+  crossings distribute across the field, not pile centrally.
+- (b) widen the bands and/or tune casing so over/under reads as ribbons, not dashes (the legibility fix
+  — likely a band-width vs tile-gap ratio knob, measured against Weave-8's clean ratio).
+- (c) the central-star grey halo is a separate casing-overdraw/outline bug at the dense center.
+
+**Visual witnesses (rendered, eyeballed; in /tmp this session, regenerable):** `weave8.png` (GOOD
+reference interlace), `weave-studio-served.png` (flat-looking medallion), `studio-arm-crop.png`
+(casing-as-dashes), `studio-center-crop.png` (grey halo + white blob), `field-hankin-proof.png`
+(field primitive fires but untuned).

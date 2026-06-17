@@ -482,6 +482,7 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
     <div class="styletoggle">
      <button type="button" id="styleFlat" class="styopt sel">Flat lattice</button>
      <button type="button" id="styleCross" class="styopt">Interwoven ribbons</button>
+     <button type="button" id="styleField" class="styopt">Field weave (arms too)</button>
     </div>
    </div>
    <div class="dial" id="ringsDial" style="display:none">
@@ -497,6 +498,22 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
     <label>Shadow darkness <span class="hint">— how dark the gap is where one ribbon dips under another</span>
      <span class="val" id="shadowVal"></span></label>
     <input type="range" id="shadow" min="0" max="100" step="5" value="0">
+   </div>
+   <div class="dial" id="fieldAngleDial" style="display:none">
+    <label>Weave angle <span class="hint">— how steeply the ribbons cross between tiles</span>
+     <span class="val" id="fieldAngleVal"></span></label>
+    <input type="range" id="fieldAngle" min="20" max="80" step="2" value="36">
+   </div>
+   <div class="dial" id="fieldRayDial" style="display:none">
+    <label>Ribbon reach <span class="hint">— shorter = sparser, longer = fuller (too long tangles)</span>
+     <span class="val" id="fieldRayVal"></span></label>
+    <input type="range" id="fieldRay" min="6" max="80" step="2" value="24">
+   </div>
+   <div class="dial" id="fieldWaveDial" style="display:none">
+    <label>Which rings weave <span class="hint">— the band of rings (inner→outer) that interlace</span>
+     <span class="val" id="fieldWaveVal"></span></label>
+    <input type="range" id="fieldWaveLo" min="1" max="22" step="1" value="13">
+    <input type="range" id="fieldWaveHi" min="1" max="22" step="1" value="22">
    </div>
    <div class="dial" id="netDial" style="display:none">
     <label class="toggle"><input type="checkbox" id="network">
@@ -527,9 +544,12 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
  ];
  const state = {
    width: 10, color: '#FCFDFD', suppress: true,
-   style: 'flat',                                   // 'flat' | 'crossing'
-   step: 3,                                          // {n/k} fullness
+   style: 'flat',                                   // 'flat' | 'crossing' | 'field'
+   step: 3,                                          // {n/k} fullness (crossing)
    rings: { center: true, petal_base: true, petal_tip: true, outer: true },
+   field_angle: 36,                                 // field-Hankin contact angle θ
+   field_ray: 24,                                   // field-Hankin ray reach
+   field_wave_lo: 13, field_wave_hi: 22,            // field-Hankin wave band (arms/perimeter)
    shadow: 0,                                        // 0 = auto (engine-derived); >0 = explicit darkness %
    casing: '',                                       // resolved hex from shadow %, '' = auto
    network: false,                                   // show crossing markers
@@ -612,6 +632,7 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
  // ── Weave-style toggle (Flat lattice ↔ Interwoven ribbons) ──
  const styleFlat = document.getElementById('styleFlat');
  const styleCross = document.getElementById('styleCross');
+ const styleField = document.getElementById('styleField');
  const ringsDial = document.getElementById('ringsDial');
  const stepDial = document.getElementById('stepDial');
  const stepEl = document.getElementById('step');
@@ -619,25 +640,51 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
  const shadowDial = document.getElementById('shadowDial');
  const shadowEl = document.getElementById('shadow');
  const shadowVal = document.getElementById('shadowVal');
+ const fieldAngleDial = document.getElementById('fieldAngleDial');
+ const fieldRayDial = document.getElementById('fieldRayDial');
+ const fieldWaveDial = document.getElementById('fieldWaveDial');
  const netDial = document.getElementById('netDial');
  const networkEl = document.getElementById('network');
  const pickHint = document.getElementById('pickHint');
  function syncStyle() {
    const cross = state.style === 'crossing';
+   const field = state.style === 'field';
+   const woven = cross || field;                    // either interlace mode
    styleCross.classList.toggle('sel', cross);
-   styleFlat.classList.toggle('sel', !cross);
-   // The crossing-ring + debug controls only matter for the interwoven style.
+   styleField.classList.toggle('sel', field);
+   styleFlat.classList.toggle('sel', !woven);
+   // Crossing-only controls (per-ring {n/k} chords).
    ringsDial.style.display = cross ? '' : 'none';
    stepDial.style.display = cross ? '' : 'none';
-   shadowDial.style.display = cross ? '' : 'none';
-   netDial.style.display = cross ? '' : 'none';
-   pickHint.style.display = cross ? '' : 'none';
+   // Field-only controls (contact angle / ray reach / wave band).
+   fieldAngleDial.style.display = field ? '' : 'none';
+   fieldRayDial.style.display = field ? '' : 'none';
+   fieldWaveDial.style.display = field ? '' : 'none';
+   // Shadow + crossing-markers + ribbon-inspect apply to both woven styles.
+   shadowDial.style.display = woven ? '' : 'none';
+   netDial.style.display = woven ? '' : 'none';
+   pickHint.style.display = woven ? '' : 'none';
  }
  function syncShadow() { shadowVal.textContent = state.shadow <= 0 ? 'auto' : state.shadow + '%'; }
  shadowEl.addEventListener('input', () => { state.shadow = parseInt(shadowEl.value, 10); syncShadow(); preview(); });
  networkEl.addEventListener('change', () => { state.network = networkEl.checked; preview(); });
  styleFlat.addEventListener('click', () => { state.style = 'flat'; syncStyle(); preview(); });
  styleCross.addEventListener('click', () => { state.style = 'crossing'; syncStyle(); preview(); });
+ styleField.addEventListener('click', () => { state.style = 'field'; syncStyle(); preview(); });
+
+ // ── Field-Hankin dials (contact angle θ, ray reach, wave band) ──
+ const fieldAngleEl = document.getElementById('fieldAngle');
+ const fieldAngleVal = document.getElementById('fieldAngleVal');
+ const fieldRayEl = document.getElementById('fieldRay');
+ const fieldRayVal = document.getElementById('fieldRayVal');
+ const fieldWaveLoEl = document.getElementById('fieldWaveLo');
+ const fieldWaveHiEl = document.getElementById('fieldWaveHi');
+ const fieldWaveVal = document.getElementById('fieldWaveVal');
+ function syncFieldWave() { fieldWaveVal.textContent = state.field_wave_lo + '–' + state.field_wave_hi; }
+ fieldAngleEl.addEventListener('input', () => { state.field_angle = parseInt(fieldAngleEl.value, 10); fieldAngleVal.textContent = state.field_angle + '°'; preview(); });
+ fieldRayEl.addEventListener('input', () => { state.field_ray = parseInt(fieldRayEl.value, 10); fieldRayVal.textContent = state.field_ray; preview(); });
+ fieldWaveLoEl.addEventListener('input', () => { state.field_wave_lo = parseInt(fieldWaveLoEl.value, 10); syncFieldWave(); preview(); });
+ fieldWaveHiEl.addEventListener('input', () => { state.field_wave_hi = parseInt(fieldWaveHiEl.value, 10); syncFieldWave(); preview(); });
 
  // ── Per-ring on/off checkboxes ──
  const ringchecks = document.getElementById('ringchecks');
@@ -657,6 +704,9 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
 
  // First render on load.
  stepVal.textContent = '{10/' + state.step + '}';
+ fieldAngleVal.textContent = state.field_angle + '°';
+ fieldRayVal.textContent = state.field_ray;
+ syncFieldWave();
  syncShadow(); syncStyle(); syncLabels(); preview();
 
  const agreeBtn = document.getElementById('agree');
@@ -1315,6 +1365,42 @@ def main() -> None:
                 overlay.append("  # (degree-4 self-crossings) — the tile lattice is untouched.")
                 overlay.append("  weave .weave_overlay")
                 overlay.extend(ring_lines)
+        elif style == "field":
+            # ── FIELD-HANKIN weave (2026-06-17, bikar feat/strapwork-outer-edge-
+            # closure) — the owner's "interlace the WHOLE field, arms included"
+            # request. Per-circle ring chords ({n/k}) cross only at each ring's
+            # CENTRE, so the crossing-network style piles interlace centrally and
+            # the arms stay flat. Field-Hankin instead shoots one UNTRIMMED
+            # contact ray from every tile edge of every wave-N polygon; rays from
+            # tiles that share an edge meet ACROSS that edge, so degree-4
+            # crossings appear BETWEEN tiles all across the field — out along the
+            # arms and the perimeter, not just the centre.
+            #
+            # `weave .weave_overlay field angle θ on wave N [ray L]` is the
+            # first-class DSL primitive (Tier-0/Tier-1 green). One line per wave
+            # in the owner's [first..last] range; θ and ray are the owner's dials.
+            # Default range = the arm/perimeter waves (the inner rosette waves
+            # over-densify into tangles — verified 2026-06-17). θ default 36 is a
+            # decagonal contact angle; the owner tunes per the reference.
+            angle = float(params.get("field_angle", 36))
+            ray = float(params.get("field_ray", 24))
+            wave_lo = int(params.get("field_wave_lo", 13))
+            wave_hi = int(params.get("field_wave_hi", 22))
+            # Clamp θ into the valid open interval (0, 90); ray to a sane span.
+            angle = min(89.0, max(1.0, angle))
+            ray = min(120.0, max(2.0, ray))
+            if wave_hi < wave_lo:
+                wave_lo, wave_hi = wave_hi, wave_lo
+            field_lines = [
+                f"    field angle {angle:g} on wave {w} ray {ray:g}"
+                for w in range(wave_lo, wave_hi + 1)
+            ]
+            if field_lines:
+                overlay.append("  # ── field-Hankin weave overlay (transient) ──")
+                overlay.append("  # untrimmed contact rays per tile edge → crossings")
+                overlay.append("  # BETWEEN tiles across the whole field (arms included).")
+                overlay.append("  weave .weave_overlay")
+                overlay.extend(field_lines)
 
         body = list(overlay)
         body += [
