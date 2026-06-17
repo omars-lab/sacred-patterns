@@ -17,6 +17,35 @@ cross-repo orchestration owned by sacred-patterns.
 
 ---
 
+## 2026-06-17 — medallion-10 WEAVE stage: field-Hankin first-class DSL weave (bikar local tasks #16–#36)
+
+The medallion-10 reconstruction's WEAVE stage (third on the structure→color→weave
+ladder). The interlace read as a flat white lattice with no over/under because the
+weave sources were concentric single-circle `ring every k` star-polygons whose
+{n/k} chords all cross at the circle's *center* — so every crossing piled up
+centrally and the radial arms carried none. Root-caused to `hankinLines` being
+strictly per-polygon (it trims each ray at the star point). The robust fix
+(Tenets 26/28): a new **untrimmed field-contact-ray** kernel primitive so crossings
+appear BETWEEN tiles all across the field, arms included — then fed verbatim to the
+already-working strapwork weaver. Engine BUILT + Tier-0/Tier-1 green + committed on
+`feat/strapwork-outer-edge-closure` (off main, no deploy); the medallion application
+is owner-gated (no self-approval) and still open as #23→#24→#25→#36.
+
+Plan `.claude/plans/dreamy-wandering-meerkat.md`; decision doc (pending #25)
+`bikar/docs/decisions/2026-06-17-field-hankin-weave.md`, layered under
+`2026-06-16-weave-stage.md`.
+
+- [bikar] `hankinContactRays` kernel primitive + `weave … field angle θ on wave N [ray L]` DSL (AST union / parser / evaluator) — commit `2a89cda`; witnesses `tests/kernel/weave-field.test.ts` + `tests/dsl/weave-statement.test.ts` (Tenet 18)
+- [bikar] strapwork mitre degree-1/2 terminal band ends — outer-petal weave closes — commit `7007025`
+- [bikar] band-emitter interlace-collapse + stub-casing fixes; render woven bands ON TOP of colored layers (burial bug); CLI cssBlock fix so animations reach CLI SVG
+- [sp] weave studio in `tools/wave-plan-server.py`: Flat-lattice/Interwoven toggle, per-ring checkboxes, {10/k} fullness slider, debug knobs; verdicts write `session.json` weave gate via `POST /api/weave-verdict`
+- [sp] `/animate` radial_assemble build-in (grow medallion outer-edge inward, wave-by-wave)
+- [sp] portal verdicts → git source-of-record (`--session-json` flag, Option A)
+- [sp] #34 retarget two session-stale portal regressions to merged `/waves` — commit `afb9f19`
+- [bikar+sp] revive pre-push gitleaks full-history scan via husky (was silently dead) — bikar `9ae18b4`, sp `b371841`
+
+Still OPEN (owner-gated, NOT self-approvable): #23 owner weave verdict · #24 land approved params into flat `pattern.bkr` · #25 docs+decision · #36 merge branch → bikar main.
+
 ## 2026-06-11 — review-portal aesthetic feedback cascade (#2–#12)
 
 The portal grew from a topology checker into the owner's full feedback surface:
