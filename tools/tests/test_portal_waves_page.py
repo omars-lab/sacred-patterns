@@ -23,6 +23,7 @@ here as the test.
 from __future__ import annotations
 
 import json
+import re
 import socket
 import subprocess
 import sys
@@ -86,6 +87,17 @@ def _make_session(root: Path) -> None:
     # A pattern.bkr per built iteration so the code-diff has something to diff.
     (root / "iterations" / "1" / "pattern.bkr").write_text(
         "blueprint\n  circle C0 center(0,0) radius 100\npattern\n  connect 0 1\n")
+    # The cumulative per-wave recipes the code-diff tile reads (wave_bkr_text →
+    # iterations/{best}/waves/wave-{n}.bkr). Each wave adds a line so the diff
+    # has a green-added row; without these the codediff tile is suppressed.
+    wdir = root / "iterations" / "1" / "waves"
+    wdir.mkdir(parents=True, exist_ok=True)
+    (wdir / "wave-1.bkr").write_text(
+        "blueprint\n  circle C0 center(0,0) radius 100\npattern\n"
+        "  connect 0 1 .wave1\n")
+    (wdir / "wave-6.bkr").write_text(
+        "blueprint\n  circle C0 center(0,0) radius 100\npattern\n"
+        "  connect 0 1 .wave1\n  connect 2 3 .wave6\n")
     session = {
         "name": "test-medallion",
         "stage_gates": {
@@ -143,7 +155,13 @@ class WavesPage(unittest.TestCase):
                 # 1. /waves: one card per wave, every view tile, a code diff.
                 st, body, _ = _get(f"{base}/waves")
                 self.assertEqual(st, 200)
-                self.assertEqual(body.count("data-wave-card='"), 2,
+                # Count rendered card DIVs only — each opens with
+                # data-wave-card='<n>'. A bare substring count would also catch
+                # the ITERATE_JS verdict-wiring literal `[data-wave-card='" + wave`
+                # in the page's <script>, inflating the count by one (the
+                # 2026-06-17 `3 != 2` failure). Anchor on the numeric attribute
+                # value so only the divs match.
+                self.assertEqual(len(re.findall(r"data-wave-card='\d+'", body)), 2,
                                  "expected one card per wave")
                 self.assertEqual(body.count("view primary"), 2,
                                  "expected one primary crop tile per wave")
@@ -154,13 +172,23 @@ class WavesPage(unittest.TestCase):
                               "tiles must be an equal 3-column grid")
                 self.assertEqual(body.count("class='view"), 6,
                                  "3 equal tiles per wave (crop+ours+iso)")
-                self.assertEqual(body.count("class='expand'"), 6,
-                                 "every tile needs a fullscreen-expand button")
+                # Every tile carries a fullscreen-expand button, and each BUILT
+                # wave's hero pair adds two more (left build + right photo). Both
+                # test waves are built, so: 2 waves * (3 tiles + 2 hero) = 10.
+                # Assert >= one-per-tile (the contract) AND the exact total (guards
+                # the hero buttons from silently disappearing).
+                self.assertGreaterEqual(body.count("class='expand'"), 6,
+                                        "every tile needs a fullscreen-expand button")
+                self.assertEqual(body.count("class='expand'"), 10,
+                                 "3 tile + 2 hero expand buttons per built wave")
                 self.assertIn("id='lightbox'", body, "fullscreen lightbox missing")
                 self.assertNotIn("side-views", body,
                                  "old primary-bigger-than-sides layout removed")
+                # The three view tiles now resolve to -crop / -build / -iso
+                # (WAVE_VIEWS; the bare wave-{n}.png URL was retired when "Our
+                # build" moved to the cumulative -build.png render).
                 for ref in ("wave-1-crop.png", "wave-6-crop.png",
-                            "/wave-ghosts/wave-1.png", "wave-1-iso.png"):
+                            "/wave-ghosts/wave-1-build.png", "wave-1-iso.png"):
                     self.assertIn(ref, body, f"missing view image {ref}")
                 self.assertEqual(body.count("class='codediff'"), 2,
                                  "expected a code-diff section per built wave")
@@ -180,11 +208,15 @@ class WavesPage(unittest.TestCase):
                 self.assertIn("Tap a shape on your photo", it)
                 self.assertIn("data-wave='6'", it)
 
-                # 4. The removed picker leaves no trace on /iterate.
+                # 4. The removed picker leaves no trace. /iterate was merged
+                #    into /waves (owner 2026-06-15) — it now 301-redirects there,
+                #    so following it lands on the waves page (heading), and the
+                #    old per-wave "view you picked" roll-up is gone for good.
                 sti2, itr, _ = _get(f"{base}/iterate")
                 self.assertEqual(sti2, 200)
                 self.assertNotIn("view you picked per wave", itr)
-                self.assertIn("/waves", itr)
+                self.assertIn("The waves, one by one", itr,
+                              "/iterate must land on the merged waves page")
             finally:
                 proc.terminate()
                 try:

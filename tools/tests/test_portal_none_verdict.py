@@ -1,18 +1,23 @@
 """Regression: the build portal must not crash when a wave's owner_verdict is null.
 
-Plain-English symptom (2026-06-14): opening the "watching it get built" page
-(`/iterate`) returned an empty body / connection reset. The cause was a wave in
-`session.json -> stage_gates.structure.waves_passed` whose `owner_verdict` was an
-explicit `null` (which is exactly what the re-gate stamp writes before the owner
-judges the wave). The page code read `gate.get("owner_verdict", {}).get("state")`
-— the `{}` default only applies when the KEY IS ABSENT, so an explicit `None`
-slipped through and `None.get("state")` raised AttributeError, taking the whole
-request down.
+Plain-English symptom (2026-06-14): opening the build-progress page returned an
+empty body / connection reset. The cause was a wave in `session.json ->
+stage_gates.structure.waves_passed` whose `owner_verdict` was an explicit `null`
+(which is exactly what the re-gate stamp writes before the owner judges the wave).
+The page code read `gate.get("owner_verdict", {}).get("state")` — the `{}` default
+only applies when the KEY IS ABSENT, so an explicit `None` slipped through and
+`None.get("state")` raised AttributeError, taking the whole request down.
 
-This test stamps a session with a null-verdict passed wave, serves `/iterate`,
-and asserts a 200 with a real body. The witness that found the bug (a wave stamped
-with `owner_verdict: None`) lives here so a future refactor of the portal can't
-silently reintroduce the crash (Tenet 18).
+This test stamps a session with a null-verdict passed wave, serves the page, and
+asserts a 200 with a real body. The witness that found the bug (a wave stamped with
+`owner_verdict: None`) lives here so a future refactor of the portal can't silently
+reintroduce the crash (Tenet 18).
+
+Updated 2026-06-17: the old `/iterate` page was merged into `/waves` (owner
+2026-06-15 "merge the experiences") and now 301-redirects there. The
+verdict-reading code that crashed moved with it, so the witness now targets
+`/waves` (where `gate.get("owner_verdict") or {}` is the null-safe read), and also
+pins the `/iterate -> /waves` redirect so old bookmarks still land.
 """
 
 from __future__ import annotations
@@ -24,6 +29,7 @@ import sys
 import tempfile
 import time
 import unittest
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -93,7 +99,9 @@ class PortalNullVerdictDoesNotCrash(unittest.TestCase):
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
             )
             try:
-                url = f"http://127.0.0.1:{port}/iterate"
+                # The verdict-reading code moved to /waves; that's where a null
+                # owner_verdict is now read and could crash. Hit it directly.
+                url = f"http://127.0.0.1:{port}/waves"
                 body, status = "", None
                 deadline = time.time() + 10
                 last_err: Exception | None = None
@@ -107,12 +115,26 @@ class PortalNullVerdictDoesNotCrash(unittest.TestCase):
                         last_err = e
                         time.sleep(0.25)
                 self.assertEqual(status, 200,
-                                 f"/iterate did not return 200 (last err: {last_err})")
+                                 f"/waves did not return 200 (last err: {last_err})")
                 # A crash produced an empty body; a healthy page has the heading
                 # and the built-wave badge for the null-verdict wave.
-                self.assertIn("Watching it get built", body)
+                self.assertIn("The waves, one by one", body)
                 self.assertIn("Wave 1", body)
                 self.assertIn("built", body)
+
+                # The merge contract: the old /iterate URL 301-redirects to /waves
+                # so bookmarks still land (owner 2026-06-15 "merge the experiences").
+                class _NoRedirect(urllib.request.HTTPRedirectHandler):
+                    def redirect_request(self, *a, **k):
+                        return None
+
+                opener = urllib.request.build_opener(_NoRedirect)
+                try:
+                    opener.open(f"http://127.0.0.1:{port}/iterate", timeout=3)
+                    self.fail("/iterate should 301-redirect, not return 200")
+                except urllib.error.HTTPError as e:
+                    self.assertEqual(e.code, 301)
+                    self.assertTrue(e.headers.get("Location", "").endswith("/waves"))
             finally:
                 proc.terminate()
                 try:
