@@ -507,13 +507,13 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
    <div class="dial" id="fieldRayDial" style="display:none">
     <label>Ribbon reach <span class="hint">— shorter = sparser, longer = fuller (too long tangles)</span>
      <span class="val" id="fieldRayVal"></span></label>
-    <input type="range" id="fieldRay" min="6" max="80" step="2" value="24">
+    <input type="range" id="fieldRay" min="6" max="80" step="2" value="8">
    </div>
    <div class="dial" id="fieldWaveDial" style="display:none">
     <label>Which rings weave <span class="hint">— the band of rings (inner→outer) that interlace</span>
      <span class="val" id="fieldWaveVal"></span></label>
-    <input type="range" id="fieldWaveLo" min="1" max="22" step="1" value="13">
-    <input type="range" id="fieldWaveHi" min="1" max="22" step="1" value="22">
+    <input type="range" id="fieldWaveLo" min="1" max="22" step="1" value="17">
+    <input type="range" id="fieldWaveHi" min="1" max="22" step="1" value="17">
    </div>
    <div class="dial" id="netDial" style="display:none">
     <label class="toggle"><input type="checkbox" id="network">
@@ -548,8 +548,15 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
    step: 3,                                          // {n/k} fullness (crossing)
    rings: { center: true, petal_base: true, petal_tip: true, outer: true },
    field_angle: 36,                                 // field-Hankin contact angle θ
-   field_ray: 24,                                   // field-Hankin ray reach
-   field_wave_lo: 13, field_wave_hi: 22,            // field-Hankin wave band (arms/perimeter)
+   // Why the BOUNDED defaults (ray 8, single wave 17), not the old ray 24 /
+   // waves 13..22 (2026-06-19 fix): field-Hankin over 10 stacked outer waves ×
+   // 10 rotations emits ~147K SVG paths — rsvg-convert then DROPS the outer
+   // arc-clipped faces (the owner's "central-disc-only color" report). A single
+   // wave-band + short ray stays ~3.7K paths, full-field color, real interlace.
+   // These MUST match build_weave_variant's server-side field fallbacks
+   // (params.get(..., 8/17/17)) — else a fresh studio load re-explodes.
+   field_ray: 8,                                    // field-Hankin ray reach
+   field_wave_lo: 17, field_wave_hi: 17,            // field-Hankin wave band (bounded — see above)
    shadow: 0,                                        // 0 = auto (engine-derived); >0 = explicit darkness %
    casing: '',                                       // resolved hex from shadow %, '' = auto
    network: false,                                   // show crossing markers
