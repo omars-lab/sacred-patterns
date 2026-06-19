@@ -548,15 +548,21 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
    step: 3,                                          // {n/k} fullness (crossing)
    rings: { center: true, petal_base: true, petal_tip: true, outer: true },
    field_angle: 36,                                 // field-Hankin contact angle θ
-   // Why the BOUNDED defaults (ray 8, single wave 17), not the old ray 24 /
-   // waves 13..22 (2026-06-19 fix): field-Hankin over 10 stacked outer waves ×
-   // 10 rotations emits ~147K SVG paths — rsvg-convert then DROPS the outer
-   // arc-clipped faces (the owner's "central-disc-only color" report). A single
-   // wave-band + short ray stays ~3.7K paths, full-field color, real interlace.
-   // These MUST match build_weave_variant's server-side field fallbacks
-   // (params.get(..., 8/17/17)) — else a fresh studio load re-explodes.
+   // Why the RADIAL-SPREAD default (ray 8, waves 5..16), refined 2026-06-19:
+   // a SINGLE wave is 10 rotated copies of one tile-family, ALL at one radius —
+   // its untrimmed rays only meet rotational neighbors within that ring, so it
+   // renders as ONE ring of detached rosettes ("nodules", owner verdict). A
+   // CONTIGUOUS outer block (16..18) is co-radial too → just a thicker donut.
+   // To weave the WHOLE field the band must CROSS ring boundaries: radial map
+   // is wave 1 = center, 3–7 inner, 8–12 middle, 13–22 outer; waves 5..16 span
+   // inner→outer → a continuous field-wide lattice (23.9K paths, <<147K ceiling;
+   // EXTRA 7.8% vs the bounded-17's 23.8%). Center void (1–4) over-densifies so
+   // it stays out of the default. These MUST match build_weave_variant's
+   // server-side field fallbacks (params.get(..., 8/5/16)) — else a fresh
+   // studio load reverts to the single-ring nodules. See ISSUES-OBSERVED.md
+   // 2026-06-19 "Field weave = ONE ring of detached nodules".
    field_ray: 8,                                    // field-Hankin ray reach
-   field_wave_lo: 17, field_wave_hi: 17,            // field-Hankin wave band (bounded — see above)
+   field_wave_lo: 5, field_wave_hi: 16,             // field-Hankin wave band (radial spread — see above)
    shadow: 0,                                        // 0 = auto (engine-derived); >0 = explicit darkness %
    casing: '',                                       // resolved hex from shadow %, '' = auto
    network: false,                                   // show crossing markers
@@ -1439,22 +1445,27 @@ def main() -> None:
             # `weave .weave_overlay field angle θ on wave N [ray L]` is the
             # first-class DSL primitive (Tier-0/Tier-1 green). One line per wave
             # in the owner's [first..last] range; θ and ray are the owner's dials.
-            # Default range = the arm/perimeter waves (the inner rosette waves
-            # over-densify into tangles — verified 2026-06-17). θ default 36 is a
-            # decagonal contact angle; the owner tunes per the reference.
-            # DEFAULTS BOUNDED 2026-06-19 (path-explosion fix): the old default
-            # (ray 24, waves 13..22 = 10 STACKED waves) emitted 147K SVG paths —
-            # untrimmed rays from 10 stacked waves cross non-neighbors at huge
-            # density, the weaver bands each into micro-paths (grey confetti), and
-            # rsvg-convert then dropped the outer color. A single wave-band + short
-            # ray gives ~3.7K paths (sane), full-field color, real interlace marks
-            # (witness /tmp/f1-r8.png). The owner can still widen the range, but the
-            # dial now STARTS in a viable place instead of exploded. See
-            # ISSUES-OBSERVED.md 2026-06-19 + task #44.
+            # Default range = waves 5..16, a RADIAL SPREAD that crosses ring
+            # boundaries (radial map: 1=center, 3–7 inner, 8–12 middle, 13–22
+            # outer). θ default 36 is a decagonal contact angle; owner tunes.
+            # TWO BOUNDS, refined 2026-06-19:
+            #  (1) path-explosion ceiling — the old default (ray 24, waves 13..22
+            #      = 10 STACKED waves) emitted 147K SVG paths; rsvg-convert then
+            #      dropped the outer color (grey confetti + central-disc-only).
+            #      Keep total paths well under 147K (waves 5..16 ray 8 = 23.9K).
+            #  (2) co-radial single-ring trap — a SINGLE wave (or a contiguous
+            #      block in ONE annulus like 16..18) is co-radial, so its rays
+            #      only meet rotational neighbors → ONE ring of detached rosettes
+            #      ("nodules", owner verdict). The band MUST span rings; 5..16
+            #      gives a field-wide lattice (EXTRA 7.8% vs bounded-17's 23.8%).
+            # Center void (1–4) over-densifies, so the default starts at 5; the
+            # owner can lower it toward center in the studio. See
+            # ISSUES-OBSERVED.md 2026-06-19 (both "path-explosion" + "ONE ring of
+            # detached nodules") + tasks #44/#49.
             angle = float(params.get("field_angle", 36))
             ray = float(params.get("field_ray", 8))
-            wave_lo = int(params.get("field_wave_lo", 17))
-            wave_hi = int(params.get("field_wave_hi", 17))
+            wave_lo = int(params.get("field_wave_lo", 5))
+            wave_hi = int(params.get("field_wave_hi", 16))
             # Clamp θ into the valid open interval (0, 90); ray to a sane span.
             angle = min(89.0, max(1.0, angle))
             ray = min(120.0, max(2.0, ray))

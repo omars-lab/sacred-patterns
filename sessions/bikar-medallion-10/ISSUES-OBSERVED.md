@@ -707,3 +707,38 @@ even at high path counts); (b) `field` defaults bounded to avoid the 10-wave sta
 Witnesses (regenerable): /tmp/field-rsvg.png (broken, rsvg+strapwork), /tmp/field-mine.png (same SVG,
 magick, full color), /tmp/field-nostrap-rsvg.png (rays-only, full color), /tmp/f1-r8.png
 (single-wave ray-8, sane + interlace marks).
+
+---
+
+## 2026-06-19 — Field weave = ONE ring of detached "nodules": single-wave bands are co-radial (owner screenshot verdict)
+
+**Plain English:** the owner's screenshot verdict — "not seeing over and under, and weave nodules look
+wrong" — is the bounded `field_wave_lo=17/hi=17` default rendering as **a single ring of detached
+rosettes** instead of a field-wide woven lattice. The reference weaves the whole disc; ours weaves one
+annulus and calls it done.
+
+**Root cause (confirmed by render-diagnostics, all regenerable in /tmp):** a single field-Hankin wave
+is **10 rotated copies of ONE tile-family, all at ONE radius**. Untrimmed contact rays from co-radial
+copies only meet their *rotational* neighbors within that ring — never the ring inward or outward. So
+one wave → one ring of rosettes, **always**, regardless of ray length.
+
+**Two fixes FALSIFIED before the real one:**
+| candidate | result | why it failed |
+|---|---|---|
+| widen to contiguous block 16..18 | one *thicker* fused white donut, center empty | waves 16/17/18 are ALL outer-petal waves — co-radial, so still one ring (`/tmp/cand-weaveonly.png`) |
+| longer ray on single wave (ray 8→24→48 @ wave 12) | spikier blobs, still one ring | single-wave rays can't bridge rings — every rotational copy is co-radial (`/tmp/ray-48-wo.png`) |
+
+**THE FIX — span the radial field, not one annulus.** Radial wave map: wave 1 = center star,
+3–7 = inner ring, 8–12 = middle ring, 13–22 = outer ring. A band that crosses ring boundaries
+(`field_wave_lo=5 field_wave_hi=16`, ray 8) produces a genuine **field-wide white interlaced lattice** —
+concentric woven cells inner→outer with visible over/under marks. 23,981 paths (<<147K ceiling, safe).
+Witnesses: `/tmp/spread-5-16-wo.png` (weave-only, the lattice), `/tmp/spread-5-16-full.png` (full color).
+
+**Quantified vs reference (weave-only-compare):** EXTRA **23.8% → 7.8%** (the nodule artifact is ~solved
+— 3× fewer spurious straps). MISSING **33.8%** = the still-unwoven CENTER void (waves 1–4) + thinner
+coverage than the reference. similarity 58.3%, shared 42.0%.
+
+**Remaining (owner-gated studio dial-in, NOT engine):** extend the band toward center (waves 1–4
+over-densify per the path-explosion note above — weaving the center cleanly may need engine work) and
+raise width to match the reference's bolder ribbons. The radial-spread default is the new viable
+starting point; surfaced to the owner for the MATCH verdict (never self-approve #23). Task #49.
