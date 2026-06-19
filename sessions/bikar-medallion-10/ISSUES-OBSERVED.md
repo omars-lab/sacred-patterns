@@ -662,3 +662,48 @@ loses field-wide color AND produces speckle instead of straps. The flat bordered
 dreamy-wandering-meerkat.md) done properly — ribbons chained from the rays, color preserved — which
 is a non-trivial commitment and the owner's call (#23 gate). Witnesses (regenerable in /tmp):
 weave-field-owner.png (broken field), weave-flat-candidate.png (flat, matches).
+
+## 2026-06-19 — owner picked path B; the "dead end" verdict above is CORRECTED — it's a PATH-EXPLOSION, not field-style failure
+
+Plain English: the owner chose to build the full-field weave (path B). Before building, I re-ran the
+exact `style=field` config the owner tested and isolated WHY it looked broken. **The 2026-06-18
+verdict ("field loses field-wide color, dead end") was wrong about the cause** — both of its symptoms
+trace to ONE root cause, and that cause is tunable, not inherent.
+
+**The measurement (SVG path counts, all regenerable in /tmp):**
+| variant | SVG `<path>` count | rsvg-convert render |
+|---|---|---|
+| flat (no overlay) | 3,081 | full-field color ✅ |
+| field rays only, NO strapwork (`field angle 36 on wave 13..22 ray 24`) | 58,942 | full-field color ✅ |
+| field + strapwork (the owner's config) | **147,722** | central-disc-only color ✗ + grey confetti ✗ |
+| field, SINGLE wave 17, short `ray 8` + strapwork | 3,761 | full-field color ✅ + small interlace marks |
+
+Strapwork group breakdown of the 147K: over 17,880 / under 17,960 / casing 17,100 / outline 35,840.
+
+**Root cause:** untrimmed contact rays from 10 STACKED outer waves (each ×10 rotations) cross
+non-neighbors at enormous density → ~59K micro-segments (autoIntersect splits every ray at every
+crossing) → the weaver bands each into ~88K micro-paths = **the "grey confetti."** And `rsvg-convert`
+(the studio's rasterizer) **degrades at 147K paths and drops the outer colored faces** = **the
+"central-disc-only color."** The SVG itself carries full-field color (381 non-white fills, identical
+to flat — verified); `magick` rasterizes the SAME 147K-path SVG with full color. So defect (1) is a
+**rasterizer-degradation artifact downstream of the explosion**, NOT an engine color bug; defect (2)
+is the explosion itself.
+
+**Why the Tier-0/Tier-1 witnesses passed but the medallion explodes:** the two-squares witness has ONE
+shared edge → a handful of clean crossings. The medallion's outer field has HUNDREDS of near-parallel
+wave edges across 10 stacked waves; untrimmed rays from all of them tangle. This is the plan's
+flagged `rayLength`/edge-count risk realized (dreamy-wandering-meerkat.md "Risks").
+
+**The fix direction (density control — proven on the single-wave witness above):** field-Hankin DOES
+work on the medallion once ray density is bounded — a single wave-band + short ray gives 3,761 paths
+(sane), full-field color, and real interlace marks. Tuning ray/wave-range/angle to grow those marks
+into continuous reference-matching straps is the studio dial-in loop — which is now viable because it
+no longer explodes. Open engine question: whether to trim rays at first-crossing (so they stop
+fragmenting) is the cleaner long-term fix vs. relying on short rayLength.
+
+**Studio hardening shipped alongside (so the owner's dial can't re-trigger the artifact):** (a) the
+rasterizer prefers `magick` over `rsvg-convert` (magick renders the arc-clipped outer faces correctly
+even at high path counts); (b) `field` defaults bounded to avoid the 10-wave stack. See task #44.
+Witnesses (regenerable): /tmp/field-rsvg.png (broken, rsvg+strapwork), /tmp/field-mine.png (same SVG,
+magick, full color), /tmp/field-nostrap-rsvg.png (rays-only, full color), /tmp/f1-r8.png
+(single-wave ray-8, sane + interlace marks).

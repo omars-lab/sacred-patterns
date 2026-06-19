@@ -1435,10 +1435,19 @@ def main() -> None:
             # Default range = the arm/perimeter waves (the inner rosette waves
             # over-densify into tangles — verified 2026-06-17). θ default 36 is a
             # decagonal contact angle; the owner tunes per the reference.
+            # DEFAULTS BOUNDED 2026-06-19 (path-explosion fix): the old default
+            # (ray 24, waves 13..22 = 10 STACKED waves) emitted 147K SVG paths —
+            # untrimmed rays from 10 stacked waves cross non-neighbors at huge
+            # density, the weaver bands each into micro-paths (grey confetti), and
+            # rsvg-convert then dropped the outer color. A single wave-band + short
+            # ray gives ~3.7K paths (sane), full-field color, real interlace marks
+            # (witness /tmp/f1-r8.png). The owner can still widen the range, but the
+            # dial now STARTS in a viable place instead of exploded. See
+            # ISSUES-OBSERVED.md 2026-06-19 + task #44.
             angle = float(params.get("field_angle", 36))
-            ray = float(params.get("field_ray", 24))
-            wave_lo = int(params.get("field_wave_lo", 13))
-            wave_hi = int(params.get("field_wave_hi", 22))
+            ray = float(params.get("field_ray", 8))
+            wave_lo = int(params.get("field_wave_lo", 17))
+            wave_hi = int(params.get("field_wave_hi", 17))
             # Clamp θ into the valid open interval (0, 90); ray to a sane span.
             angle = min(89.0, max(1.0, angle))
             ray = min(120.0, max(2.0, ray))
@@ -1483,23 +1492,32 @@ def main() -> None:
         return flat.rstrip() + "\n" + "\n".join(body) + "\n"
 
     def _rasterize_svg(svg_path: Path, png_path: Path, height: int) -> None:
-        # SVG -> PNG. Prefer rsvg-convert / ImageMagick `magick` (subprocess,
-        # no native-cairo-python dependency) so the studio renders under
-        # whatever python runs the server — the conda env on this box lacks
-        # libcairo for the cairosvg module, but rsvg-convert/magick are present
-        # (same choice qiyas-diff.py makes). cairosvg is the last resort.
+        # SVG -> PNG (subprocess, no native-cairo-python dependency) so the studio
+        # renders under whatever python runs the server — the conda env on this box
+        # lacks libcairo for cairosvg, but magick/rsvg-convert are present.
+        #
+        # Why `magick` FIRST, not `rsvg-convert` (2026-06-19 fix): rsvg-convert
+        # DEGRADES at high path counts and DROPS the outer arc-clipped faces. The
+        # field-Hankin weave variant can emit 100K+ <path>s (untrimmed contact rays
+        # × the strapwork weaver); rsvg-convert rendered that as a central colored
+        # disc with the whole outer field gone WHITE (the owner's 2026-06-18
+        # "central-disc-only color" report). magick renders the SAME SVG with full
+        # field-wide color. The SVG is correct either way (verified: 381 non-white
+        # fills in both); only rsvg-convert mis-renders it. See ISSUES-OBSERVED.md
+        # 2026-06-19. rsvg-convert stays as the fallback (it's fine for the flat /
+        # crossing styles' few-thousand-path SVGs and is faster there).
         import shutil
 
-        if shutil.which("rsvg-convert"):
-            subprocess.run(
-                ["rsvg-convert", "-h", str(height), "-o", str(png_path), str(svg_path)],
-                check=True, capture_output=True, text=True,
-            )
-            return
         if shutil.which("magick"):
             subprocess.run(
                 ["magick", "-background", "none", "-density", "192",
                  str(svg_path), "-resize", f"x{height}", str(png_path)],
+                check=True, capture_output=True, text=True,
+            )
+            return
+        if shutil.which("rsvg-convert"):
+            subprocess.run(
+                ["rsvg-convert", "-h", str(height), "-o", str(png_path), str(svg_path)],
                 check=True, capture_output=True, text=True,
             )
             return
