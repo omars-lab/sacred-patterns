@@ -597,3 +597,68 @@ inradius.
 reference interlace), `weave-studio-served.png` (flat-looking medallion), `studio-arm-crop.png`
 (casing-as-dashes), `studio-center-crop.png` (grey halo + white blob), `field-hankin-proof.png`
 (field primitive fires but untuned).
+
+---
+
+## 2026-06-18 — bordered-strap fix (bikar cf9cc1b) vs field-Hankin-rim, eyeballed comparison
+
+Owner spec: "each weave should have a border ... two weave lines intersect is where we should be
+doing over under". Shipped the engine fix (bikar feat/strapwork-outer-edge-closure cf9cc1b):
+- Casing (over/under shadow) now fires ONLY at genuine degree-4 crossings (edgePairs===2). The
+  triangle wedges the owner saw were casing stubs stroked at high-degree junctions (star centres,
+  tile-corner meetings) where straps MEET, not cross. Skipping those killed the triangles.
+- Bordered straps: Pass-1 outline rail widened (outlineExtra ≥1.4) + near-white frame darkened
+  #9AA0A6→#6B7176, so each white strap reads as a bordered ribbon.
+
+**Eyeballed two candidates against reference.jpg (this tick):**
+- **Bordered tile-edge strapwork, width 10** (`/weave.png?style=flat&width=10&color=%23FCFDFD&suppress=1&suppress_tol=55&suppress_beyond=0.69`):
+  CLOSEST to reference. Wide white bordered ribbons frame each colored tile; no triangle speckle;
+  clean. GAP: tile-edge straps mostly MEET at corners (few true 2-line crossings), so genuine
+  cross-tile over/under interlace is sparse — the reference's straps visibly weave over/under.
+- **Field-Hankin on rim waves 18-22** (`/weave.png?style=field&...&field_wave_lo=18&field_wave_hi=22`):
+  REGRESSION. Heavy white frill on the OUTER RIM only; interior stays bare tile-grout. Reads as a
+  fussy ruffle, not a field-wide interlace. Confirms field-Hankin-on-rim is a dead end — to get true
+  cross-tile interlace it must run across the WHOLE field, which is a larger build (plan
+  dreamy-wandering-meerkat.md), not a rim overlay.
+
+**RECOMMENDATION to owner (#23 gate, NEVER self-approve):** bordered tile-edge strapwork width 10 is
+the strongest candidate as-is. Decision point for the owner: accept this bordered-strap framing look,
+OR commission full-field field-Hankin so straps genuinely cross-and-weave between tiles. The latter is
+a non-trivial build; don't start speculatively.
+
+Witnesses (regenerable in /tmp): tick43-w10.png + tick43-w10-crop.png (bordered straps), tick44-field
+.png (field-rim regression).
+
+---
+
+## 2026-06-18 (later) — owner tested broader field config (waves 13–22): TWO defects, eyeballed
+
+Owner reported "still issues" on:
+`/weave-studio?style=field&width=6&color=%23FCFDFD&step=3&shadow=0&network=0&field_angle=36&field_ray=24&field_wave_lo=13&field_wave_hi=22&rings=center,petal_base,petal_tip,outer`
+
+This is a BROADER field config than the prior rim-only test (waves 13–22 now, not 18–22; 4 ring
+overlays). Rendered it and looked (Tenet 24, expectation written first: "expect grey contact-ray
+cracks over color, sparse/overpowering"). Reality is worse and surfaces a SECOND defect:
+
+1. **COLOR COVERAGE DEFECT (new, the more important one):** the colored tiles only fill a small
+   CENTRAL DISC (~inner 6 waves). The entire outer field — all 10 arms/petals — renders WHITE. The
+   reference has edge-to-edge color across all 10 decagons. So before any weave question, the base
+   pattern at this wave range isn't even coloring the field. (Flat candidate DOES color edge-to-edge;
+   see below — so this is specific to how the field-style variant builds / which waves it colors.)
+2. **WEAVE = GREY CONFETTI (confirms #41/#42):** in the white outer annulus the field-Hankin rays
+   render as disconnected grey DOTTED speckle, NOT continuous white straps, NOT over/under ribbons.
+   Untrimmed contact rays scatter as isolated crossing dots without chaining into bands.
+
+**A/B against the confirmed flat candidate** (`style=flat&width=10&color=%23FCFDFD&suppress=1&suppress_tol=55&suppress_beyond=0.69`),
+both eyeballed this tick:
+- FLAT: full edge-to-edge blue/teal color across all 10 decagons + continuous white strap-lines
+  framing every tile = matches the reference's coverage AND its lattice. Strongest candidate, unchanged.
+- FIELD (owner's URL): tiny colored core + grey speckle outside = neither coverage nor straps. Broken.
+
+**Verdict for owner:** the `style=field` path in its current form is a dead end for this look — it
+loses field-wide color AND produces speckle instead of straps. The flat bordered-strap candidate
+(cf9cc1b) remains the closest match. Genuine cross-tile over/under interlace across the WHOLE field
+(the remaining gap vs reference) needs the full-field field-Hankin build (plan
+dreamy-wandering-meerkat.md) done properly — ribbons chained from the rays, color preserved — which
+is a non-trivial commitment and the owner's call (#23 gate). Witnesses (regenerable in /tmp):
+weave-field-owner.png (broken field), weave-flat-candidate.png (flat, matches).

@@ -3282,6 +3282,66 @@ def main() -> None:
                     .replace("__NOTE__", html.escape(note))
                 )
                 return
+            # Just the image, no UX: GET /weave.png?<same knobs as /weave-studio>
+            # returns the raw rendered PNG for that knob-set. The studio's render
+            # lives behind POST /api/preview (a JSON body), which a browser can't
+            # produce from a plain link — so a shareable "show me only the picture"
+            # URL needs this GET twin. Query keys + types mirror URL_KEYS exactly,
+            # so any /weave-studio?… link works as /weave.png?… by swapping the path.
+            if self.path.split("?", 1)[0] == "/weave.png":
+                from urllib.parse import urlparse, parse_qs
+
+                q = parse_qs(urlparse(self.path).query)
+                def _one(k):
+                    return q[k][0] if k in q and q[k] else None
+                # Collect ONLY the knobs present in the link; build_weave_variant
+                # supplies the measured default for every omitted key, so a partial
+                # link (e.g. just ?style=field&field_ray=8) renders cleanly. Keys +
+                # types mirror the studio's URL_KEYS so /weave-studio?… ⇒ /weave.png?…
+                # is a pure path-swap.
+                params: dict = {}
+                if (v := _one("style")) in ("flat", "crossing", "field"):
+                    params["style"] = v
+                for k, cast in (("width", float), ("step", int), ("shadow", int),
+                                ("field_angle", int), ("field_ray", int),
+                                ("field_wave_lo", int), ("field_wave_hi", int),
+                                # flat (tile-edge strapwork) spoke-trim knobs (#42):
+                                # suppress_tol = drop bands within N° of radial,
+                                # suppress_beyond = …past this fraction of R. These
+                                # are what tune the white lattice to the reference
+                                # (no radial spokes); previously hardcoded 22/0.69.
+                                ("suppress_tol", float), ("suppress_beyond", float)):
+                    if (v := _one(k)) is not None:
+                        try:
+                            params[k] = cast(v)
+                        except ValueError:
+                            pass
+                if (v := _one("color")) is not None:
+                    params["color"] = v  # build_weave_variant validates the hex
+                if (v := _one("casing")) is not None:
+                    params["casing"] = v  # build_weave_variant validates the hex
+                if (v := _one("suppress")) is not None:
+                    params["suppress"] = v in ("1", "true")
+                if (v := _one("network")) is not None:
+                    params["network"] = v in ("1", "true")
+                if (v := _one("rings")) is not None:
+                    on = set(v.split(","))
+                    params["rings"] = {key: (key in on) for key in WEAVE_RINGS}
+                try:
+                    png = render_weave_png(params)
+                except subprocess.CalledProcessError as e:
+                    self.send_error(500, f"render failed: {(e.stderr or e.stdout or str(e)).strip()[:300]}")
+                    return
+                except Exception as e:
+                    self.send_error(500, f"render failed: {e}")
+                    return
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", str(len(png)))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(png)
+                return
             if self.path == "/animate":
                 # The build-in assembly viewer (#14): watch the medallion grow
                 # itself centre-first, wave-by-wave. The page fetches a live SVG
