@@ -742,3 +742,37 @@ coverage than the reference. similarity 58.3%, shared 42.0%.
 over-densify per the path-explosion note above — weaving the center cleanly may need engine work) and
 raise width to match the reference's bolder ribbons. The radial-spread default is the new viable
 starting point; surfaced to the owner for the MATCH verdict (never self-approve #23). Task #49.
+
+---
+
+## 2026-06-20 — SUPERSEDES the radial-spread fix above: the structure has NO crossings at all
+
+**Plain English:** every weave-tuning note above (radial-spread band, ray length, width, "extend toward
+center") assumes the only thing missing is *where* the crossings land. That assumption is now falsified.
+The approved iter-71 medallion has **no crossings anywhere** — so no amount of band/ray/width tuning can
+ever make it weave over/under. The radial-spread default still gives the *least-bad* white lattice, but
+its over/under marks come from co-radial rotational ray-meets, not from a real crossing network.
+
+**The measurement (regenerable via the bikar core API on iterations/71/pattern.bkr):** the rendered tile
+graph is **2700 nodes, ALL degree-2** — a disjoint union of closed polygon outlines. A weave (over/under)
+exists *only at a degree-4 crossing* where two lines pass through one point; the medallion has zero of
+them. Probed every method: `ring`, `field`, `boundary`, and the legacy flat strapwork all return **0
+crossings** on this geometry.
+
+**Frozen as a test (Tenet 18, bikar 7407667):** `packages/core/tests/dsl/weave-statement.test.ts`
+— `BOUNDARY_ADJACENT_SQUARES` (genuinely disjoint squares, 30-unit gap → 0 crossings, 0 under) brackets
+the positive `BOUNDARY_OCTAGRAM` (overlapping squares → ≥8 crossings). Together they prove: **boundary/field
+weaving REQUIRES tiles that OVERLAP into shared degree-4 nodes; an edge-adjacent or gappy tiling has none.**
+
+**Why this matters for the loop:** do NOT re-attempt the radial-spread "extend toward center / raise width"
+tuning above — it cannot produce over/under on a degree-2 graph (Tenet 7: stop tuning a geometrically
+incapable method). The weave stage is now an OWNER FORK, not a tuning problem:
+1. **Overlay an independent self-crossing network** on top of the tiles (engine already supports it; studio
+   dial-in). Keeps the approved structure untouched.
+2. **Re-author the structure so tiles overlap** into degree-4 nodes — produces a "real" woven frame but
+   **re-opens the structure gate** (owner approved PICK A as-is).
+3. **Accept a flat bordered look** (white tile borders, no over/under).
+
+Surfaced to the owner 2026-06-20 with all-degree-2 evidence + all-dial boundary studio URL. Decision doc
+`bikar/docs/decisions/2026-06-19-weave-field-method.md` §10. Tasks #41/#42/#43/#44/#49 closed as symptoms
+of this one cause; tracked as #53. NEVER self-approve #23.
