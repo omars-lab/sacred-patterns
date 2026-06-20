@@ -15,6 +15,36 @@ Format: `#NN [repo-prefix] subject — one-line outcome`. Repo prefix is one of
 `[sp]` sacred-patterns, `[qiyas]`, `[bikar]`, or unprefixed when the task is
 cross-repo orchestration owned by sacred-patterns.
 
+## medallion-10 weave-stage investigation — root cause: structure is degree-2 (sp#53)
+
+The medallion weave stage chased a white over/under strap-lattice through several
+method pivots (per-circle ring crossing-network → field-Hankin contact rays →
+trimmed-PIC → tile-boundary lattice), each producing the wrong look against the
+reference. Root cause found 2026-06-20: the approved iter-71 geometry is **2700
+nodes, ALL degree-2** — a disjoint union of closed polygon outlines with zero
+crossing junctions, so NO strapwork weave can interlace it (a weave needs a
+degree-4 crossing to alternate over/under on). The whole sub-cascade resolves to
+an **owner fork** (#53, still open): overlay an independent self-crossing network /
+re-author the structure to overlap into degree-4 nodes / accept a flat bordered
+look. Rationale + falsification ladder: `bikar/docs/decisions/2026-06-19-weave-field-method.md` §10
+(commit bikar `7407667`); studio boundary-style wiring `8d3436c`; issues-supersede `af0964a`.
+Negative-control witness `BOUNDARY_ADJACENT_SQUARES` (0 crossings) + positive
+`BOUNDARY_OCTAGRAM` (≥8) frozen in `bikar/packages/core/tests/dsl/weave-statement.test.ts`.
+
+- #37 [bikar] Debug: weave studio showed no over/under, no shadow toggle, broken perimeter
+- #38 [bikar] Debug: interwoven-ribbons weave bloated into a white blob over the central star
+- #39 [bikar] URL-param support for all weave-studio knobs (shareable/bookmarkable links)
+- #40 [bikar] Playwright contract round-trip spec for weave-studio URL params
+- #41 [bikar] Field weave overpowered the pattern (too dense vs reference)
+- #42 [bikar] Weave rendered as grey overlay-cracks, not white framing-straps
+- #43 [bikar] Weave model: bordered straps + over/under only at 2-line crossings
+- #44 [bikar] Field-Hankin across medallion waves (transient weave variant) for studio dial-in
+- #45/#46/#47/#48 [sp] Weave-only compare tool (exact render-side isolation + reference whiteness strip + side-by-side/overlay diff + methodology codification)
+- #49 [bikar] Field weave showed no over/under + detached nodules (owner verdict 2026-06-19)
+- #50 [bikar] Pivot field weave to trimmed-PIC (hankinLines), Option B — falsified Tier-0
+- #52 [bikar] Option-A tile-boundary weave source (boundary variant) + Tier-0 two-tile witness
+- #53 [bikar] **OPEN** — medallion has no crossing network (all degree-2); weave stage at owner fork
+
 ---
 
 ## 2026-06-17 — medallion-10 WEAVE stage: field-Hankin first-class DSL weave (bikar local tasks #16–#36)
