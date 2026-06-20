@@ -483,6 +483,7 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
      <button type="button" id="styleFlat" class="styopt sel">Flat lattice</button>
      <button type="button" id="styleCross" class="styopt">Interwoven ribbons</button>
      <button type="button" id="styleField" class="styopt">Field weave (arms too)</button>
+     <button type="button" id="styleBoundary" class="styopt">Tile-boundary weave (Option A)</button>
     </div>
    </div>
    <div class="dial" id="ringsDial" style="display:none">
@@ -544,7 +545,7 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
  ];
  const state = {
    width: 10, color: '#FCFDFD', suppress: true,
-   style: 'flat',                                   // 'flat' | 'crossing' | 'field'
+   style: 'flat',                                   // 'flat' | 'crossing' | 'field' | 'boundary'
    step: 3,                                          // {n/k} fullness (crossing)
    rings: { center: true, petal_base: true, petal_tip: true, outer: true },
    field_angle: 36,                                 // field-Hankin contact angle θ
@@ -572,7 +573,7 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
  // change (so the address bar always reflects the live dials). Keys are short
  // and stable; unknown/garbage values fall back to the state default.
  const URL_KEYS = {
-   style:         { get: () => state.style,         set: v => { if (['flat','crossing','field'].includes(v)) state.style = v; } },
+   style:         { get: () => state.style,         set: v => { if (['flat','crossing','field','boundary'].includes(v)) state.style = v; } },
    width:         { get: () => state.width,          set: v => { const n = parseFloat(v); if (!isNaN(n)) state.width = n; } },
    color:         { get: () => state.color,          set: v => { if (/^#[0-9a-fA-F]{6}$/.test(v)) state.color = v; } },
    step:          { get: () => state.step,           set: v => { const n = parseInt(v, 10); if (!isNaN(n)) state.step = n; } },
@@ -696,6 +697,7 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
  const styleFlat = document.getElementById('styleFlat');
  const styleCross = document.getElementById('styleCross');
  const styleField = document.getElementById('styleField');
+ const styleBoundary = document.getElementById('styleBoundary');
  const ringsDial = document.getElementById('ringsDial');
  const stepDial = document.getElementById('stepDial');
  const stepEl = document.getElementById('step');
@@ -712,18 +714,22 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
  function syncStyle() {
    const cross = state.style === 'crossing';
    const field = state.style === 'field';
-   const woven = cross || field;                    // either interlace mode
+   const boundary = state.style === 'boundary';
+   const woven = cross || field || boundary;        // any interlace mode
    styleCross.classList.toggle('sel', cross);
    styleField.classList.toggle('sel', field);
+   styleBoundary.classList.toggle('sel', boundary);
    styleFlat.classList.toggle('sel', !woven);
    // Crossing-only controls (per-ring {n/k} chords).
    ringsDial.style.display = cross ? '' : 'none';
    stepDial.style.display = cross ? '' : 'none';
-   // Field-only controls (contact angle / ray reach / wave band).
+   // Field-only controls: contact angle / ray reach are field-Hankin-only
+   // (Option A traces edges directly — no angle, no ray). The wave-band dial
+   // is shared (both field AND boundary span the owner's [lo..hi] wave range).
    fieldAngleDial.style.display = field ? '' : 'none';
    fieldRayDial.style.display = field ? '' : 'none';
-   fieldWaveDial.style.display = field ? '' : 'none';
-   // Shadow + crossing-markers + ribbon-inspect apply to both woven styles.
+   fieldWaveDial.style.display = (field || boundary) ? '' : 'none';
+   // Shadow + crossing-markers + ribbon-inspect apply to all woven styles.
    shadowDial.style.display = woven ? '' : 'none';
    netDial.style.display = woven ? '' : 'none';
    pickHint.style.display = woven ? '' : 'none';
@@ -734,6 +740,7 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
  styleFlat.addEventListener('click', () => { state.style = 'flat'; syncStyle(); preview(); });
  styleCross.addEventListener('click', () => { state.style = 'crossing'; syncStyle(); preview(); });
  styleField.addEventListener('click', () => { state.style = 'field'; syncStyle(); preview(); });
+ styleBoundary.addEventListener('click', () => { state.style = 'boundary'; syncStyle(); preview(); });
 
  // ── Field-Hankin dials (contact angle θ, ray reach, wave band) ──
  const fieldAngleEl = document.getElementById('fieldAngle');
@@ -1481,6 +1488,34 @@ def main() -> None:
                 overlay.append("  # BETWEEN tiles across the whole field (arms included).")
                 overlay.append("  weave .weave_overlay")
                 overlay.extend(field_lines)
+        elif style == "boundary":
+            # ── OPTION-A TILE-BOUNDARY weave (2026-06-19, bikar 87197e7) — the
+            # owner's §9 re-pick ("trace the tile edges as the weave"). Where
+            # `field` shoots contact RAYS from each edge midpoint, `boundary`
+            # dresses each wave-N tile's EDGES THEMSELVES as the weave-line
+            # network: the colored-tile boundary lattice IS the field-spanning
+            # star network, and the reference's white straps are those tile
+            # edges widened into ribbons. The medallion's star-derived waves are
+            # OVERLAPPING tiles (not a shared edge), so their edges genuinely
+            # cross → degree-4 nodes → the strapwork weaver interlaces them
+            # over/under. NO angle, NO ray — `boundary on wave N` is the whole
+            # statement (Tier-0 green: weave-statement.test.ts BOUNDARY_OCTAGRAM,
+            # 8 crossings, 16 over / 8 under). One line per wave in the owner's
+            # [lo..hi] band; reuse the field band dials so the studio's existing
+            # wave-range sliders drive it (no new knob to wire).
+            wave_lo = int(params.get("field_wave_lo", 5))
+            wave_hi = int(params.get("field_wave_hi", 16))
+            if wave_hi < wave_lo:
+                wave_lo, wave_hi = wave_hi, wave_lo
+            boundary_lines = [
+                f"    boundary on wave {w}" for w in range(wave_lo, wave_hi + 1)
+            ]
+            if boundary_lines:
+                overlay.append("  # ── tile-boundary weave overlay (transient, Option A) ──")
+                overlay.append("  # each wave's tile EDGES dressed as the weave network →")
+                overlay.append("  # overlapping-tile edge crossings interlace over/under.")
+                overlay.append("  weave .weave_overlay")
+                overlay.extend(boundary_lines)
 
         body = list(overlay)
         body += [
@@ -3336,7 +3371,7 @@ def main() -> None:
                 # types mirror the studio's URL_KEYS so /weave-studio?… ⇒ /weave.png?…
                 # is a pure path-swap.
                 params: dict = {}
-                if (v := _one("style")) in ("flat", "crossing", "field"):
+                if (v := _one("style")) in ("flat", "crossing", "field", "boundary"):
                     params["style"] = v
                 for k, cast in (("width", float), ("step", int), ("shadow", int),
                                 ("field_angle", int), ("field_ray", int),
