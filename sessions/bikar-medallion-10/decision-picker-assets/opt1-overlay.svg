@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="320" viewBox="0 0 300 320">
+  <!-- Option 1: keep the sparse disjoint rosettes, lay an INDEPENDENT weave net on top.
+       Tiles stay apart (white gap remains) + a separate lattice of crossing straps drawn
+       over them that DOES go over/under at its own self-crossings. The straps get a dark
+       casing so they're visible even over the white gaps. -->
+  <rect width="300" height="320" fill="#ffffff"/>
+  <!-- three disjoint rosette-stand-ins, gaps between them -->
+  <g fill="#1a3a7a" stroke="#0d1f44" stroke-width="1">
+    <polygon points="80,70 95,60 110,70 110,90 95,100 80,90"/>
+    <polygon points="190,70 205,60 220,70 220,90 205,100 190,90"/>
+    <polygon points="135,180 150,170 165,180 165,200 150,210 135,200"/>
+  </g>
+  <text x="150" y="240" font-family="sans-serif" font-size="13" fill="#888" text-anchor="middle">tiles stay apart — gap remains</text>
+  <!-- independent weave lattice ON TOP: two strap families, dark casing + white core, over/under -->
+  <g stroke="#0d1f44" stroke-width="15" fill="none" stroke-linecap="round">
+    <line x1="40" y1="120" x2="260" y2="150"/>
+    <line x1="40" y1="160" x2="148" y2="135"/>
+    <line x1="152" y1="135" x2="260" y2="120"/>
+  </g>
+  <g stroke="#FCFDFD" stroke-width="9" fill="none" stroke-linecap="round">
+    <line x1="40" y1="120" x2="260" y2="150"/>
+    <line x1="40" y1="160" x2="148" y2="135"/>
+    <line x1="152" y1="135" x2="260" y2="120"/>
+  </g>
+  <circle cx="150" cy="135" r="6" fill="none" stroke="#c0392b" stroke-width="2.5"/>
+  <text x="150" y="295" font-family="sans-serif" font-size="13" fill="#c0392b" text-anchor="middle">added weave floats OVER the gaps</text>
+</svg>

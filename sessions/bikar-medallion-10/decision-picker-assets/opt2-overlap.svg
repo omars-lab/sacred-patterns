@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="320" viewBox="0 0 300 320">
+  <!-- Option 2: re-author the structure so the rosettes OVERLAP into a dense disc.
+       Shared edges become real crossings (degree-4) → the weave can interlace AND the
+       white gap between tiles disappears (this is what the reference looks like). -->
+  <rect width="300" height="320" fill="#ffffff"/>
+  <!-- overlapping rosette-stand-ins: they touch + share edges, no gaps -->
+  <g fill="#1a3a7a" stroke="#0d1f44" stroke-width="1" fill-opacity="0.92">
+    <polygon points="110,90 140,75 170,90 170,125 140,140 110,125"/>
+    <polygon points="160,90 190,75 220,90 220,125 190,140 160,125"/>
+    <polygon points="135,130 165,115 195,130 195,165 165,180 135,165"/>
+  </g>
+  <text x="150" y="240" font-family="sans-serif" font-size="13" fill="#888" text-anchor="middle">tiles pack tight — no gap, like the reference</text>
+  <!-- the weave runs THROUGH the shared seams (real crossings between tiles) -->
+  <g stroke="#FCFDFD" stroke-width="9" fill="none" stroke-linecap="round">
+    <path d="M105,108 L160,108 M170,108 L225,108"/>
+    <path d="M105,148 L160,148 M170,148 L225,148"/>
+    <path d="M165,72 L165,112 M165,124 L165,185"/>
+  </g>
+  <!-- over/under casing gaps where straps weave through the shared edges -->
+  <g stroke="#0d1f44" stroke-width="11" fill="none">
+    <line x1="163" y1="105" x2="167" y2="111"/>
+    <line x1="163" y1="145" x2="167" y2="151"/>
+  </g>
+  <circle cx="165" cy="108" r="5" fill="none" stroke="#2e8b57" stroke-width="2.5"/>
+  <circle cx="165" cy="148" r="5" fill="none" stroke="#2e8b57" stroke-width="2.5"/>
+  <text x="150" y="295" font-family="sans-serif" font-size="13" fill="#2e8b57" text-anchor="middle">woven through shared edges — all the way out</text>
+</svg>
