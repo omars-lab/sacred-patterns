@@ -776,3 +776,37 @@ incapable method). The weave stage is now an OWNER FORK, not a tuning problem:
 Surfaced to the owner 2026-06-20 with all-degree-2 evidence + all-dial boundary studio URL. Decision doc
 `bikar/docs/decisions/2026-06-19-weave-field-method.md` §10. Tasks #41/#42/#43/#44/#49 closed as symptoms
 of this one cause; tracked as #53. NEVER self-approve #23.
+
+---
+
+## Option-2 de-risk PASSED — no engine primitive needed (2026-06-20)
+
+**Plain English:** the owner picked Option 2 (re-author so rosettes overlap into a dense disc) and asked to
+do it "engine primitive first" — add a DSL primitive that lays overlapping rosettes so any N-fold medallion
+weaves gap-free. I de-risked that path in two tiers before building anything, and the result flips the plan:
+**the existing DSL already expresses the packing — no new primitive is needed.**
+
+**Tier-0 witness (bikar f37cf59, `OVERLAP_ROSETTES`):** two overlapping decagons traced as `boundary on
+wave 1` → degree-4 crossings woven genuine over/under. The two-tile mechanism holds.
+
+**Tier-1 witness (bikar c7e15d5, `PACK_RING_10`):** ten decagons on a packing ring (r60, each r38, every
+neighbour overlaps) authored with the EXISTING DSL via `rotate 10 around C0.mpt` of one off-origin tile's
+connect-cycle → **40 degree-4 crossings, over 120 / under 60.** A dense interlocking garland, NOT a sparse
+ring around a void. Eyeball: `/tmp/medallion-derisk/pack10.png` (Dropbox-mirrored).
+
+**Why the primitive premise is falsified (feedback_verify_primitive_output_not_its_name, C1):** the
+"primitive first" pick rested on "the language can't express overlapping-rosette packing." Reading the
+evaluator (`evalRotate`, `replicatePolygonsRadially`, `replicateArcsRadially`) shows `rotate N around <pt>`
+replicates the connect-cycle / polygon / arcs to distinct rotated points at distinct off-origin centers —
+the packing lays gap-free with one off-origin template tile + `rotate`. Off-origin circle centers are
+already supported (`patterns/Hexagram.bkr` declares circles at N/E/S/W). So the structural mechanism is
+present; what looked like a missing primitive is a missing *authoring idiom*, now witnessed.
+
+**Remaining gaps (authoring, not engine):** (1) center void — the packing leaves a 10-point star hole the
+reference fills with a central rosette; (2) thin straps — `width 4` renders as thin lines; the reference
+straps are broad white ribbons. Both are pure DSL authoring on top of the proven packing.
+
+**Next:** author the full medallion-10 with this idiom (central rosette + N-fold overlapping corona of
+rosettes + boundary weave), render, look (Tenet 24/25b), then surface the dense STRUCTURE via an all-dial
+studio URL for owner STRUCTURE re-approval BEFORE any weave verdict (Option 2 re-opens the structure gate;
+never self-undo an approved gate, never self-approve #23).
