@@ -1000,6 +1000,16 @@ WEAVE_PROGRESS_HTML = """<!DOCTYPE html>
      <div class="swatch" data-c="#1B6CA8" style="background:#1B6CA8"></div>
     </div>
    </div>
+   <div class="dial">
+    <label>Paint the shapes
+     <span class="hint">&mdash; fill the woven cells with the photo's blues</span></label>
+    <label class="toggle"><input type="checkbox" id="cells"> colour the cells</label>
+   </div>
+   <div class="dial">
+    <label>Flower edge
+     <span class="hint">&mdash; trim the round disc to the photo's 10-petal flower outline</span></label>
+    <label class="toggle"><input type="checkbox" id="clip"> scalloped edge</label>
+   </div>
   </div>
  </div>
 </main>
@@ -1011,6 +1021,8 @@ WEAVE_PROGRESS_HTML = """<!DOCTYPE html>
  const ringV = document.getElementById('ringV');
  const ctl = { star: document.getElementById('star'), width: document.getElementById('width') };
  const lbl = { star: document.getElementById('starV'), width: document.getElementById('widthV') };
+ const cellsBox = document.getElementById('cells');
+ const clipBox = document.getElementById('clip');
  let color = '#FFFFFF';
  const RING_WORDS = ['just the middle', 'middle + 1 ring', 'middle + 2 rings', 'the full disc'];
  const STAR_WORDS = { 2: 'blunt', 3: 'medium', 4: 'sharp' };
@@ -1024,7 +1036,8 @@ WEAVE_PROGRESS_HTML = """<!DOCTYPE html>
  async function render() {
    syncLabels();
    const shells = +sh.value;
-   const params = { star: +ctl.star.value, width: +ctl.width.value, color };
+   const params = { star: +ctl.star.value, width: +ctl.width.value, color,
+                    cells: cellsBox.checked, clip: clipBox.checked };
    ours.classList.add('loading');
    spin.textContent = 'building\\u2026';
    ringcap.textContent = 'ours \\u2014 ' + (RING_WORDS[shells] || (shells + ' rings'));
@@ -1041,6 +1054,8 @@ WEAVE_PROGRESS_HTML = """<!DOCTYPE html>
  function debounced() { clearTimeout(timer); timer = setTimeout(render, 250); }
  sh.addEventListener('input', () => { syncLabels(); debounced(); });
  for (const k in ctl) ctl[k].addEventListener('input', () => { syncLabels(); debounced(); });
+ cellsBox.addEventListener('change', render);
+ clipBox.addEventListener('change', render);
  document.querySelectorAll('#swatches .swatch').forEach(el => el.addEventListener('click', () => {
    document.querySelectorAll('#swatches .swatch').forEach(s => s.classList.remove('sel'));
    el.classList.add('sel'); color = el.dataset.c; render();
@@ -1072,6 +1087,9 @@ WEAVE_PROGRESS_HTML = """<!DOCTYPE html>
      if (hit) { hit.classList.add('sel'); color = hit.dataset.c; }
      else { color = c; }  // a colour not in the swatch strip still renders
    }
+   const truthy = v => v !== null && !['0','false','off',''].includes(v.toLowerCase());
+   if (q.has('cells')) cellsBox.checked = truthy(q.get('cells'));
+   if (q.has('clip')) clipBox.checked = truthy(q.get('clip'));
  })();
  render();
 </script>
@@ -1824,19 +1842,80 @@ def main() -> None:
             color = "#FFFFFF"
         if shells < 0:
             shells = 0
+        cells = bool(params.get("cells", False))
+        # cells: fill the woven CELLS with the reference's navy-dominant colour
+        # ladder (render-gated 2026-06-21, medallion10_field_scale_count_coupling).
+        # The most COMMON face is sides==4, so it carries the dominant navy; bright
+        # teal is reserved for the decagon/octagon rosette CENTRES as accents — this
+        # reproduces the reference's dark-field/bright-pop value structure. Colouring
+        # by side-count is crude (ignores radial position) but matches the value mood.
+        cell_block = ""
+        if cells:
+            cell_block = (
+                "  voids detect\n"
+                "  palette med10\n"
+                "      navy = #0A2463\n"
+                "      royal = #1B3B8C\n"
+                "      blue = #2E5EAA\n"
+                "      sky = #3FA7D6\n"
+                "      teal = #2AB7C8\n"
+                "  fill void where sides == 10 color teal\n"
+                "  fill void where sides == 12 color teal\n"
+                "  fill void where sides == 8 color sky\n"
+                "  fill void where sides == 5 color royal\n"
+                "  fill void where sides == 4 color navy\n"
+                "  fill void where sides == 3 color blue\n"
+            )
         return (
             "# medallion-10 girih-field weave PROGRESS frame "
-            f"(shells {shells}, star {star}) — convergent reconstruction.\n"
+            f"(shells {shells}, star {star}, cells {cells}) — convergent reconstruction.\n"
             "blueprint g\n"
             "  circle C0 center(0,0) radius 100\n"
             "\n"
             "pattern p on g\n"
             f"  girih field decagonal {edge:g} shells {shells} star {star}\n"
+            f"{cell_block}"
             "  strapwork\n"
             f"    width {width:g}\n"
             "    crossing alternating\n"
             f"    color {color}\n"
         )
+
+    def _apply_flower_clip(svg: str) -> str:
+        # Crop the convex girih FIELD to the reference's 10-lobed scalloped flower
+        # silhouette via a presentation-layer SVG <clipPath> (Tenet-11-legal mask:
+        # the approximation lives in the clip, the geometry stays exact). The field
+        # auto-fits its content bbox to the viewBox, so the disc half-span = half the
+        # viewBox width; size the scallop to that. Gentle lobes (R_out/R_in ratio
+        # ~1.11) rotated half a lobe (18°) so valleys fall between edge rosettes
+        # rather than slicing cells (render-gated /tmp/flower-clip/ref-vs-navy2.png).
+        import math
+        m = re.search(r'viewBox="(-?[\d.]+)\s+(-?[\d.]+)\s+([\d.]+)\s+([\d.]+)"', svg)
+        if not m:
+            return svg
+        vw = float(m.group(3))
+        half = vw / 2.0
+        R_out = half * 0.97     # lobe peak just inside the frame
+        R_in = R_out * 0.90     # valley between lobes (gentle scallop)
+        N = 10
+        rot = math.radians(18)  # half a lobe — valleys between edge rosettes
+        pts = []
+        for k in range(N):
+            a0 = k * 2 * math.pi / N
+            a1 = (k + 1) * 2 * math.pi / N
+            amid = (a0 + a1) / 2
+            for s in range(24):
+                t = s / 24
+                a = a0 + t * (a1 - a0)
+                bump = (math.cos((a - amid) * N) + 1) / 2
+                r = R_in + (R_out - R_in) * bump
+                pts.append((r * math.cos(a + rot), r * math.sin(a + rot)))
+        d = "M " + " L ".join(f"{x:.2f},{y:.2f}" for x, y in pts) + " Z"
+        defs = f'<defs><clipPath id="flower"><path d="{d}"/></clipPath></defs>'
+        svg = re.sub(r"(<svg[^>]*>)", r"\1" + defs, svg, count=1)
+        svg = svg.replace(defs, defs + '<g clip-path="url(#flower)">', 1)
+        svg = svg.replace("</svg>", "</g></svg>", 1)
+        return svg
 
     def render_progress_svg(params: dict, shells: int) -> str:
         # Live-render one progress frame to SVG (inline-embedded by the page so
@@ -1861,6 +1940,8 @@ def main() -> None:
                 r'<rect[^>]*fill="#FFFFFF"[^>]*pointer-events="none"[^>]*/>\s*',
                 "", svg, count=1,
             )
+            if bool(params.get("clip", False)):
+                svg = _apply_flower_clip(svg)
             return svg
 
     def render_progress_png(params: dict, shells: int, height: int = 1024) -> bytes:
@@ -1895,6 +1976,8 @@ def main() -> None:
                 r'<rect[^>]*fill="#FFFFFF"[^>]*pointer-events="none"[^>]*/>\s*',
                 "", svg, count=1,
             )
+            if bool(params.get("clip", False)):
+                svg = _apply_flower_clip(svg)
             svg_path.write_text(svg)
             # prefer_rsvg: the progress SVG is pure-stroke; magick blanks it (see
             # _rasterize_svg's prefer_rsvg note, 2026-06-21).
@@ -3739,6 +3822,9 @@ def main() -> None:
                             pass
                 if (v := _one("color")) is not None:
                     params["color"] = v  # build_progress_variant validates the hex
+                for flag in ("cells", "clip"):
+                    if (v := _one(flag)) is not None:
+                        params[flag] = v not in ("0", "false", "off", "")
                 try:
                     png = render_progress_png(params, shells)
                 except subprocess.CalledProcessError as e:
