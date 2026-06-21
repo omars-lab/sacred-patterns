@@ -1,0 +1,22 @@
+# Styled woven girih field: wide WHITE straps over a dark colored cell field.
+# Network = girih field decoration (240 crossings). Presentation = wide bands +
+# colored cells so the white weave reads against color like the reference.
+blueprint g
+  circle C0 center(0,0) radius 100
+
+pattern p on g
+  girih field decagonal 30 shells 1
+  voids detect
+  palette medallion
+      navy = #14306B
+      royal = #2E63B8
+      peri = #8FA8DE
+      cyan = #36BBC4
+  fill void where sides >= 10 color navy
+  fill void where sides == 3 color cyan
+  fill void where sides == 5 color peri
+  fill void where sides == 4 color royal
+  strapwork
+    width 12
+    crossing alternating
+    color #FFFFFF

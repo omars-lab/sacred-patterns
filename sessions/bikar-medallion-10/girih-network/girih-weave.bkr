@@ -1,0 +1,12 @@
+# Weave the girih decagonal field's own decoration network. The hankin-star
+# decorations already cross at degree-4 junctions across the whole field;
+# strapwork interlaces them over/under into the reference's white lattice.
+blueprint g
+  circle C0 center(0,0) radius 100
+
+pattern p on g
+  girih field decagonal 30 shells 1
+  strapwork
+    width 5
+    crossing alternating
+    color #FFFFFF
