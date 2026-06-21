@@ -1,23 +1,20 @@
-# medallion-10 — ATTACH-FLOWER witness (2026-06-21, structural breakthrough).
+# medallion-10 — ATTACH-FLOWER witness (2026-06-21). SUPERSEDED — kept as a
+# falsified-hypothesis record, NOT a recommended construction.
 #
-# Plain English: the reference is NOT a grown girih field (that close-packs
-# decagons 6-around-1 into a fine hexagonal mesh — wrong topology) and NOT the
-# iter71 concentric stack. It is a FINITE FLOWER: one centre decagon rosette with
-# a RING of decagon rosettes attached to its edges, kissing edge-to-edge, with the
-# {10/4} star-and-cross interlace filling the interstitial gaps.
+# Plain English: this witness attaches a decagon to each of the centre decagon's
+# 10 edges, hoping the ring rosettes would "kiss" like the reference. They DON'T.
+# Render-gated side-by-side vs the reference (/tmp/spacing-check/ref-vs-attach10.png,
+# 2026-06-21): the ring rosettes sit TOO FAR APART — between adjacent ring decagons
+# there is a big hexagonal void holding ONE large 6-star, where the reference has a
+# FINE dense mesh of small {10/4} stars and pentagon/bowtie spacer tiles.
 #
-# This witness places the centre decagon + a decagon on each of its 10 edges via
-# the `attach` seam-solver, then weaves with strapwork (star 4 sharpness is baked
-# into the decagon decoration). Render-verified vs reference 2026-06-21
-# (Dropbox wave-by-wave/ref-vs-attach-flower.png): the CONSTRUCTION PRINCIPLE now
-# matches — centre + ring of kissing decagon rosettes, stars+darts in the gaps,
-# continuous over/under interlace.
-#
-# KNOWN GAP (next): attaching to all 10 edges crowds adjacent ring decagons (their
-# edges are too close, so they overlap). The reference separates ring rosettes with
-# pentagon/bowtie spacer tiles (true girih) OR a `repeat 10` ring at the correct
-# radius. Refine the ring spacing next — this witness proves the primitive, not the
-# final spacing.
+# THE CORRECTION: reading the reference's own `reference-structure.png` overlay shows
+# the rosettes are a HEX-PACKING (6-around-1 decagon rosettes with pentagon/bowtie
+# SPACERS, ~19 rosettes in a 10-lobed flower) — which is EXACTLY what `girih field
+# decagonal` grows. The grown field (NOT this hand-attached ring) is the right
+# primitive; see sessions girih-network/girih-star4.bkr and the
+# medallion10_girih_field_is_the_white_network_generator memory. Converge the field's
+# shells/edge/strap-width + a flower-boundary clip, not this attach ring.
 blueprint g
   circle C0 center(0,0) radius 100
 

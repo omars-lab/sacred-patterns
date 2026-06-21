@@ -1866,17 +1866,46 @@ def main() -> None:
     def render_progress_png(params: dict, shells: int, height: int = 1024) -> bytes:
         # Live-render one progress frame to PNG (the shareable /weave-progress.png
         # twin — magick-first per _rasterize_svg's path-count fix).
+        #
+        # The shareable PNG MUST match what the page shows (Tenet 25b — a render
+        # surfaced to the owner has to be the render they'll judge by). The page
+        # composites the white woven straps over a DARK card; the bare rasterized
+        # SVG instead has white straps on the renderer's white backdrop rect, so
+        # they ghost as thin black outlines (the 2026-06-21 white-on-white twin
+        # defect). Fix here, in the twin, so the link and the page agree:
+        #   1. strip the backdrop rect (same regex as render_progress_svg), then
+        #   2. composite the rasterized weave over a dark card so the WHITE straps
+        #      read as bold ribbons, reference-style.
+        import shutil
         variant = build_progress_variant(params, shells)
+        card = str(params.get("card", "#14171a"))
+        if not re.fullmatch(r"#[0-9A-Fa-f]{6}", card):
+            card = "#14171a"
         with tempfile.TemporaryDirectory() as td:
             bkr_path = Path(td) / "progress-frame.bkr"
             svg_path = Path(td) / "progress-frame.svg"
             png_path = Path(td) / "progress-frame.png"
+            card_path = Path(td) / "progress-card.png"
             bkr_path.write_text(variant)
             cmd = [BIKAR_NODE_BIN, BIKAR_CLI_JS, "render", str(bkr_path), "-o", str(svg_path)]
             subprocess.run(cmd, check=True, capture_output=True, text=True)
+            # Strip the white backdrop rect so the dark card shows through.
+            svg = svg_path.read_text()
+            svg = re.sub(
+                r'<rect[^>]*fill="#FFFFFF"[^>]*pointer-events="none"[^>]*/>\s*',
+                "", svg, count=1,
+            )
+            svg_path.write_text(svg)
             # prefer_rsvg: the progress SVG is pure-stroke; magick blanks it (see
             # _rasterize_svg's prefer_rsvg note, 2026-06-21).
             _rasterize_svg(svg_path, png_path, height, prefer_rsvg=True)
+            if shutil.which("magick"):
+                subprocess.run(
+                    ["magick", "-size", f"{height}x{height}", f"xc:{card}",
+                     str(png_path), "-compose", "over", "-composite", str(card_path)],
+                    check=True, capture_output=True, text=True,
+                )
+                return card_path.read_bytes()
             return png_path.read_bytes()
 
     def build_buildin_variant(src_bkr: str, params: dict) -> str:
