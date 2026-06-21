@@ -909,6 +909,175 @@ ANIMATE_HTML = """<!DOCTYPE html>
 </body></html>"""
 
 
+# The weave-PROGRESS viewer (#11): watch the white interlace grow ring-by-ring,
+# the way the reference is actually built — a decagonal girih FIELD whose per-tile
+# stars join across shared edges into one star-and-cross network. The owner drags
+# a "How many rings?" slider (0 = one centre rosette, up to a full disc) or presses
+# Play to step out from the middle, ring by ring, toward the reference. Three plain
+# dials: star sharpness, ribbon thickness, ribbon colour. Reference photo sits to the
+# left so the grow can be matched against it by eye (Tenet 27 — grandma-plain: one
+# slider, one button, one picture; "girih field"/"shells"/"strapwork" never shown).
+WEAVE_PROGRESS_HTML = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Watch the weave grow</title>
+<style>__CSS__
+ .stage { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+ .stage figure { margin: 0; }
+ .stage img { width: 100%; display: block; border-radius: 10px; background: #fff;
+              border: 1px solid var(--line); min-height: 240px; }
+ /* dark card so the WHITE woven ribbons read against it — the reference is
+    white-on-dark, and white straps on a white card would be invisible. */
+ .stage .oursvg { width: 100%; display: block; border-radius: 10px; background: #1a1d21;
+              border: 1px solid var(--line); min-height: 240px; overflow: hidden; }
+ .stage .oursvg svg { width: 100%; height: auto; display: block; }
+ .stage .oursvg.loading { opacity: .55; transition: opacity .2s ease; }
+ .stage figcaption { font-size: 14px; color: var(--muted); margin: 6px 2px; font-weight: 600; }
+ .ringrow { margin-top: 22px; display: grid; grid-template-columns: auto 1fr auto; gap: 14px;
+            align-items: center; }
+ .ringrow .play { font: inherit; font-size: 16px; font-weight: 700; color: #fff; height: 46px;
+            padding: 0 22px; border-radius: 999px; border: 1px solid var(--agree);
+            background: var(--agree); cursor: pointer; white-space: nowrap;
+            transition: transform .15s ease, box-shadow .15s ease; }
+ .ringrow .play:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+ .ringrow input[type=range] { width: 100%; }
+ .ringrow .ringlbl { font-weight: 700; font-size: 16px; white-space: nowrap;
+            font-variant-numeric: tabular-nums; color: var(--accent); }
+ .dials { margin-top: 26px; display: grid; gap: 20px; max-width: 560px; }
+ .dial label { display: block; font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+ .dial .hint { font-weight: 400; color: var(--muted); font-size: 13.5px; }
+ .dial input[type=range] { width: 100%; }
+ .dial .val { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 700; }
+ .swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+ .swatch { width: 40px; height: 40px; border-radius: 8px; border: 2px solid var(--line);
+           cursor: pointer; }
+ .swatch.sel { outline: 3px solid var(--accent); outline-offset: 1px; }
+ .spin { display: block; font-size: 13px; color: var(--muted); margin-top: 10px; }
+</style></head><body>
+<header>
+ <h1>Watch the weave grow, ring by ring</h1>
+ <p class="muted">The white ribbons start as one star in the middle, then a new ring
+  of weaving appears each step until the whole disc is filled &mdash; the same way
+  your photo is built. Drag <b>How many rings</b> or press <b>Play</b> to grow it out
+  from the centre, and match it against your photo on the left.
+  <a href="/">Back to your review list</a></p>
+</header>
+<main>
+ <div class="gate">
+  <div class="stage">
+   <figure><img src="/reference.jpg" alt="your photo"><figcaption>your photo</figcaption></figure>
+   <figure><div id="ours" class="oursvg"></div><figcaption id="ringcap">ours</figcaption><span id="spin" class="spin"></span></figure>
+  </div>
+ </div>
+
+ <div class="gate">
+  <div class="ringrow">
+   <button id="play" class="play">&#9654; Play</button>
+   <input type="range" id="shells" min="0" max="3" step="1" value="0">
+   <span class="ringlbl" id="ringV">just the middle</span>
+  </div>
+ </div>
+
+ <div class="gate">
+  <div class="dials">
+   <div class="dial">
+    <label>How sharp the stars are
+     <span class="hint">&mdash; right = sharp deep points (matches the photo), left = blunt</span>
+     <span class="val" id="starV"></span></label>
+    <input type="range" id="star" min="2" max="4" step="1" value="4">
+   </div>
+   <div class="dial">
+    <label>How thick the ribbons are
+     <span class="hint">&mdash; bigger = wider white bands</span>
+     <span class="val" id="widthV"></span></label>
+    <input type="range" id="width" min="2" max="9" step="0.5" value="5">
+   </div>
+   <div class="dial">
+    <label>Ribbon colour
+     <span class="hint">&mdash; the colour of the weaving bands</span></label>
+    <div class="swatches" id="swatches">
+     <div class="swatch sel" data-c="#FFFFFF" style="background:#FFFFFF"></div>
+     <div class="swatch" data-c="#FCFDFD" style="background:#FCFDFD"></div>
+     <div class="swatch" data-c="#F2E9D8" style="background:#F2E9D8"></div>
+     <div class="swatch" data-c="#1B6CA8" style="background:#1B6CA8"></div>
+    </div>
+   </div>
+  </div>
+ </div>
+</main>
+<script>
+ const ours = document.getElementById('ours');
+ const spin = document.getElementById('spin');
+ const ringcap = document.getElementById('ringcap');
+ const sh = document.getElementById('shells');
+ const ringV = document.getElementById('ringV');
+ const ctl = { star: document.getElementById('star'), width: document.getElementById('width') };
+ const lbl = { star: document.getElementById('starV'), width: document.getElementById('widthV') };
+ let color = '#FFFFFF';
+ const RING_WORDS = ['just the middle', 'middle + 1 ring', 'middle + 2 rings', 'the full disc'];
+ const STAR_WORDS = { 2: 'blunt', 3: 'medium', 4: 'sharp' };
+ function syncLabels() {
+   const s = +sh.value;
+   ringV.textContent = RING_WORDS[s] || (s + ' rings');
+   lbl.star.textContent = STAR_WORDS[+ctl.star.value] || (+ctl.star.value);
+   lbl.width.textContent = (+ctl.width.value).toFixed(1);
+ }
+ let timer = null;
+ async function render() {
+   syncLabels();
+   const shells = +sh.value;
+   const params = { star: +ctl.star.value, width: +ctl.width.value, color };
+   ours.classList.add('loading');
+   spin.textContent = 'building\\u2026';
+   ringcap.textContent = 'ours \\u2014 ' + (RING_WORDS[shells] || (shells + ' rings'));
+   try {
+     const r = await fetch('/api/preview-progress-svg', {
+       method: 'POST', headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ params, shells }) });
+     if (!r.ok) { spin.textContent = 'could not build the picture \\u2014 try again'; return; }
+     ours.innerHTML = await r.text();
+     spin.textContent = '';
+   } catch (e) { spin.textContent = 'could not build the picture \\u2014 try again'; }
+   finally { ours.classList.remove('loading'); }
+ }
+ function debounced() { clearTimeout(timer); timer = setTimeout(render, 250); }
+ sh.addEventListener('input', () => { syncLabels(); debounced(); });
+ for (const k in ctl) ctl[k].addEventListener('input', () => { syncLabels(); debounced(); });
+ document.querySelectorAll('#swatches .swatch').forEach(el => el.addEventListener('click', () => {
+   document.querySelectorAll('#swatches .swatch').forEach(s => s.classList.remove('sel'));
+   el.classList.add('sel'); color = el.dataset.c; render();
+ }));
+ // Play: step out from the middle, one ring at a time, pausing so each new ring of
+ // weaving registers before the next appears (the wave-by-wave grow).
+ let playing = false;
+ document.getElementById('play').addEventListener('click', async () => {
+   if (playing) return; playing = true;
+   const max = +sh.max;
+   for (let s = 0; s <= max; s++) {
+     sh.value = s; syncLabels();
+     await render();
+     await new Promise(r => setTimeout(r, 650));
+   }
+   playing = false;
+ });
+ // All-dial shareable link: ?shells=&star=&width=&color= pre-sets every control,
+ // so `open`ing a full-param URL lands the owner on the exact frame (mirrors the
+ // weave studio's loadFromURL; the URL IS the state — bookmarkable, reproducible).
+ (function loadFromURL() {
+   const q = new URLSearchParams(location.search);
+   const setRange = (el, key) => { const v = q.get(key); if (v !== null && !isNaN(+v)) el.value = v; };
+   setRange(sh, 'shells'); setRange(ctl.star, 'star'); setRange(ctl.width, 'width');
+   const c = q.get('color');
+   if (c) {
+     const hit = [...document.querySelectorAll('#swatches .swatch')].find(s => s.dataset.c.toLowerCase() === c.toLowerCase());
+     document.querySelectorAll('#swatches .swatch').forEach(s => s.classList.remove('sel'));
+     if (hit) { hit.classList.add('sel'); color = hit.dataset.c; }
+     else { color = c; }  // a colour not in the swatch strip still renders
+   }
+ })();
+ render();
+</script>
+</body></html>"""
+
+
 # The simplify experience (#44): a vocabulary strip + a one-at-a-time "are these the
 # same shape?" loop. Grandma-plain (Tenet 27): big silhouettes, plain captions, one
 # question on screen, two buttons. No "cluster"/"signature"/"EPS" anywhere she reads.
@@ -1544,23 +1713,42 @@ def main() -> None:
         # evaluator collects all segments before the single voids/strapwork pass.
         return flat.rstrip() + "\n" + "\n".join(body) + "\n"
 
-    def _rasterize_svg(svg_path: Path, png_path: Path, height: int) -> None:
+    def _rasterize_svg(svg_path: Path, png_path: Path, height: int,
+                       prefer_rsvg: bool = False) -> None:
         # SVG -> PNG (subprocess, no native-cairo-python dependency) so the studio
         # renders under whatever python runs the server — the conda env on this box
         # lacks libcairo for cairosvg, but magick/rsvg-convert are present.
         #
-        # Why `magick` FIRST, not `rsvg-convert` (2026-06-19 fix): rsvg-convert
-        # DEGRADES at high path counts and DROPS the outer arc-clipped faces. The
-        # field-Hankin weave variant can emit 100K+ <path>s (untrimmed contact rays
-        # × the strapwork weaver); rsvg-convert rendered that as a central colored
-        # disc with the whole outer field gone WHITE (the owner's 2026-06-18
+        # Why `magick` FIRST by default (2026-06-19 fix): rsvg-convert DEGRADES at
+        # high path counts and DROPS the outer arc-clipped faces. The field-Hankin
+        # weave variant can emit 100K+ <path>s (untrimmed contact rays × the
+        # strapwork weaver); rsvg-convert rendered that as a central colored disc
+        # with the whole outer field gone WHITE (the owner's 2026-06-18
         # "central-disc-only color" report). magick renders the SAME SVG with full
-        # field-wide color. The SVG is correct either way (verified: 381 non-white
-        # fills in both); only rsvg-convert mis-renders it. See ISSUES-OBSERVED.md
-        # 2026-06-19. rsvg-convert stays as the fallback (it's fine for the flat /
-        # crossing styles' few-thousand-path SVGs and is faster there).
+        # field-wide color. The SVG is correct either way; only rsvg-convert
+        # mis-renders it. See ISSUES-OBSERVED.md 2026-06-19.
+        #
+        # Why `prefer_rsvg` exists (2026-06-21 fix): the OPPOSITE failure mode bites
+        # the girih-field PROGRESS frame. That SVG is pure STROKE (unfilled tiles +
+        # strapwork ribbons, no arc-clipped fills). magick — even though its own SVG
+        # delegate IS rsvg-convert — invokes it with `--dpi-x/--dpi-y` against the
+        # ~293-unit viewBox and produces a fully-WHITE 449-byte image (mean=1.0,
+        # verified 2026-06-21 /tmp/progress-check). A DIRECT `rsvg-convert -w/-h`
+        # call on the identical SVG renders the full weave (138KB). So the progress
+        # path passes prefer_rsvg=True to skip magick's broken wrapper. The two
+        # styles have inverse rasterizer bugs; callers pick by their SVG shape.
         import shutil
 
+        def _rsvg():
+            subprocess.run(
+                ["rsvg-convert", "-w", str(height), "-h", str(height),
+                 "-o", str(png_path), str(svg_path)],
+                check=True, capture_output=True, text=True,
+            )
+
+        if prefer_rsvg and shutil.which("rsvg-convert"):
+            _rsvg()
+            return
         if shutil.which("magick"):
             subprocess.run(
                 ["magick", "-background", "none", "-density", "192",
@@ -1569,10 +1757,7 @@ def main() -> None:
             )
             return
         if shutil.which("rsvg-convert"):
-            subprocess.run(
-                ["rsvg-convert", "-h", str(height), "-o", str(png_path), str(svg_path)],
-                check=True, capture_output=True, text=True,
-            )
+            _rsvg()
             return
         import cairosvg  # last resort: needs native libcairo
         cairosvg.svg2png(url=str(svg_path), write_to=str(png_path), output_height=height)
@@ -1612,6 +1797,87 @@ def main() -> None:
             cmd = [BIKAR_NODE_BIN, BIKAR_CLI_JS, "render", str(bkr_path), "-o", str(svg_path)]
             subprocess.run(cmd, check=True, capture_output=True, text=True)
             return svg_path.read_text()
+
+    # ── girih-field weave PROGRESS (the convergent reconstruction) ──────────
+    # Plain English: this builds the weave the way the reference is actually
+    # built — a decagonal GIRIH FIELD whose per-tile Hankin stars join across
+    # shared edges into ONE white star-and-cross interlace. The owner watches it
+    # grow shell-by-shell (a single decagon → +ring → +ring …). This is the path
+    # that CONVERGES on the reference, NOT iter71's concentric hand-author. It is
+    # self-contained (does NOT call build_weave_variant); the .bkr is generated
+    # directly from the dials so the page can show "wave 0, 1, 2, 3…".
+    def build_progress_variant(params: dict, shells: int) -> str:
+        # Five dials, every default a measured/derived value (no magic numbers):
+        #   edge   — girih tile edge length (field scale). 30 fills a r=100 disc
+        #            at shells≈3 the way the reference packs ten rosettes.
+        #   star   — {10/k} chord skip = star SHARPNESS. star 4 is the reference's
+        #            sharp deep-valleyed species (bikar 51c43e5); 3 = blunt φ.
+        #   width  — strap band width (white ribbon thickness).
+        #   color  — strap colour (white-on-dark reference → #FFFFFF default).
+        edge = float(params.get("edge", 30))
+        star = int(params.get("star", 4))
+        width = float(params.get("width", 5))
+        color = str(params.get("color", "#FFFFFF"))
+        if star < 2 or star > 4:          # kernel: decagonStarPairs throws else
+            star = 4
+        if not re.fullmatch(r"#[0-9A-Fa-f]{6}", color):  # lexer eats bare `#`
+            color = "#FFFFFF"
+        if shells < 0:
+            shells = 0
+        return (
+            "# medallion-10 girih-field weave PROGRESS frame "
+            f"(shells {shells}, star {star}) — convergent reconstruction.\n"
+            "blueprint g\n"
+            "  circle C0 center(0,0) radius 100\n"
+            "\n"
+            "pattern p on g\n"
+            f"  girih field decagonal {edge:g} shells {shells} star {star}\n"
+            "  strapwork\n"
+            f"    width {width:g}\n"
+            "    crossing alternating\n"
+            f"    color {color}\n"
+        )
+
+    def render_progress_svg(params: dict, shells: int) -> str:
+        # Live-render one progress frame to SVG (inline-embedded by the page so
+        # the strap ribbons carry data-strand and the network overlay can draw
+        # over the same coordinate space — same contract as render_weave_svg).
+        #
+        # Strip the renderer's full-viewBox WHITE background <rect>: the page's
+        # card is dark (so the WHITE woven ribbons read, reference-style), but the
+        # SVG's own white rect would cover that dark and re-hide the white straps
+        # (white-on-white). Removing the one `fill="#FFFFFF" pointer-events="none"`
+        # backdrop rect lets the dark card show through behind the weave.
+        variant = build_progress_variant(params, shells)
+        with tempfile.TemporaryDirectory() as td:
+            bkr_path = Path(td) / "progress-frame.bkr"
+            svg_path = Path(td) / "progress-frame.svg"
+            bkr_path.write_text(variant)
+            cmd = [BIKAR_NODE_BIN, BIKAR_CLI_JS, "render", str(bkr_path), "-o", str(svg_path)]
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+            svg = svg_path.read_text()
+            # Drop ONLY the backdrop rect (full-viewBox white, pointer-events none).
+            svg = re.sub(
+                r'<rect[^>]*fill="#FFFFFF"[^>]*pointer-events="none"[^>]*/>\s*',
+                "", svg, count=1,
+            )
+            return svg
+
+    def render_progress_png(params: dict, shells: int, height: int = 1024) -> bytes:
+        # Live-render one progress frame to PNG (the shareable /weave-progress.png
+        # twin — magick-first per _rasterize_svg's path-count fix).
+        variant = build_progress_variant(params, shells)
+        with tempfile.TemporaryDirectory() as td:
+            bkr_path = Path(td) / "progress-frame.bkr"
+            svg_path = Path(td) / "progress-frame.svg"
+            png_path = Path(td) / "progress-frame.png"
+            bkr_path.write_text(variant)
+            cmd = [BIKAR_NODE_BIN, BIKAR_CLI_JS, "render", str(bkr_path), "-o", str(svg_path)]
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+            # prefer_rsvg: the progress SVG is pure-stroke; magick blanks it (see
+            # _rasterize_svg's prefer_rsvg note, 2026-06-21).
+            _rasterize_svg(svg_path, png_path, height, prefer_rsvg=True)
+            return png_path.read_bytes()
 
     def build_buildin_variant(src_bkr: str, params: dict) -> str:
         # Bolt the `radial_assemble` build-in animation onto the flat source so the
@@ -3413,6 +3679,52 @@ def main() -> None:
                 self.end_headers()
                 self.wfile.write(png)
                 return
+            if self.path.split("?", 1)[0] == "/weave-progress":
+                # The wave-by-wave weave-building viewer (#11): watch the girih
+                # FIELD grow shell-by-shell into the reference's white star-and-
+                # cross interlace. Page reads its dials client-side from the query
+                # string, so match path-only (same reason as /weave-studio).
+                self._send_html(WEAVE_PROGRESS_HTML.replace("__CSS__", HUB_CSS))
+                return
+            if self.path.split("?", 1)[0] == "/weave-progress.png":
+                # The shareable image twin: GET /weave-progress.png?shells=2&star=4&…
+                # returns one rendered progress frame. Mirrors /weave.png's GET-twin
+                # contract (a browser can't POST a JSON body from a plain link).
+                from urllib.parse import urlparse, parse_qs
+
+                q = parse_qs(urlparse(self.path).query)
+                def _one(k):
+                    return q[k][0] if k in q and q[k] else None
+                shells = 0
+                if (v := _one("shells")) is not None:
+                    try:
+                        shells = max(0, int(v))
+                    except ValueError:
+                        shells = 0
+                params: dict = {}
+                for k, cast in (("edge", float), ("star", int), ("width", float)):
+                    if (v := _one(k)) is not None:
+                        try:
+                            params[k] = cast(v)
+                        except ValueError:
+                            pass
+                if (v := _one("color")) is not None:
+                    params["color"] = v  # build_progress_variant validates the hex
+                try:
+                    png = render_progress_png(params, shells)
+                except subprocess.CalledProcessError as e:
+                    self.send_error(500, f"render failed: {(e.stderr or e.stdout or str(e)).strip()[:300]}")
+                    return
+                except Exception as e:
+                    self.send_error(500, f"render failed: {e}")
+                    return
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", str(len(png)))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(png)
+                return
             if self.path == "/animate":
                 # The build-in assembly viewer (#14): watch the medallion grow
                 # itself centre-first, wave-by-wave. The page fetches a live SVG
@@ -3689,6 +4001,36 @@ def main() -> None:
                     return
                 except Exception as e:
                     self.send_error(500, f"build-in preview failed: {e}")
+                    return
+                out = svg.encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/svg+xml")
+                self.send_header("Content-Length", str(len(out)))
+                self.end_headers()
+                self.wfile.write(out)
+            elif self.path == "/api/preview-progress-svg":
+                # Live progress render (#11): {params, shells} -> one girih-field
+                # progress frame as inline SVG. The page re-injects it on every
+                # SHELL-slider tick / dial change to show the next wave of the
+                # convergent reconstruction. Self-contained girih-field source —
+                # NOT build_weave_variant (which mutates iter71's concentric base).
+                try:
+                    data = json.loads(self._read_body())
+                except json.JSONDecodeError:
+                    self.send_error(400, "body must be JSON")
+                    return
+                params = data.get("params", {})
+                try:
+                    shells = max(0, int(data.get("shells", 0)))
+                except (ValueError, TypeError):
+                    shells = 0
+                try:
+                    svg = render_progress_svg(params, shells)
+                except subprocess.CalledProcessError as e:
+                    self.send_error(500, f"render failed: {(e.stderr or e.stdout or str(e)).strip()[:300]}")
+                    return
+                except Exception as e:
+                    self.send_error(500, f"progress preview failed: {e}")
                     return
                 out = svg.encode()
                 self.send_response(200)
