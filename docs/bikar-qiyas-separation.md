@@ -105,8 +105,16 @@ Diagrams: [`diagrams/bikar-decon-journey.mmd`](diagrams/bikar-decon-journey.mmd)
 The extractable library is the **artifact contract** (schemas only — no algorithm
 crosses the boundary). Phased:
 
-- **Phase 1** — `qiyas/src/qiyas/contract/` package: envelope Pydantic models +
-  generated JSON Schema.
+- **Phase 1** — `qiyas/src/qiyas/contract/` package: the **named envelope surface**
+  (one import site for `Encoding` / `Diff` / `AnnotationsFile` / `ReviewVerdict`) +
+  generated JSON Schema + a byte-stable drift gate. The package re-exports each model
+  from wherever it sits in the layer DAG rather than forcing all of them to a common
+  floor: `Encoding`/`Diff` stay at the head of L1 (they front-ref the shape unions and
+  can't go below `Shape`); `ReviewVerdict` stays in L6 (it's replay-coupled);
+  `AnnotationsFile` relocated *into* `contract.annotations` (pure data, was stranded in
+  L6 `review/` by directory accident). Why the facade is the end state, not scaffolding:
+  `qiyas/docs/issues/2026-06-26-contract-layer-cannot-be-l0.md`. *Shipped: contract pkg +
+  schema export + drift gate (`d13af17`); annotations relocation (`e530a77`).*
 - **Phase 2** — publish `@naqshcoffee/qiyas-schema` (TS mirror of the JSON Schema).
 - **Phase 3** — bikar's `GroundTruthEncoding` conforms to the shared envelope;
   `qiyas validate-dsl-contract --strict` extends to envelope-level round-trip.
