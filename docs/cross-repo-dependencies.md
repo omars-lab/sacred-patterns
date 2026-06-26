@@ -70,6 +70,10 @@ The "construction-extended-then-clipped shape" pattern — needed to break medal
 | (auto-consumes via overall.warnings) | qiyas#70 | — | qiyas-side | 2026-05-02 | svg-audit warnings flow through `qiyas score` into `overall.warnings[0]`. No sacred-patterns code change required. |
 | (iteration-loop triage) | qiyas#67 | — | qiyas-side | 2026-05-02 | `qiyas trace --show-unknown` (text/JSON) + `--show-unknown-html` (visual overlay) shipped same day. Investigators can now triage why specific contours classified as `unknown` and what tolerance bump would admit them. |
 
+## Reference: cross-repo contracts
+
+- **bikar ↔ qiyas deconstruction separation** — `docs/bikar-qiyas-separation.md` (canonical here; mirror stubs in `bikar/docs/` and `qiyas/docs/`). Names which tool to reach for (bikar = by-eye author / producer-of-record; qiyas = machine-CV reviewer / portal), the shared-artifact seam (`pattern.gt.json` → `encoding.json` → `annotations.json`), and the roadmap to extract the shared envelope contract (`@naqshcoffee/qiyas-schema`, Phases 1–4). Companion to `dsl-metadata-contract.md` (per-`data-*` channel) at the envelope level.
+
 ## Reference: the three repos
 
 - **sacred-patterns** (`/Users/omareid/Workspace/git/sacred-patterns/`) — pattern-construction (TypeScript/D3), iteration loop, interpret-pattern UX, validation orchestrator. Calls qiyas via Docker.

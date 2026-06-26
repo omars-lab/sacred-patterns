@@ -1,0 +1,23 @@
+%% The shared-artifact seam between bikar (author) and qiyas (reviewer)
+%% Three artifacts, each one direction, each one meaning. JSON only — no algorithm crosses Python/JS.
+flowchart LR
+    subgraph BIKAR["bikar lane — author (producer of record)"]
+        BK[".bkr construction"] --> GT["emitGroundTruth()"]
+        GT --> GTJ[(pattern.gt.json<br/>GT_SCHEMA_VERSION 1.23<br/>confidence = 1.0)]
+        FB[(feedback.json<br/>by-eye flags + points)]
+    end
+
+    subgraph QIYAS["qiyas lane — reviewer (machine CV)"]
+        EI["encode_image()"] --> ENC[(encoding.json<br/>SCHEMA_VERSION 1.21<br/>confidence = detector)]
+        ENC --> ANN[(annotations.json v3<br/>+ ReviewVerdict v1)]
+    end
+
+    GTJ ==>|DSL truth, one way| EI
+    ENC -.->|optional: machine read shown beside human read| BK
+
+    subgraph FAMILY["ONE artifact family (sibling version-lines)"]
+        F1["same shape vocabulary<br/>evidence.{face_class, shape_id,<br/>authored_region, outline_arcs}"]
+    end
+    GTJ -.->|conforms to| F1
+    ENC -.->|conforms to| F1
+    F1 -.->|extractable as| SCHEMA["@naqshcoffee/qiyas-schema<br/>(Phase 2 — TS mirror of JSON Schema)"]
