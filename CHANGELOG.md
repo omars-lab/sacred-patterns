@@ -15,6 +15,68 @@ Format: `#NN [repo-prefix] subject — one-line outcome`. Repo prefix is one of
 `[sp]` sacred-patterns, `[qiyas]`, `[bikar]`, or unprefixed when the task is
 cross-repo orchestration owned by sacred-patterns.
 
+## medallion-10 weave reconstruction — PARKED at owner gate #23 (bikar#2)
+
+The medallion-10 weave-stage cascade (~70 tasks) was **parked 2026-06-26** before the
+owner's whole-field visual gate (#23) and its task graph archived here. **This cascade is
+PAUSED, not closed** — the GOAL anchor (bikar task #12) and the weave-building-skill
+follow-on (bikar task #5) stay OPEN in the live task list; everything below is the settled
+sub-work, archived so the list stops carrying it. The durable record a resuming session
+reads is, in order: the front door `sacred-patterns/sessions/bikar-medallion-10/RESUME.md`,
+GitHub issue `NaqshCoffee/bikar#2`, the six-phase plan
+`bikar/.claude/plans/refactored-fluttering-pnueli.md`, and the park plan
+`bikar/.claude/plans/park-medallion-weave-handoff.md`. Every finding and dead-end is
+harvested into those — this entry only names the outcome and points there.
+
+**The converged result (all frozen as tests — Tenet 18):** the reference is a grown girih
+field (`girih field decagonal 30 shells 1 star 4` + `strapwork`), NOT discrete rosettes (the
+overlapping-vs-discrete question is settled — reopen cancelled, decision
+`bikar/docs/decisions/2026-06-19-weave-field-method.md` §13). Phase gates 0–5 GREEN: star
+sharpness {10/4}=3.078, interlace 560 crossings / 280-280 over-under, color census (~802
+faces), scalloped 10-lobe boundary. Frozen witnesses: `girih-tiles.test.ts`,
+`medallion-girih-field-weave-connectivity.test.ts`, `flower-clip-lobe-count.test.ts` (bikar),
+`test_weave_progress_opens_on_deliverable.py` (sp). Only the owner's #23 verdict remains.
+
+**Structure / method (the convergence path):**
+- #2 [bikar] Wave-by-wave→grown-shells method — settled: `girih field shells 1 star 4` + strapwork; "wave N" is a review-aid radial crop, not per-wave geometry (#52 won't-do)
+- #50 [bikar] Wave-1 re-root-caused against the reference — the eyeball-loop trap named; led to the six-phase objective-gate plan (#59)
+- #49 [bikar] Edge-kissing-packing invocation-gap scope; #51 epsilon-merge FALSIFIED (strapwork is already one connected network, 650 nodes / 560 crossings / 90 strands)
+- #66–#70 [bikar] Discrete-rosette REOPEN + Tier-0/1/3 witnesses — overlapping field confirmed, reopen cancelled by owner 2026-06-24
+
+**Six-phase plan (each gate frozen as a test):**
+- #59 [bikar] The phased plan that replaced the 10-round eyeball loop
+- #60 [bikar] Phase 0 — symmetric-scale ruler + qiyas pixel-diff number (fixed the distorting lens)
+- #61 [bikar] Phase 1 — skeleton proven against the reference (falsifiable gate)
+- #62 [bikar] Phase 2 — star sharpness {10/4} chord skip (`star 4`, 3.078)
+- #63 [bikar] Phase 3 — interlace: one network, distributed crossings, real over/under
+- #64 [bikar] Phase 4 — color: palette cells recessed, dark star-voids at crossings
+- #65 [bikar] Phase 5 — boundary: scalloped 10-lobe flower clip, no convex overshoot
+
+**Presentation + engine + studio:**
+- #6 [bikar] Presentation styling — shape-based color roles (navy/royal/teal/blue), white network, scalloped boundary, white backdrop
+- #9 [bikar] Sharp spiked Hankin stars (not blunt nubs); #25 casing emitter (navy border); #36/#37 cell + star-void color fixes
+- #13 [bikar] Girih-field cell-face census frozen as a vitest; #33 `ring_band N` DSL attr (built; global-extent scale-coupled, periwinkle-centre detail dropped)
+- #11 [bikar] Dedicated weave-building progress page on the :8765 studio; #71 page opens on the deliverable (not a degenerate wave-1 crop)
+- #7/#10/#14–#17/#30–#32/#34/#35/#38–#43/#48/#53–#58 [bikar] Wave-progress page build-out, weave-only extraction, scale/density/strap-weight iteration, owner-surface `open`s
+
+**Investigations (Q-tasks, answers in the decision docs / memories):**
+- #18–#24/#26/#27/#29/#44–#47 [bikar] Reference-vs-ours diagnostics — flatness (#45: reference is flat, no 3-D shadow), weave-only extraction polarity, over/under presence, panel-scale parity; captured in decision `2026-06-22-weave-strap-shadow-style.md` + the `medallion10_*` / `weave_*` memories
+
+**Park execution (bikar#2 checklist):**
+- #74 [bikar] Executed the park — RESUME.md front door, prompts marked PARKED, park memory, working-tree freezes committed locally, loop stopped, task graph intact
+- #75 [bikar] Folded the weave-building skill creation into the park plan as resume Follow-on A
+- #8 [bikar] General visual-verification rule — landed as CLAUDE.md **Tenet 29** (subsumes the tuned-params-link ask); #76 task-close-out audit
+
+## plan-to-backlog skill (bikar#72)
+
+A reusable skill that standardizes the plan→GitHub-issue→`docs/backlog.md`→close-harvested-tasks
+flow, first used to park the medallion-10 weave. The load-bearing step is harvesting related
+open+closed tasks' findings/constraints INTO the plan before closing them, so the plan is
+self-contained. Lives at `bikar/.claude/skills/plan-to-backlog/SKILL.md`.
+
+- #72 [bikar] Build the plan-to-backlog skill (commit f2eb79e)
+- #73 [bikar] First use — ran it on the weave-park plan (produced bikar#2 + the park plan + backlog.md row)
+
 ## medallion-10 weave-stage investigation — root cause: structure is degree-2 (sp#53)
 
 The medallion weave stage chased a white over/under strap-lattice through several
