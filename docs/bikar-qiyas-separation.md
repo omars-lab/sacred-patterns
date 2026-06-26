@@ -116,8 +116,19 @@ crosses the boundary). Phased:
   `qiyas/docs/issues/2026-06-26-contract-layer-cannot-be-l0.md`. *Shipped: contract pkg +
   schema export + drift gate (`d13af17`); annotations relocation (`e530a77`).*
 - **Phase 2** — publish `@naqshcoffee/qiyas-schema` (TS mirror of the JSON Schema).
-- **Phase 3** — bikar's `GroundTruthEncoding` conforms to the shared envelope;
-  `qiyas validate-dsl-contract --strict` extends to envelope-level round-trip.
+- **Phase 3** — bikar's `GroundTruthEncoding` conforms to the shared envelope at the
+  **skeleton level, not the shape level** (compile-time, in
+  `bikar/packages/core/src/contract-conformance.ts`). The envelope *skeleton* —
+  `image` / `stats` / `symmetry` / `centroid` + top-level field presence — is a clean
+  structural match and is type-locked against `EncodingLike`; a qiyas-side rename
+  breaks bikar's typecheck. The *shape array* is deliberately **not** asserted: gt's
+  `GtShape[]` is a coarse-on-purpose projection the qiyas detector *widens* into the
+  per-type discriminated union (`CircleShape | SquareShape | …`). gt → encoding is a
+  widening the detector performs, **not a subtype the producer must satisfy** — asserting
+  it would invert Tenet 23 (push the detector's confidence vocabulary onto the author).
+  Decided in
+  [`bikar/docs/issues/2026-06-26-gt-encoding-conforms-at-skeleton-not-shape-level.md`](../../bikar/docs/issues/2026-06-26-gt-encoding-conforms-at-skeleton-not-shape-level.md).
+  `qiyas validate-dsl-contract --strict` extends to envelope-level round-trip (follow-on).
 - **Phase 4 (optional)** — `POST /deconstruct` on the review app → contract-typed
   `encoding.json`; bikar `/sessions` gains an optional "show the machine's read" toggle.
 
