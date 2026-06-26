@@ -134,6 +134,10 @@ http://localhost:8765/weave-progress?wave=22&waves=22&edge=30&star=4&width=4&col
 
 Detail for the *what-to-do-next* lives in the six-phase plan and the LOOP/OPEN-ITEMS prompts (§7).
 
+**Resume follow-ons (part of this deliverable, not orphaned tasks)** — `bikar/.claude/plans/park-medallion-weave-handoff.md` → "Resume follow-ons":
+- **Follow-on A — build the weave-building skill (task #5, OPEN).** Codify the converged iterative weave/strapwork-reconstruction method (grown girih field + phased objective-gate loop) into a reusable skill. Needs neither the studio nor gate #23, so it can be done independently of the owner's #23 verdict — best done while the experience is fresh.
+- **Follow-on B — general visual-verification rule → DONE.** Landed as `bikar/CLAUDE.md` **Tenet 29** (every visible artifact is rendered, looked at expectation-first, compared to its reference before surfacing; surface via an openable params-shown link; enforced by the tenet stop-rule, not a Stop hook). Closed task #8.
+
 **Named residual the owner may weigh at #23:** at the `.png`'s 1024px scale the white straps read
 heavier than the reference's delicate ribbons (over/under reads flat); at the page's native ~300px
 scale they read proportionate. That's the owner's call, not a structural defect.
