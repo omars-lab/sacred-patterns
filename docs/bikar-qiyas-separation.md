@@ -116,6 +116,9 @@ crosses the boundary). Phased:
   `qiyas/docs/issues/2026-06-26-contract-layer-cannot-be-l0.md`. *Shipped: contract pkg +
   schema export + drift gate (`d13af17`); annotations relocation (`e530a77`).*
 - **Phase 2** — publish `@naqshcoffee/qiyas-schema` (TS mirror of the JSON Schema).
+  *Shipped: package + codegen + tag-triggered publish workflow; live at `0.1.0`. The
+  maintenance runbook (re-vendor → codegen → conformance gate → `schema-vX.Y.Z` tag) is
+  the bikar `release-the-schema-mirror` skill.*
 - **Phase 3** — bikar's `GroundTruthEncoding` conforms to the shared envelope at the
   **skeleton level, not the shape level** (compile-time, in
   `bikar/packages/core/src/contract-conformance.ts`). The envelope *skeleton* —
