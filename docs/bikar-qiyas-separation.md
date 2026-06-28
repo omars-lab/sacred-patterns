@@ -131,7 +131,14 @@ crosses the boundary). Phased:
   it would invert Tenet 23 (push the detector's confidence vocabulary onto the author).
   Decided in
   [`bikar/docs/issues/2026-06-26-gt-encoding-conforms-at-skeleton-not-shape-level.md`](../../bikar/docs/issues/2026-06-26-gt-encoding-conforms-at-skeleton-not-shape-level.md).
-  `qiyas validate-dsl-contract --strict` extends to envelope-level round-trip (follow-on).
+  *Shipped: the compile-time gate (bikar `contract-conformance.ts`) PLUS its runtime
+  twin — qiyas `tests/test_contract.py` round-trips a real bikar v1.23 `pattern.gt.json`
+  through the `Encoding` contract model, asserting the skeleton conforms and the shape
+  array projects (both halves proven to bite via negative control; witness frozen per
+  Tenet 18 at `qiyas/tests/fixtures/bikar-gt-1.23-star8.gt.json`).* Note: the
+  envelope-level round-trip lives in the contract test suite, **not** in
+  `validate-dsl-contract` — that CLI gates the SVG `data-*` channel (the
+  `dsl-metadata-contract.md` seam), a different layer than the JSON envelope.
 - **Phase 4 (optional)** — `POST /deconstruct` on the review app → contract-typed
   `encoding.json`; bikar `/sessions` gains an optional "show the machine's read" toggle.
 
