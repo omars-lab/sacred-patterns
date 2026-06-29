@@ -141,6 +141,14 @@ crosses the boundary). Phased:
   `dsl-metadata-contract.md` seam), a different layer than the JSON envelope.
 - **Phase 4 (optional)** — `POST /deconstruct` on the review app → contract-typed
   `encoding.json`; bikar `/sessions` gains an optional "show the machine's read" toggle.
+  *qiyas half SHIPPED (`POST /deconstruct`, qiyas `12e5c32`):* a cross-origin caller
+  (bikar `/sessions` on :5173) holds image *bytes* it cannot pass as a server-local
+  path the way `GET /encoding` requires, so the route accepts a multipart upload,
+  encodes the bytes through the **same** cached pipeline `GET /encoding` uses, and
+  returns the **identical** contract-typed `Encoding` — only the input channel differs,
+  so it is an added capability, not a Tenet-11 duplicate. Unknown suffix → 415, empty
+  body → 422 (Tenet 3). The bikar `/sessions` "show the machine's read" toggle is the
+  remaining, cleanly-deferrable half (separate bikar-repo, Tenet-29-simple).
 
 Per Tenet 24, a family-contract change is **break + regen** (regenerate JSON Schema +
 TS mirror, bump both sides, re-run the round-trip gate) — no compat window for the
