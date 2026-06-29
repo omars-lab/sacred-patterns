@@ -147,8 +147,14 @@ crosses the boundary). Phased:
   encodes the bytes through the **same** cached pipeline `GET /encoding` uses, and
   returns the **identical** contract-typed `Encoding` — only the input channel differs,
   so it is an added capability, not a Tenet-11 duplicate. Unknown suffix → 415, empty
-  body → 422 (Tenet 3). The bikar `/sessions` "show the machine's read" toggle is the
-  remaining, cleanly-deferrable half (separate bikar-repo, Tenet-29-simple).
+  body → 422 (Tenet 3). *bikar half SHIPPED (`86daeb6`):* a Tenet-29-simple "Machine
+  read" toggle on `/sessions` POSTs the session reference image to `POST /deconstruct`,
+  parses the `EncodingLike` via the published `@naqshcoffee/qiyas-schema` mirror, and
+  renders a plain-language panel — "N shapes found" + a most-common-first breakdown +
+  an "It looks K-fold symmetric" sentence + a muted "not your answer — compare against
+  what you marked by eye" disclaimer. It degrades loudly (Tenet 3): qiyas down → a red
+  "Couldn't reach the machine reader" with the plain fix instruction, never a silent
+  empty panel. **Phase 4 (and the whole roadmap) is now complete.**
 
 Per Tenet 24, a family-contract change is **break + regen** (regenerate JSON Schema +
 TS mirror, bump both sides, re-run the round-trip gate) — no compat window for the
