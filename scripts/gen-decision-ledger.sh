@@ -35,9 +35,46 @@ if ! command -v yq >/dev/null 2>&1; then
   exit 1
 fi
 
+# Scratch file for yq's stderr, so fm() can tell "key absent" from "yq could
+# not read this file" without merging yq's diagnostics into the value.
+YQ_ERR=$(mktemp)
+trap 'rm -f "$YQ_ERR"' EXIT INT TERM
+
 # fm <doc> <expr> — extract a frontmatter expression, '' if null/absent.
+#
+# Fails closed. This used to read
+#
+#   result=$(yq --front-matter=extract "$2" "$1" 2>/dev/null || echo "null")
+#
+# which collapsed three different outcomes into one empty string: the key is
+# absent (legitimate — `superseded_by` on a live doc), the key is null, and
+# *yq could not read the file at all*. The third is a doc whose frontmatter
+# does not parse, and it rendered as a ledger row reading
+# `(untagged) | (none) | — | no | —` — indistinguishable from a doc nobody
+# has tagged yet. This file's header claims the ledger "cannot drift from the
+# docs"; a doc it silently failed to read is exactly that drift, and it is
+# worse than a hand-curated list because nobody is looking.
+#
+# check-decision-coherence.sh already guards its identical fm() with rule 0
+# ("frontmatter MUST parse as YAML ... the fm() helper swallows the error and
+# returns ''"), and pre-commit and `check:decisions` both run that checker
+# before this generator — so in those paths the gap was covered. It was not
+# covered on the paths that run this script alone: `npm run ledger` (the write
+# path this script's own staleness message tells you to run) and `make
+# check-ledger`, which is offered as the staleness gate. Guarding here rather
+# than adding a second rule-0 also means the guard cannot be switched off from
+# a different file: rule 0 goes through record(), so a {doc, rule-0} entry in
+# .coherence-baseline.json would grandfather it away. A generator cannot
+# meaningfully grandfather a doc it cannot read — it would just write a wrong
+# row (Tenet 29: a reader that cannot interpret its input errors, never skips).
 fm() {
-  result=$(yq --front-matter=extract "$2" "$1" 2>/dev/null || echo "null")
+  if ! result=$(yq --front-matter=extract "$2" "$1" 2>"$YQ_ERR"); then
+    echo "gen-decision-ledger: cannot read frontmatter of $1" >&2
+    echo "  expression: $2" >&2
+    sed 's/^/  yq: /' "$YQ_ERR" >&2
+    echo "  Fix the doc's YAML (quote values containing ':') and re-run." >&2
+    exit 1
+  fi
   [ "$result" = "null" ] && result=""
   printf '%s' "$result"
 }
@@ -93,8 +130,23 @@ done
 
 # --- Fold in transcript-only dead-ends from the seed file. -------------------
 if [ -f "$SEED_FILE" ]; then
-  n=$(yq '.dead_ends | length' "$SEED_FILE" 2>/dev/null || echo 0)
-  [ -z "$n" ] && n=0
+  # Same fail-closed rule as fm(). `|| echo 0` here meant an unreadable seed
+  # file produced ZERO dead-ends and a "(none recorded yet)" table — the
+  # do-not-retry list silently emptying is precisely the failure this file
+  # exists to prevent.
+  if ! n=$(yq '.dead_ends | length' "$SEED_FILE" 2>"$YQ_ERR"); then
+    echo "gen-decision-ledger: cannot read $SEED_FILE" >&2
+    sed 's/^/  yq: /' "$YQ_ERR" >&2
+    exit 1
+  fi
+  case "$n" in
+    # An absent `dead_ends:` key is legitimate — an empty seed file.
+    null | '') n=0 ;;
+    *[!0-9]*)
+      echo "gen-decision-ledger: $SEED_FILE '.dead_ends | length' is not a count: '$n'" >&2
+      exit 1
+      ;;
+  esac
   i=0
   while [ "$i" -lt "$n" ]; do
     a=$(yq ".dead_ends[$i].approach" "$SEED_FILE")

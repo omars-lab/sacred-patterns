@@ -29,8 +29,35 @@ if ! command -v yq >/dev/null 2>&1; then
   exit 1
 fi
 
+# Scratch file for yq's stderr, so fm() can tell "key absent" from "yq could
+# not read this file" without merging yq's diagnostics into the value.
+YQ_ERR=$(mktemp)
+trap 'rm -f "$YQ_ERR"' EXIT INT TERM
+
+# fm <doc> <expr> — extract a frontmatter expression, '' if null/absent.
+#
+# Fails closed. This used to read
+#
+#   result=$(yq --front-matter=extract "$2" "$1" 2>/dev/null || echo "null")
+#
+# which collapsed "the key is absent" and "yq could not read the file at all"
+# into the same empty string. That is worse here than in the per-repo
+# generator: the loop below does `[ -z "$tag" ] && continue`, so a doc whose
+# frontmatter does not parse was not merely degraded to an `(untagged)` row —
+# it dropped out of the cross-repo ledger entirely, from the one table whose
+# whole job is to answer "has another repo already decided this tag?". A
+# settled decision could be re-litigated because the doc recording it happened
+# to be unreadable, and nothing anywhere would say so.
+#
+# Tenet 29: a reader that cannot interpret its input errors, never skips.
 fm() {
-  result=$(yq --front-matter=extract "$2" "$1" 2>/dev/null || echo "null")
+  if ! result=$(yq --front-matter=extract "$2" "$1" 2>"$YQ_ERR"); then
+    echo "gen-decision-ledger-xrepo: cannot read frontmatter of $1" >&2
+    echo "  expression: $2" >&2
+    sed 's/^/  yq: /' "$YQ_ERR" >&2
+    echo "  Fix the doc's YAML (quote values containing ':') and re-run." >&2
+    exit 1
+  fi
   [ "$result" = "null" ] && result=""
   printf '%s' "$result"
 }
