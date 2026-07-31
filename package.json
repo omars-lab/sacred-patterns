@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/ts",
     "prepare": "husky",
+    "test:scripts": "sh scripts/gen-decision-ledger-xrepo.test.sh",
     "ledger": "sh scripts/gen-decision-ledger.sh && sh scripts/gen-decision-ledger-xrepo.sh",
     "check:decisions": "sh scripts/check-decision-coherence.sh && sh scripts/gen-decision-ledger.sh --check && sh scripts/gen-decision-ledger-xrepo.sh --check"
   },
