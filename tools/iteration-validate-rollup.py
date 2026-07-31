@@ -20,23 +20,88 @@ from statistics import median
 SCHEMA_VERSION = "1"
 
 
+# The complete status vocabulary of `validate-svg.sh`'s per-check emitters
+# (`pass()` / `fail()` / `warn()`, tools/validate-svg.sh:28-30). A check line is
+# exactly `  <ANSI><TOKEN><ANSI> <label>` — so the reader splits off the first
+# whitespace-delimited field and compares it against this closed set, rather
+# than pattern-matching the line as a whole. Everything else in the log
+# ("Validating: <file>", "---", the "Fix: sed …" hint, the VALID/INVALID
+# summary) is prose by construction and is skipped by that same rule.
+_CHECK_STATUSES = frozenset({"PASS", "FAIL", "WARN"})
+
+# `validate-svg.sh` colours its output unconditionally, so every check line
+# arrives wrapped in SGR escapes. Stripping them is the one job a regex is the
+# right tool for here — matching a token inside text, not reading structure.
+_ANSI_SGR_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+# One per validated file (tools/validate-svg.sh:35). Used only to tell an empty
+# log from a log the reader failed to understand.
+_BLOCK_MARKER = "Validating:"
+
+
 def parse_validate_log(log_path: Path) -> dict:
-    """validate-svg.sh emits PASS/FAIL lines per check. Parse them."""
+    """validate-svg.sh emits PASS/FAIL/WARN lines per check. Parse them.
+
+    Fails closed. Until 2026-07-31 this function read the log with
+
+        re.match(r"^[✓✗xX*✓✗].*?([A-Za-z][A-Za-z0-9 _-]+)$", stripped)
+
+    and a bare `if m:` — no else. `validate-svg.sh` emits no `✓`/`✗` anywhere,
+    and every line it does emit begins with an ANSI escape that `str.strip()`
+    does not remove, so the pattern matched **nothing the producer has ever
+    written**. `checks` was therefore `{}` on every run since the reader was
+    written, and the only reason nobody noticed is that a silent skip is
+    indistinguishable from a pass: `validation.json` simply carried an empty
+    field and no one raised, warned, or logged.
+
+    So a log that contains at least one validation block and yields no checks is
+    now a `parse_error`, which `compute_overall()` turns into a blocking issue —
+    the same treatment `qiyas score unavailable` already gets, and for the same
+    reason. Drift between this reader and its producer must be loud.
+    """
     if not log_path.exists():
         return {"checks": {}, "stdout": ""}
 
     text = log_path.read_text(encoding="utf-8", errors="replace")
     checks: dict[str, str] = {}
-    # Lines look like "  ✓ Has xmlns" / "  ✗ Missing xmlns" or "  PASS: ..."
+    duplicates: list[str] = []
+
     for line in text.splitlines():
-        stripped = line.strip()
-        # Match common patterns from validate-svg.sh
-        m = re.match(r"^[✓✗xX*✓✗].*?([A-Za-z][A-Za-z0-9 _-]+)$", stripped)
-        if m:
-            label = m.group(1).strip()
-            status = "PASS" if stripped[0] in "✓✓" else "FAIL"
-            checks[label] = status
-    return {"checks": checks, "stdout": text}
+        plain = _ANSI_SGR_RE.sub("", line).strip()
+        token, _, label = plain.partition(" ")
+        if token not in _CHECK_STATUSES:
+            continue
+        label = label.strip()
+        if not label:
+            continue
+        # The schema is a flat label→status map, so it cannot represent the same
+        # label twice. validate-svg.sh accepts a directory and re-runs the same
+        # check names per file; the rollup only ever passes one SVG, but a
+        # silent last-write-wins here would be this function's original defect
+        # in miniature.
+        if label in checks:
+            duplicates.append(label)
+        checks[label] = token
+
+    blocks = text.count(_BLOCK_MARKER)
+    error: str | None = None
+    if blocks and not checks:
+        error = (
+            f"validate-svg.log has {blocks} validation block(s) but no line this "
+            f"reader recognises as a check — parse_validate_log() and "
+            f"validate-svg.sh have drifted"
+        )
+    elif duplicates:
+        error = (
+            "validate-svg.log repeats check label(s) "
+            f"{sorted(set(duplicates))} — the flat checks map cannot hold a "
+            f"multi-file run; validate one SVG per log"
+        )
+
+    out: dict = {"checks": checks, "stdout": text}
+    if error:
+        out["parse_error"] = error
+    return out
 
 
 def parse_diff_stats(diff_dir: Path) -> dict:
@@ -177,6 +242,7 @@ def load_qiyas_score(json_path: Path | None) -> dict:
 def compute_overall(
     *,
     validate_exit: int,
+    validate_svg: dict,
     svg_audit: dict,
     diff_traced: dict,
     diff_jpg: dict,
@@ -189,6 +255,12 @@ def compute_overall(
 
     if validate_exit != 0:
         blocking.append(f"validate-svg failed (exit {validate_exit})")
+
+    # A reader that cannot understand its producer is a broken gate, not a
+    # cosmetic gap — the same call as the "qiyas score unavailable" blocker
+    # below, and made for the same reason: it must not pass silently.
+    if validate_svg.get("parse_error"):
+        blocking.append(validate_svg["parse_error"])
 
     a2 = svg_audit.get("A2_symmetry", {}) if svg_audit.get("available") else {}
     a4 = svg_audit.get("A4_coverage", {}) if svg_audit.get("available") else {}
@@ -319,6 +391,7 @@ def main() -> int:
 
     overall = compute_overall(
         validate_exit=args.validate_svg_exit,
+        validate_svg=validate_svg,
         svg_audit=svg_audit,
         diff_traced=diff_traced,
         diff_jpg=diff_jpg,
