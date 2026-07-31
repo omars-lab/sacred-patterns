@@ -29,6 +29,8 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `derived-shape-naming` | bikar | bikar/docs/decisions/2026-05-27-derived-shape-naming-convention.md | ACCEPTED | C | ★ |
 | `diff-alignment-path` | qiyas | qiyas/docs/decisions/2026-06-10-shape-diff-canonical-path.md | ACCEPTED | A | ★ |
 | `dominant-arc-resolver` | bikar | bikar/docs/decisions/2026-05-10-dominant-arc-resolver-source-primitives.md | ACCEPTED | α | ★ |
+| `dsl-grammar` | bikar | bikar/docs/decisions/2026-07-29-dsl-grammar-spec-and-gates.md | ACCEPTED | A | ★ |
+| `dsl-params` | bikar | bikar/docs/decisions/2026-07-26-dsl-params-parse-time-substitution.md | ACCEPTED | A | ★ |
 | `dsl-tagging` | sacred-patterns | sacred-patterns/docs/decisions/2026-05-20-universal-dsl-tagging.md | ACCEPTED | A | ★ |
 | `encode-scoreability` | qiyas | qiyas/docs/decisions/2026-06-10-encode-time-scoreability.md | ACCEPTED | B | ★ |
 | `extend-mechanism` | bikar | bikar/docs/decisions/2026-05-10-extend-virtual-radius-mechanism.md | ACCEPTED | A | ★ |
@@ -42,6 +44,7 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `fill-void` | bikar | bikar/docs/decisions/2026-05-18-fill-void-where-map-population.md | ACCEPTED | B | ★ |
 | `fixture-comparator` | qiyas | qiyas/docs/decisions/2026-05-20-byte-strict-fixture-comparator-decay.md | ACCEPTED | D | ★ |
 | `girih-construction` | bikar | bikar/docs/decisions/2026-05-28-medallion10-girih-ceiling.md | ACCEPTED | C″ | ★ |
+| `girih-star-sharpness` | bikar | bikar/docs/decisions/2026-07-30-girih-star-sharpness.md | ACCEPTED | A | ★ |
 | `hexagram-lens` | qiyas | qiyas/docs/decisions/2026-05-11-hexagram-lens-silent-drop.md | ACCEPTED | A | ★ |
 | `i1-closeout` | qiyas | qiyas/docs/decisions/2026-05-12-i1-cascade-closeout.md | ACCEPTED | A | ★ |
 | `i1-corpus-plan` | qiyas | qiyas/docs/decisions/2026-05-11-i1-next-corpus-and-macro-lift.md | ACCEPTED | E | ★ |
@@ -50,10 +53,16 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `i1-ratchet` | qiyas | qiyas/docs/decisions/2026-05-28-i1-ratchet-tree-walk-vs-index.md | ACCEPTED | A | ★ |
 | `import-linter-layers` | qiyas | qiyas/docs/decisions/2026-05-18-import-linter-layer-contracts.md | ACCEPTED | A | ★ |
 | `k3-acceptance-policy` | qiyas | qiyas/docs/decisions/2026-05-06-petal-2ring-k3-ari-saturation.md | ACCEPTED | G | ★ |
+| `lexer-hex-comments` | bikar | bikar/docs/decisions/2026-07-29-lexer-hex-colors-token-context.md | ACCEPTED | A | ★ |
 | `line-primitive` | bikar | bikar/docs/decisions/2026-05-26-line-primitive-cascade-D1-D2-D3.md | ACCEPTED | E | ★ |
 | `loop-terminal-condition` | sacred-patterns | sacred-patterns/docs/decisions/2026-06-07-loop-terminal-condition.md | ACCEPTED | C | ★ |
 | `merge-policy` | bikar | bikar/docs/decisions/2026-05-19-merge-policy-typed-parameter.md | ACCEPTED | B | ★ |
 | `mirror-rotate` | bikar | bikar/docs/decisions/2026-05-26-mirror-rotate-polygon-body-emission.md | ACCEPTED | B | ★ |
+| `orb-kernel3d` | bikar | bikar/docs/decisions/2026-07-23-orb-kernel3d-ring-solidify-no-csg.md | ACCEPTED | A | ★ |
+| `orb-lab-knobs` | bikar | bikar/docs/decisions/2026-07-27-knob-layer-workspace-package.md | ACCEPTED | C | ★ |
+| `orb-views` | bikar | bikar/docs/decisions/2026-07-25-orb-view-orthographic-validation.md | ACCEPTED | A | ★ |
+| `orb-weave` | bikar | bikar/docs/decisions/2026-07-25-orb-weave-strand-tubes-parity-2coloring.md | ACCEPTED | A | ★ |
+| `parser-source-spans` | bikar | bikar/docs/decisions/2026-07-29-parser-statement-spans-comment-retention.md | ACCEPTED | A | ★ |
 | `partial-polygon-residue` | qiyas | qiyas/docs/decisions/2026-05-20-partial-polygon-residue-starvation.md | ACCEPTED | E | ★ |
 | `pattern-identity-signature` | qiyas | qiyas/docs/decisions/2026-05-11-pattern-identity-signature-shape.md | ACCEPTED | C | ★ |
 | `petal-2ring-partition` | qiyas | qiyas/docs/decisions/2026-05-05-petal-n-2ring-class-partition.md | ACCEPTED | D | ★ |
@@ -61,9 +70,12 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `petal-ring-class` | bikar | bikar/docs/decisions/2026-05-15-bikar-petal-n-ring-class-assignment.md | ACCEPTED | B | ★ |
 | `petal-ring-class` | qiyas | qiyas/docs/decisions/2026-05-07-petal-6-full-asymmetric-granularity.md | SUPERSEDED | β | — |
 | `petal-ring-class` | qiyas | qiyas/docs/decisions/2026-05-07-petal-6-full-empty-provenance-collapse.md | ACCEPTED | γ-narrow+α | ★ |
+| `piece-assembly` | bikar | bikar/docs/decisions/2026-07-28-c2-ports-connect-assembly.md | ACCEPTED | A | ★ |
 | `portal-hypothesis-handoff` | sacred-patterns | sacred-patterns/docs/decisions/2026-06-10-portal-hypothesis-handoff.md | ACCEPTED | A | ★ |
+| `print-gate` | bikar | bikar/docs/decisions/2026-07-29-print-gate-v1-slice-structure.md | ACCEPTED | A | ★ |
 | `rasterizer-fidelity` | bikar | bikar/docs/decisions/2026-05-13-gt-json-image-dims-rasterizer-fidelity.md | ACCEPTED | A | ★ |
 | `scale-invariant-matching` | qiyas | qiyas/docs/decisions/2026-06-10-scale-invariant-param-drift.md | ACCEPTED | B | ★ |
+| `scope-rescope` | bikar | bikar/docs/decisions/2026-06-15-authored-region-fuse-na-for-non-girih.md | ACCEPTED | A | ★ |
 | `scope-rescope` | qiyas | qiyas/docs/decisions/2026-05-22-138-rescope-after-empirical-delta.md | ACCEPTED | G | ★ |
 | `serialization-d4` | qiyas | qiyas/docs/decisions/2026-05-23-362-phase-1-d4-cutover-serialization.md | ACCEPTED | B | ★ |
 | `session-artifact-storage` | sacred-patterns | sacred-patterns/docs/decisions/2026-06-15-session-artifact-storage.md | ACCEPTED | A | ★ |
@@ -72,10 +84,13 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `shape-vocabulary` | qiyas | qiyas/docs/decisions/2026-05-18-shape-vocabulary-vs-detector-tolerances.md | ACCEPTED | D | ★ |
 | `star7-red-detection` | qiyas | qiyas/docs/decisions/2026-05-18-star7-red-shape-detection-routing.md | SUPERSEDED | — | — |
 | `star7-red-detection` | qiyas | qiyas/docs/decisions/2026-05-21-star7-missed-red-shapes-mechanism.md | ACCEPTED | A | ★ |
+| `strapwork-terminal-ends` | bikar | bikar/docs/decisions/2026-07-30-strapwork-terminal-mitres.md | ACCEPTED | A | ★ |
+| `studio-api-contract` | bikar | bikar/docs/decisions/2026-07-30-studio-api-fail-closed-and-gate-coverage.md | ACCEPTED | A | ★ |
 | `svg-direct` | qiyas | qiyas/docs/decisions/2026-05-17-eliminate-rasterize-trace-round-trip.md | SUPERSEDED | B | — |
 | `svg-direct` | qiyas | qiyas/docs/decisions/2026-05-18-b1-mechanism-refinement-gt-vs-render-svg.md | ACCEPTED | B | ★ |
 | `svg-direct-baseline` | qiyas | qiyas/docs/decisions/2026-05-21-iter-14-svg-direct-detector-path-forward.md | ACCEPTED | A | ★ |
 | `telemetry-snapshot` | qiyas | qiyas/docs/decisions/2026-05-19-telemetry-snapshot-fragility.md | ACCEPTED | B | ★ |
 | `visibility-filter` | qiyas | qiyas/docs/decisions/2026-05-14-visibility-filter-default-threshold.md | ACCEPTED | A | ★ |
+| `wall-connectors` | bikar | bikar/docs/decisions/2026-07-29-w2-wall-connectors-mounts.md | ACCEPTED | A | ★ |
 
 _★ = live authoritative doc for that tag in that repo._
