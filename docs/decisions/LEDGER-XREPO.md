@@ -15,8 +15,10 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `arc-lens-partial` | bikar | bikar/docs/decisions/2026-05-17-arc-region-class-precision.md | SUPERSEDED | — | — |
 | `arc-lens-partial` | qiyas | qiyas/docs/decisions/2026-06-10-partial-shape-detector-sliver-cleanup.md | PROPOSED | — | — |
 | `arc-lens-partial` | sacred-patterns | sacred-patterns/docs/decisions/2026-05-07-partial-shape-rendering-via-construction.md | SUPERSEDED | — | — |
+| `brick-top-face` | bikar | bikar/docs/decisions/2026-08-02-edge-to-edge-relief-top-face-arrangement.md | ACCEPTED | B | ★ |
 | `build-toolchain` | bikar | bikar/docs/decisions/2026-05-18-vite-vitest-major-upgrade-clear-esbuild-vulns.md | ACCEPTED | A | ★ |
 | `ci-arch-divergence` | qiyas | qiyas/docs/decisions/2026-05-19-ci-arch-divergence-encoder-baselines.md | SUPERSEDED | — | — |
+| `ci-coverage-telemetry` | bikar | bikar/docs/decisions/2026-08-01-jsdoc-summary-gate.md | ACCEPTED | A | ★ |
 | `ci-coverage-telemetry` | qiyas | qiyas/docs/decisions/2026-05-21-bikar-validate-dsl-contract-ci-shape.md | ACCEPTED | A | ★ |
 | `ci-silent-detection` | qiyas | qiyas/docs/decisions/2026-05-19-qiyas-ci-silent-since-may-3.md | ACCEPTED | A | ★ |
 | `clip-primitive` | bikar | bikar/docs/decisions/2026-05-07-polygon-clipping-dep.md | ACCEPTED | C | ★ |
@@ -53,11 +55,13 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `i1-ratchet` | qiyas | qiyas/docs/decisions/2026-05-28-i1-ratchet-tree-walk-vs-index.md | ACCEPTED | A | ★ |
 | `import-linter-layers` | qiyas | qiyas/docs/decisions/2026-05-18-import-linter-layer-contracts.md | ACCEPTED | A | ★ |
 | `k3-acceptance-policy` | qiyas | qiyas/docs/decisions/2026-05-06-petal-2ring-k3-ari-saturation.md | ACCEPTED | G | ★ |
+| `ldraw-export` | bikar | bikar/docs/decisions/2026-08-01-ldraw-export-inline-mpd.md | ACCEPTED | B | ★ |
 | `lexer-hex-comments` | bikar | bikar/docs/decisions/2026-07-29-lexer-hex-colors-token-context.md | ACCEPTED | A | ★ |
 | `line-primitive` | bikar | bikar/docs/decisions/2026-05-26-line-primitive-cascade-D1-D2-D3.md | ACCEPTED | E | ★ |
 | `loop-terminal-condition` | sacred-patterns | sacred-patterns/docs/decisions/2026-06-07-loop-terminal-condition.md | ACCEPTED | C | ★ |
 | `merge-policy` | bikar | bikar/docs/decisions/2026-05-19-merge-policy-typed-parameter.md | ACCEPTED | B | ★ |
 | `mirror-rotate` | bikar | bikar/docs/decisions/2026-05-26-mirror-rotate-polygon-body-emission.md | ACCEPTED | B | ★ |
+| `mural-panelization` | bikar | bikar/docs/decisions/2026-08-02-mural-panelization.md | ACCEPTED | A | ★ |
 | `orb-kernel3d` | bikar | bikar/docs/decisions/2026-07-23-orb-kernel3d-ring-solidify-no-csg.md | ACCEPTED | A | ★ |
 | `orb-lab-knobs` | bikar | bikar/docs/decisions/2026-07-27-knob-layer-workspace-package.md | ACCEPTED | C | ★ |
 | `orb-views` | bikar | bikar/docs/decisions/2026-07-25-orb-view-orthographic-validation.md | ACCEPTED | A | ★ |
