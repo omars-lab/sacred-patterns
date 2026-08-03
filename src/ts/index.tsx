@@ -5,12 +5,17 @@ import { d3SVG, DrawingProps } from "./types"
 import { Dropdown } from 'react-bootstrap';
 import { useRef, useEffect } from 'react';
 import {
-    appendLinearGradientDef, drawChainedStars, drawDifferentPolygons,
+    appendLinearGradientDef, 
+    drawChainedStars, 
+    drawDifferentPolygons,
     drawStarGrid,
     drawRotatedStar,
     drawDifferentStars,
-    drawRotatingCircles, drawHexagonWithSurroundingNonagons, invertHex,
-    drawCirclesRecursively
+    drawRotatingCircles, 
+    drawHexagonWithSurroundingNonagons, 
+    invertHex,
+    drawCirclesRecursively,
+    drawLotfallahDome
 } from './draw';
 
 /* The following line can be included in your src/index.js or App.js file */
@@ -90,6 +95,9 @@ export function drawArtwork(svg: d3SVG, props: DrawingProps) {
     else if (index == "7") {
         drawCirclesRecursively(svg, radius, size, maxLevels);
     }
+    else if (index == "8") {
+        drawLotfallahDome(svg, radius, size, maxLevels);
+    }
 }
 
 // https://medium.com/@jeffbutsch/using-d3-in-react-with-hooks-4a6c61f1d102
@@ -135,7 +143,7 @@ function D3Artwork(props: { activeArtworkIndex: string }) {
 
 function ArtworkDropdown() {
 
-    const [activeArtworkIndex, setActiveArtworkIndex] = useState("0")
+    const [activeArtworkIndex, setActiveArtworkIndex] = useState("8")
     // https://stackoverflow.com/questions/31509965/how-can-i-capture-the-value-of-a-react-bootstrap-dropdown-list
 
     return (
@@ -159,6 +167,7 @@ function ArtworkDropdown() {
                     <Dropdown.Item eventKey={"5"}>Image 5</Dropdown.Item>
                     <Dropdown.Item eventKey={"6"}>Image 6</Dropdown.Item>
                     <Dropdown.Item eventKey={"7"}>Image 7</Dropdown.Item>
+                    <Dropdown.Item eventKey={"8"}>Image 8 - Lotfollah</Dropdown.Item>
                 </Dropdown.Menu>
             </Dropdown>
             <D3Artwork activeArtworkIndex={activeArtworkIndex}></D3Artwork>

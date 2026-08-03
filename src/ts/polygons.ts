@@ -24,7 +24,7 @@ export class Polygon {
     }
 
     get points(): Point[] {
-        const points_of_hexagon = this.outerCircle.pointsOnCircumference(this.number_of_points, this.radial_shift);
+        const points_of_hexagon = this.outerCircle.pointsOnCircumference(this.number_of_points, { shift_in_radians: this.radial_shift });
         return points_of_hexagon;
     }
 

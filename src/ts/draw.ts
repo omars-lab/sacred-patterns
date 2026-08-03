@@ -7,7 +7,7 @@ import { Star, ElongatedFivePointStar, FivePointStar } from "./star"
 import * as d3 from 'd3'
 import { _map_even_odd } from "./helpers"
 import { IO, d3SVG, d3SVGDef, d3CIRCLE } from "./types"
-import { appendText, appendPolygon, appendCircle, appendCircleWithMidpoint } from "./canvas"
+import { appendText, appendPolygon, appendCircle, appendCircleWithMidpoint, colorForLevel } from "./canvas"
 import { Decagon } from "./polygons"
 
 /* The following line can be included in your src/index.js or App.js file */
@@ -45,7 +45,7 @@ export function appendLinearGradientDef(svgDefs: d3SVGDef, id: string, color1: s
 export function rotateOuterCircles(centralCircle: Circle, currentShift: number, outerCirclesSVGS: d3CIRCLE[]): [number, Circle[]] {
     const newShift = currentShift + 1;
     console.log("Current shfit", newShift);
-    const newOuterCircles = centralCircle.surroundingCircles(6, 1, (newShift / 10) * Math.PI * 2 / 6);
+    const newOuterCircles = centralCircle.surroundingCircles(6, { shift_in_radians: (newShift / 10) * Math.PI * 2 / 6 });
     _.forEach(
         _.zip(newOuterCircles, outerCirclesSVGS),
         ([newCircle, circleToTransition]) => {
@@ -76,7 +76,7 @@ export function surroundingHexagons(circle: Circle): Hexagon[] {
 
 export function nonagonsThatFormA6PointStarCenteredAt(centralHexagon: Hexagon): Polygon[] {
     const centralCircle = centralHexagon.outerCircle;
-    const outerCircles = centralCircle.surroundingCircles(6, 1);
+    const outerCircles = centralCircle.surroundingCircles(6, {});
     // appendPolygon(svg, new Hexagon(centralCircle.midpoint, centralCircle.r).lines);
     let surroundingPolygons = _.map(
         outerCircles,
@@ -170,11 +170,11 @@ export function drawRotatingCircles(svg: d3SVG, radius: number, size: number): I
     const centralCircle = new Circle(radius * size / 2, radius * size / 2, radius);
     // let centralSVGS = appendCircle(svg, centralCircle);
     let currentShift = 0;
-    let outerCircles = centralCircle.surroundingCircles(6, 1, currentShift * Math.PI * 2 / 6);
+    let outerCircles = centralCircle.surroundingCircles(6, { shift_in_radians: currentShift * Math.PI * 2 / 6 });
     const outerCirclesSVGS = (_.map(outerCircles, c => appendCircle(svg, c))) as d3CIRCLE[];
     const outerCirclesL2 = _.flatMap(
-        centralCircle.surroundingCircles(6, 1, currentShift * Math.PI * 2 / 6),
-        c => c.surroundingCircles(6, 1, currentShift * Math.PI * 2 / 6)
+        centralCircle.surroundingCircles(6, { shift_in_radians: currentShift * Math.PI * 2 / 6 }),
+        c => c.surroundingCircles(6, { shift_in_radians: currentShift * Math.PI * 2 / 6 })
     );
     _.map(outerCirclesL2, c => appendCircle(svg, c));
 
@@ -221,11 +221,149 @@ export function drawCirclesRecursively(svg: d3SVG, radius: number, size: number,
         circles,
         (c: Circle) => {
             console.log("appending c", c);
-            appendCircleWithMidpoint(svg as d3SVG, c, maxLevels);
+            appendCircleWithMidpoint(svg as d3SVG, c, colorForLevel(c.metadata.level, maxLevels));
             appendPolygon(svg as d3SVG, Hexagon.withinCircle(c).lines);
         }
     );
     // appendCircleWithMidpoint(<d3SVG>svg, circle);
+}
+
+function collectiveMidpoint(points: Point[]): Point {
+    const xs = _.map(points, p => p.x);
+    const ys = _.map(points, p => p.y);
+    return new Point(_.sum(xs) / points.length, _.sum(ys) / points.length,)
+}
+
+function distanceBetweenPoints(x1: Point, x2:Point): number {
+    return Math.sqrt(
+        Math.pow(x1.x-x2.x, 2) + 
+        Math.pow(x1.y-x2.y, 2) 
+    );
+
+}
+
+// Appends Stuff to SVG and returns next layer ...
+function processLotfallahDomeCircleLayer(svg: d3SVG, currentCirclesLayer: Circle[], centralCircle: Circle, layerNum: number, debugFn=((layer:number) => layer >= 0)): Circle[] {
+    const nextCircleLayer = [] as Circle[];
+    _.each(
+        currentCirclesLayer,
+        (c: Circle, i: number) => {
+            console.log("appending c", c);
+            // appendCircle(svg as d3SVG, c, "grey");
+            if (debugFn(layerNum)) {
+                appendCircle(svg as d3SVG, c, "grey");
+            }
+            // if (debugFn(layerNum)) {
+            //     appendText(svg as d3SVG, `${i}ML${layerNum}`, c.midpoint, {stroke: "blue", "font-size": 4});
+            // }
+            // Top mapper - top for current index is top of one indexes before ...
+            const topIndexMapper = (i: number) => (i - 1) < 0 ? (currentCirclesLayer.length + i - 1) : i - 1;
+            // Right mapper - right for current index is right of two indexes before ...
+            const rightIndexMapper = (i: number) => (i - 2) < 0 ? (currentCirclesLayer.length + i - 2) : i - 2;
+            // Left mapper - left for current index is left of one indexes before ... smae as top
+            const leftIndexMapper = topIndexMapper;
+            // Bottom mapper - mottom for current index is bottom of twp indexes before ... smae as right
+            const bottomIndexMapper = rightIndexMapper;
+            // const [ topIndexMapper, rightIndexMapper, leftIndexMapper, bottomIndexMapper] = [((x:number) => x), ((x:number) => x), ((x:number) => x), ((x:number) => x)]
+
+            const topPoint = currentCirclesLayer[topIndexMapper(i)].pointOnCircumferenceAtRadian(-1 * (topIndexMapper(i) + 2) * 2 * Math.PI / currentCirclesLayer.length - (layerNum * Math.PI/4))
+            const leftPoint = currentCirclesLayer[leftIndexMapper(i)].pointOnCircumferenceAtRadian(-1 * (leftIndexMapper(i) + 3) * 2 * Math.PI / currentCirclesLayer.length - (layerNum * Math.PI/4))
+            const rightPoint = currentCirclesLayer[rightIndexMapper(i)].pointOnCircumferenceAtRadian(-1 * (rightIndexMapper(i) + 3) * 2 * Math.PI / currentCirclesLayer.length - (layerNum * Math.PI/4));
+            const bottomPoint = currentCirclesLayer[bottomIndexMapper(i)].pointOnCircumferenceAtRadian(-1 * (bottomIndexMapper(i) + 4 + layerNum) * 2 * Math.PI / currentCirclesLayer.length - (layerNum * Math.PI/4));
+            const centralPoint = collectiveMidpoint([bottomPoint, topPoint, leftPoint, rightPoint]);
+            
+
+            if (debugFn(layerNum)) {
+                // Top Dot
+                appendText(svg as d3SVG, `${i}L${layerNum}`, topPoint,{stroke: "green", "font-size": 4});
+            }
+            if (debugFn(layerNum)) {
+                // left Dot (also right dot ...)
+                appendText(svg as d3SVG,  `${i}L${layerNum}`, leftPoint, {stroke: "orange", "font-size": 4});
+            }
+            if (debugFn(layerNum)) {
+                // right Dot (also right dot ...)
+                appendText(svg as d3SVG, `${i}L${layerNum}`, rightPoint, {stroke: "orange", "font-size": 4});
+            }
+            if (debugFn(layerNum)) {
+                // Bottom Dot - also same as the midpoint ...
+                appendText(svg as d3SVG, `${i}L${layerNum}`, bottomPoint, {stroke: "red", "font-size": 4});
+            }
+
+            if (debugFn(layerNum)) {
+                appendText(svg as d3SVG, `${layerNum}.${i}`, centralPoint, {stroke: "purple", "font-size": 4});
+            }
+
+            // Add circle for the next layer ...
+            // Next layer need to connect to origin / midpoint ...
+            // const nextLayerPoint = c.pointOnCircumferenceAtRadian(-1 * (bottomIndexMapper(i) + 3) * 2 * Math.PI / currentCirclesLayer.length - (layerNum * Math.PI/4));
+            // const nextLayerPoint = currentCirclesLayer[bottomIndexMapper(i)].pointOnCircumferenceAtRadian(-1 * (bottomIndexMapper(i) + 3) * 2 * Math.PI / currentCirclesLayer.length - (layerNum * Math.PI/4));
+            const nextLayerPoint = c.pointOnCircumferenceAtRadian(-1 * (i + 3) * 2 * Math.PI / currentCirclesLayer.length - (layerNum * Math.PI/4));
+            
+
+            const newRadius = distanceBetweenPoints(nextLayerPoint, centralCircle.midpoint);
+            const nextLayerCircle = new Circle(nextLayerPoint.x, nextLayerPoint.y, newRadius)
+            nextCircleLayer.push(nextLayerCircle);
+
+            // Inner circle radius
+            // const previousLayerPoint = currentCirclesLayer[topIndexMapper(i)].pointOnCircumferenceAtRadian(-1 * (topIndexMapper(i) + 3) * 2 * Math.PI / currentCirclesLayer.length - (layerNum * Math.PI/4));
+            // if (debugFn(layerNum)) {
+            //     // Bottom Dot - also same as the midpoint ...
+            //     appendText(svg as d3SVG, `${i}L${layerNum}`, previousLayerPoint, {stroke: "gold", "font-size": 4});
+            // }
+            // https://www.quora.com/How-does-one-calculate-the-straight-line-distance-between-two-points-on-a-circle-if-the-radius-and-arc-length-are-known
+            // const innerCircleRaduis = (Math.PI/(4/3)) * newRadius/currentCirclesLayer.length;
+            // const innerCircleRaduis = c.r / currentCirclesLayer.length;
+            // const innerCircleRaduis = ((nextLayerCircle.r * Math.PI * 2) / currentCirclesLayer.length) / 2;
+            // const innerCircleRaduis = distanceBetweenPoints(nextLayerPoint, previousLayerPoint) / 2;
+            // const innerCircleRaduis = (2 * c.r * Math.sin(c.r*(2*Math.PI/currentCirclesLayer.length) / (2* c.r))) / 2;
+            const innerCircleRaduis = .95 * ( Math.PI * distanceBetweenPoints(centralPoint, centralCircle.midpoint) ) / currentCirclesLayer.length;
+            // const innerCircleRaduis = .99 * ( Math.PI * distanceBetweenPoints(centralPoint, centralCircle.midpoint) ) / currentCirclesLayer.length;
+            appendCircle(svg as d3SVG, new Circle(centralPoint.x, centralPoint.y, innerCircleRaduis), "grey");
+        }
+    ).length;
+    return nextCircleLayer;
+}
+
+// eslint-disable-next-line no-unused-vars
+export function drawLotfallahDome(svg: d3SVG, radius: number, size: number, maxLevels: number): IO {
+    console.log(maxLevels);
+    // https://design.tutsplus.com/tutorials/geometric-design-the-lotfallah-mosque-dome--cms-24859
+    // Add Circle in the center of the grid
+    const circle = new Circle(radius * size / 2, radius * size / 2, radius * 2 / 5.25);
+    appendCircleWithMidpoint(svg as d3SVG, circle);
+    // Add 6 circles around middle circle ...
+    // Interleave arrays so they are sequential ...
+    console.log("circles");
+    const flattenedCircles = _.flatten(_.zip(
+        circle.surroundingCircles(6, {clockwise: false}), 
+        circle.surroundingCircles(6, { shift_in_radians: Math.PI/6, clockwise: false })
+    ));
+    
+    console.log(flattenedCircles);
+    // const circles = (_.remove(flattenedCircles, _.isNil) as unknown) as Circle[];
+    // const circles = _.remove(
+    //     flattenedCircles, 
+    //     x => { console.log(x); return _.isNil(x); } 
+    // ) as Circle[];
+    const l0Circles = flattenedCircles.filter((c) => !_.isNil(c)) as Circle[]
+    // l0Circles.forEach((c) => appendCircle(svg as d3SVG, c, "grey"));
+    console.log(processLotfallahDomeCircleLayer);
+    // console.log(l0Circles);
+    const l1Circles = processLotfallahDomeCircleLayer(svg as d3SVG, l0Circles, circle, 0, l => l == -1);
+    // console.log(l1Circles);
+    const l2Circles = processLotfallahDomeCircleLayer(svg as d3SVG, l1Circles, circle, 1, l => l == -1);
+    // console.log(l2Circles);
+    const l3Circles = processLotfallahDomeCircleLayer(svg as d3SVG, l2Circles, circle, 2, l => l == -1);
+    // console.log(l3Circles);
+    const l4Circles = processLotfallahDomeCircleLayer(svg as d3SVG, l3Circles, circle, 3, l => l == -1);
+    // console.log(l4Circles);
+    const l5Circles = processLotfallahDomeCircleLayer(svg as d3SVG, l4Circles, circle, 4, l => l == -1);
+    // console.log(l5Circles);
+    const l6Circles = processLotfallahDomeCircleLayer(svg as d3SVG, l5Circles, circle, 5, l => l == -1);
+    // console.log(l6Circles);
+    const l7Circles = processLotfallahDomeCircleLayer(svg as d3SVG, l6Circles, circle, 6, l => l == -1);
+    console.log(l7Circles);
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -233,7 +371,7 @@ export function drawChainedStars(svg: d3SVG, radius: number, size: number): IO {
     const numbereOfStars = 10;
     // Recursively Add circles around middle circle ...
     const circle = new Circle(radius * size / 2, radius * size / 2, radius * 2 / 5);
-    const points = (circle).pointsOnCircumference(numbereOfStars, Math.PI / numbereOfStars);
+    const points = (circle).pointsOnCircumference(numbereOfStars, { shift_in_radians: Math.PI / numbereOfStars });
 
     _.forEach(
         points,

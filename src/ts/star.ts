@@ -13,7 +13,7 @@ export class Star {
     }
 
     get innerCircles(): Circle[] {
-        return this.centralCircle.surroundingCircles(this.numberOfPoints, undefined, this.radial_shift);
+        return this.centralCircle.surroundingCircles(this.numberOfPoints, { distance_modifier: undefined, shift_in_radians: this.radial_shift });
     }
 
     get outerCircle(): Circle {

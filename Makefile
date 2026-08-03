@@ -26,10 +26,17 @@ run: compile build
 	node app/runner.js
 
 # Recompilation Commands
-~compile:
+compile.~:
 	npx tsc -w
 
-~run:
+build.~:
+	# https://stackoverflow.com/questions/38089785/webpack-watch-vs-hot-whats-the-difference
+	npx webpack --watch --config webpack.config.js
+
+run.lite.~:
+	npx nodemon -w templates -w src/ts --ext 'ts tpl' --exec 'node app/runner.js'
+
+run.~:
 	npx nodemon -w templates -w src/ts --ext 'ts tpl' --exec 'make compile; make _build; node app/runner.js'
 
 # Container Oriented Commands

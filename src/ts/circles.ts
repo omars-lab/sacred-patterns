@@ -11,6 +11,20 @@ export interface CircleMetadata {
     stroke?: string;
 }
 
+export interface ScalingProps {
+    shift_in_radians?: number;
+    distance_modifier?: number;
+    clockwise?: boolean;
+}
+
+export function defaultScalingProps(props: ScalingProps) {
+    return _.defaults(_.cloneDeep(props), {
+        shift_in_radians: 0, 
+        distance_modifier: 1,
+        clockwise: true
+    })
+}
+
 /* eslint-disable-next-line no-unused-vars, no-redeclare */
 export class Circle {
 
@@ -24,10 +38,11 @@ export class Circle {
         return _.isEmpty(this._metadata) ? {level:0} : (<CircleMetadata>this._metadata);
     }
 
-    pointsOnCircumference(numberOfPoints:number, shift_in_radians=0): Point[] {
+    pointsOnCircumference(numberOfPoints:number, props: ScalingProps): Point[] {
+        const p: ScalingProps = defaultScalingProps(props);
         return _.map(
             <number[]>(_.range(0, 2 * Math.PI, 2 * Math.PI / numberOfPoints)),
-            radians => this.pointOnCircumferenceAtRadian(radians + shift_in_radians)
+            radians => this.pointOnCircumferenceAtRadian(radians + p.shift_in_radians!)
         );
     }
 
@@ -43,23 +58,28 @@ export class Circle {
     }
     // circlesAround
     // https://stackoverflow.com/questions/17186566/how-do-i-fix-error-ts1015-parameter-cannot-have-question-mark-and-initializer
-    surroundingCircles(count:number, distance_modifier=1, shift_in_radians=0, metadata:CircleMetadata|undefined=undefined): Circle[] {
+    surroundingCircles(count:number, props: ScalingProps = {}, metadata:CircleMetadata|undefined=undefined): Circle[] {
+        const p: ScalingProps = defaultScalingProps(props);
         const {x, y, r} = this;
         const circles = _.map(
             _.range(0, 2 * Math.PI, 2 * Math.PI / count),
-            radians => new Circle(
-                x + (Math.cos(radians + shift_in_radians) * r * distance_modifier),
-                y + (Math.sin(radians + shift_in_radians) * r * distance_modifier),
-                r,
-                _.isEmpty(metadata) ? undefined : _.merge({}, metadata),
-            )
+            radians => {
+                let new_radian = radians + p.shift_in_radians!;
+                new_radian = props.clockwise ? new_radian : -1 * new_radian;
+                return new Circle(
+                    x + (Math.cos(new_radian) * r * p.distance_modifier!),
+                    y + (Math.sin(new_radian) * r * p.distance_modifier!),
+                    r,
+                    _.isEmpty(metadata) ? undefined : _.merge({}, metadata)
+                );
+            },
         );
         return circles;
     }
 
     // flowersAround
     surroundWithFlower(metadata?:CircleMetadata): Circle[] {
-        return this.surroundingCircles(6, 1, 0, metadata);
+        return this.surroundingCircles(6, {}, metadata);
     }
 
     static indexCircles(circles:Circle[]): Record<string, Circle> {
