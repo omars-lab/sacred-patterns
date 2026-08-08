@@ -15,6 +15,7 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `arc-lens-partial` | bikar | bikar/docs/decisions/2026-05-17-arc-region-class-precision.md | SUPERSEDED | — | — |
 | `arc-lens-partial` | qiyas | qiyas/docs/decisions/2026-06-10-partial-shape-detector-sliver-cleanup.md | PROPOSED | — | — |
 | `arc-lens-partial` | sacred-patterns | sacred-patterns/docs/decisions/2026-05-07-partial-shape-rendering-via-construction.md | SUPERSEDED | — | — |
+| `brick-outline-footprint` | bikar | bikar/docs/decisions/2026-08-02-pattern-outline-footprint.md | ACCEPTED | A | ★ |
 | `brick-top-face` | bikar | bikar/docs/decisions/2026-08-02-edge-to-edge-relief-top-face-arrangement.md | ACCEPTED | B | ★ |
 | `build-toolchain` | bikar | bikar/docs/decisions/2026-05-18-vite-vitest-major-upgrade-clear-esbuild-vulns.md | ACCEPTED | A | ★ |
 | `ci-arch-divergence` | qiyas | qiyas/docs/decisions/2026-05-19-ci-arch-divergence-encoder-baselines.md | SUPERSEDED | — | — |
@@ -90,6 +91,7 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `star7-red-detection` | qiyas | qiyas/docs/decisions/2026-05-21-star7-missed-red-shapes-mechanism.md | ACCEPTED | A | ★ |
 | `strapwork-terminal-ends` | bikar | bikar/docs/decisions/2026-07-30-strapwork-terminal-mitres.md | ACCEPTED | A | ★ |
 | `studio-api-contract` | bikar | bikar/docs/decisions/2026-07-30-studio-api-fail-closed-and-gate-coverage.md | ACCEPTED | A | ★ |
+| `studio-page-catalog` | bikar | bikar/docs/decisions/2026-08-07-labs-served-from-studio.md | ACCEPTED | A | ★ |
 | `svg-direct` | qiyas | qiyas/docs/decisions/2026-05-17-eliminate-rasterize-trace-round-trip.md | SUPERSEDED | B | — |
 | `svg-direct` | qiyas | qiyas/docs/decisions/2026-05-18-b1-mechanism-refinement-gt-vs-render-svg.md | ACCEPTED | B | ★ |
 | `svg-direct-baseline` | qiyas | qiyas/docs/decisions/2026-05-21-iter-14-svg-direct-detector-path-forward.md | ACCEPTED | A | ★ |
