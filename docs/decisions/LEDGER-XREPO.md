@@ -87,6 +87,7 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `shape-vocab-typed-params` | qiyas | qiyas/docs/decisions/2026-05-16-typed-shape-params-vs-object-bag.md | ACCEPTED | C | ★ |
 | `shape-vocab-typed-params` | qiyas | qiyas/docs/decisions/2026-05-18-shape-discriminated-union-migration-sequencing.md | SUPERSEDED | — | — |
 | `shape-vocabulary` | qiyas | qiyas/docs/decisions/2026-05-18-shape-vocabulary-vs-detector-tolerances.md | ACCEPTED | D | ★ |
+| `spiral-primitive` | bikar | bikar/docs/decisions/2026-08-11-log-spiral-primitive.md | ACCEPTED | A | ★ |
 | `star7-red-detection` | qiyas | qiyas/docs/decisions/2026-05-18-star7-red-shape-detection-routing.md | SUPERSEDED | — | — |
 | `star7-red-detection` | qiyas | qiyas/docs/decisions/2026-05-21-star7-missed-red-shapes-mechanism.md | ACCEPTED | A | ★ |
 | `strapwork-terminal-ends` | bikar | bikar/docs/decisions/2026-07-30-strapwork-terminal-mitres.md | ACCEPTED | A | ★ |
