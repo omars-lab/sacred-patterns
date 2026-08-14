@@ -79,7 +79,7 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `portal-hypothesis-handoff` | sacred-patterns | sacred-patterns/docs/decisions/2026-06-10-portal-hypothesis-handoff.md | ACCEPTED | A | ★ |
 | `print-gate` | bikar | bikar/docs/decisions/2026-07-29-print-gate-v1-slice-structure.md | ACCEPTED | A | ★ |
 | `rasterizer-fidelity` | bikar | bikar/docs/decisions/2026-05-13-gt-json-image-dims-rasterizer-fidelity.md | ACCEPTED | A | ★ |
-| `render-orientation` | bikar | bikar/docs/decisions/2026-08-13-render-orientation.md | PROPOSED | — | — |
+| `render-orientation` | bikar | bikar/docs/decisions/2026-08-13-render-orientation.md | ACCEPTED | 1B | ★ |
 | `scale-invariant-matching` | qiyas | qiyas/docs/decisions/2026-06-10-scale-invariant-param-drift.md | ACCEPTED | B | ★ |
 | `scope-rescope` | bikar | bikar/docs/decisions/2026-06-15-authored-region-fuse-na-for-non-girih.md | ACCEPTED | A | ★ |
 | `scope-rescope` | qiyas | qiyas/docs/decisions/2026-05-22-138-rescope-after-empirical-delta.md | ACCEPTED | G | ★ |
