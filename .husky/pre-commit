@@ -60,6 +60,31 @@ if [ -n "$staged_decisions" ]; then
   fi
 fi
 
+# The cross-repo generator's own test suite, when the generator or its test is
+# staged. `--check` above already runs the generator on real data, which is
+# necessary and not sufficient: it can only fail on a defect the current corpus
+# happens to exhibit, and both defects this script has shipped were invisible to
+# it. The uncloned-sibling one rendered a confident partial join; the working-
+# tree one rendered a confident wrong row. Neither is an error state the real
+# repos were in at the moment `--check` ran, which is exactly why the suite
+# constructs them. Same reasoning as the two blocks above about there being no
+# CI backstop in this repo, so it blocks rather than warns.
+staged_gen=$(git diff --cached --name-only --diff-filter=ACM |
+  grep -E '^scripts/gen-decision-ledger-xrepo(\.test)?\.sh$' || true)
+if [ -n "$staged_gen" ]; then
+  if command -v yq >/dev/null 2>&1; then
+    echo "[pre-commit] gen-decision-ledger-xrepo.test.sh (generator changed)"
+    sh scripts/gen-decision-ledger-xrepo.test.sh || exit 1
+  elif [ "${DECISION_GATE_OK:-}" = "1" ]; then
+    echo "[pre-commit] WARN: generator test suite SKIPPED via DECISION_GATE_OK=1."
+  else
+    echo "[pre-commit] ERROR: yq not installed — the generator's test suite cannot run."
+    echo "             Install with: brew install yq"
+    echo "             Deliberate override: DECISION_GATE_OK=1 git commit ..."
+    exit 1
+  fi
+fi
+
 # Cross-repo tenet 12 — secret scan on staged hunks (sacred-patterns#345).
 # `gitleaks protect` is deprecated/broken in v8.30+: it detects leaks but
 # always exits 0, defeating the gate. Use the documented post-v8 path:
