@@ -65,6 +65,7 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `mural-panelization` | bikar | bikar/docs/decisions/2026-08-02-mural-panelization.md | ACCEPTED | A | ★ |
 | `orb-kernel3d` | bikar | bikar/docs/decisions/2026-07-23-orb-kernel3d-ring-solidify-no-csg.md | ACCEPTED | A | ★ |
 | `orb-lab-knobs` | bikar | bikar/docs/decisions/2026-07-27-knob-layer-workspace-package.md | ACCEPTED | C | ★ |
+| `orb-view-scoreability` | qiyas | qiyas/docs/decisions/2026-08-15-orb-view-scoreable-split.md | ACCEPTED | B | ★ |
 | `orb-views` | bikar | bikar/docs/decisions/2026-07-25-orb-view-orthographic-validation.md | ACCEPTED | A | ★ |
 | `orb-weave` | bikar | bikar/docs/decisions/2026-07-25-orb-weave-strand-tubes-parity-2coloring.md | ACCEPTED | A | ★ |
 | `parser-source-spans` | bikar | bikar/docs/decisions/2026-07-29-parser-statement-spans-comment-retention.md | ACCEPTED | A | ★ |
