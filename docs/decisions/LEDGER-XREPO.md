@@ -15,6 +15,7 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `arc-lens-partial` | bikar | bikar/docs/decisions/2026-05-17-arc-region-class-precision.md | SUPERSEDED | — | — |
 | `arc-lens-partial` | qiyas | qiyas/docs/decisions/2026-06-10-partial-shape-detector-sliver-cleanup.md | PROPOSED | — | — |
 | `arc-lens-partial` | sacred-patterns | sacred-patterns/docs/decisions/2026-05-07-partial-shape-rendering-via-construction.md | SUPERSEDED | — | — |
+| `authoritative-sides-regularity` | qiyas | qiyas/docs/decisions/2026-08-16-irregular-polygon-type.md | ACCEPTED | C | ★ |
 | `brick-outline-footprint` | bikar | bikar/docs/decisions/2026-08-02-pattern-outline-footprint.md | ACCEPTED | A | ★ |
 | `brick-top-face` | bikar | bikar/docs/decisions/2026-08-02-edge-to-edge-relief-top-face-arrangement.md | ACCEPTED | B | ★ |
 | `build-toolchain` | bikar | bikar/docs/decisions/2026-05-18-vite-vitest-major-upgrade-clear-esbuild-vulns.md | ACCEPTED | A | ★ |
@@ -71,6 +72,7 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `parser-source-spans` | bikar | bikar/docs/decisions/2026-07-29-parser-statement-spans-comment-retention.md | ACCEPTED | A | ★ |
 | `partial-polygon-residue` | qiyas | qiyas/docs/decisions/2026-05-20-partial-polygon-residue-starvation.md | ACCEPTED | E | ★ |
 | `pattern-identity-signature` | qiyas | qiyas/docs/decisions/2026-05-11-pattern-identity-signature-shape.md | ACCEPTED | C | ★ |
+| `per-part-scorer-statistics` | qiyas | qiyas/docs/decisions/2026-08-16-per-part-scorer-statistics.md | ACCEPTED | B | ★ |
 | `petal-2ring-partition` | qiyas | qiyas/docs/decisions/2026-05-05-petal-n-2ring-class-partition.md | ACCEPTED | D | ★ |
 | `petal-ring-class` | bikar | bikar/docs/decisions/2026-05-06-rotate-block-prev-next-index.md | SUPERSEDED | — | — |
 | `petal-ring-class` | bikar | bikar/docs/decisions/2026-05-15-bikar-petal-n-ring-class-assignment.md | ACCEPTED | B | ★ |
@@ -81,6 +83,7 @@ repo's `LEDGER.md`. Schema: `docs/decision-schema.md`.
 | `print-gate` | bikar | bikar/docs/decisions/2026-07-29-print-gate-v1-slice-structure.md | ACCEPTED | A | ★ |
 | `rasterizer-fidelity` | bikar | bikar/docs/decisions/2026-05-13-gt-json-image-dims-rasterizer-fidelity.md | ACCEPTED | A | ★ |
 | `render-orientation` | bikar | bikar/docs/decisions/2026-08-13-render-orientation.md | ACCEPTED | 1B | ★ |
+| `ribbon-pass-shape-type` | qiyas | qiyas/docs/decisions/2026-08-15-ribbon-pass-shape-type.md | ACCEPTED | C | ★ |
 | `scale-invariant-matching` | qiyas | qiyas/docs/decisions/2026-06-10-scale-invariant-param-drift.md | ACCEPTED | B | ★ |
 | `scope-rescope` | bikar | bikar/docs/decisions/2026-06-15-authored-region-fuse-na-for-non-girih.md | ACCEPTED | A | ★ |
 | `scope-rescope` | qiyas | qiyas/docs/decisions/2026-05-22-138-rescope-after-empirical-delta.md | ACCEPTED | G | ★ |
