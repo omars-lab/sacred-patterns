@@ -6,6 +6,7 @@
 # Only runs when staged files include .ts under src/ts/ — keeps the gate fast
 # on doc-only / config-only commits.
 
+# gate: typecheck-lint
 staged_ts=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^src/ts/.*\.ts$' || true)
 
 if [ -n "$staged_ts" ]; then
@@ -20,6 +21,7 @@ fi
 # the per-repo LEDGER.md is in sync, and refresh the cross-repo roll-up. All
 # read structured frontmatter keys only (no regex / no body scan). Scoped to
 # docs/decisions/** so unrelated commits stay fast. Schema: docs/decision-schema.md.
+# gate: decision-coherence
 staged_decisions=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^docs/decisions/' || true)
 if [ -n "$staged_decisions" ]; then
   if command -v yq >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
@@ -69,6 +71,7 @@ fi
 # repos were in at the moment `--check` ran, which is exactly why the suite
 # constructs them. Same reasoning as the two blocks above about there being no
 # CI backstop in this repo, so it blocks rather than warns.
+# gate: xrepo-generator-test
 staged_gen=$(git diff --cached --name-only --diff-filter=ACM |
   grep -E '^scripts/gen-decision-ledger-xrepo(\.test)?\.sh$' || true)
 if [ -n "$staged_gen" ]; then
@@ -98,6 +101,35 @@ fi
 # yq/jq branch above, one block down, and the stakes are higher — the failure
 # mode is a committed secret rather than a stale ledger. It blocks, with the
 # same named override.
+# gate: gate-parity
+# `gate-parity.yaml` says what each gate in this file looks like run over the
+# whole tree, and `make local.ci` is only worth its name while that mapping is
+# complete. The check runs in both directions: a `# gate:` block with no entry
+# fails, and an entry naming a block that no longer exists fails.
+#
+# This gate is self-referential, and deliberately so — it declares itself with
+# the `# gate:` line above and carries its own manifest entry. Leaving it
+# unmapped would be the one hole the mapping could never see.
+#
+# The trigger set is everything that can move the answer: the two dispatched
+# hooks, the manifest, and the checker. --diff-filter includes D because
+# deleting a hook is exactly what strands its entries as STALE.
+#
+# There is no CI backstop in this repo, so this blocks rather than warns.
+staged_gateparity=$(git diff --cached --name-only --diff-filter=ACMD |
+  grep -E '^(\.husky/(pre-commit|pre-push)|gate-parity\.yaml|scripts/gate_parity\.py)$' || true)
+if [ -n "$staged_gateparity" ]; then
+  echo "[pre-commit] gate-parity --check (hooks, manifest, or checker changed)"
+  python3 scripts/gate_parity.py --check || {
+    echo ""
+    echo "  gate-parity.yaml no longer describes what the hooks gate. Every"
+    echo "  '# gate:' block needs an entry saying how to run it over the whole"
+    echo "  tree (wholesale:) or why there is no such form (skip: + reason:)."
+    exit 1
+  }
+fi
+
+# gate: gitleaks-staged
 if command -v gitleaks >/dev/null 2>&1; then
   echo "[pre-commit] gitleaks scan (staged hunks)"
   git diff --cached | gitleaks stdin --no-banner --redact --exit-code 1 || exit 1

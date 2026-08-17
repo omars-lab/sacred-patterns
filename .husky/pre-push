@@ -36,6 +36,7 @@
 # pre-push hook (its .githooks/ tree is stranded; core.hooksPath is .husky/_).
 # bikar covers the full-history case with .github/workflows/secret-scan.yml
 # instead, which is not an option here while this repo has no CI.
+# gate: gitleaks-history
 if command -v gitleaks >/dev/null 2>&1; then
   echo "[pre-push] gitleaks full-history scan"
   gitleaks git . --no-banner --redact || {

@@ -28,6 +28,30 @@ serve:
 # Report-only (exit 0 even on findings) — gating is intentional follow-on (#346 → #343).
 # Currently clean (0 vulns); kept report-only so adding it to a CI gate later is a
 # one-line change (`-npm audit` → `npm audit`).
+# === Gate parity ===
+#
+# This repo has no CI. Nothing runs on a push or a pull request; every enforced
+# check is a git hook, each hook sees only what one commit stages, and
+# `--no-verify` skips all of them. `local.ci` is what runs the same gates over
+# the whole tree — plus the five checks that exist here and no hook runs at all.
+#
+# The name is borrowed on purpose. There is no CI here to be parity *with*, and
+# calling this `local.ci` is how somebody who learned the name in bikar or qiyas
+# finds it. The output says plainly that there is no remote counterpart, so the
+# name cannot be read as a claim that something else also ran.
+
+local.check-gate-parity: ## Fail if any git-hook gate is missing from gate-parity.yaml
+	@python3 ${ROOT_DIR}/scripts/gate_parity.py --check
+
+local.gate-parity: local.check-gate-parity ## Run every hook gate's wholesale form
+	@python3 ${ROOT_DIR}/scripts/gate_parity.py --run
+
+local.ci: local.check-gate-parity ## Every hook gate over the whole tree, plus the checks no hook runs
+	@python3 ${ROOT_DIR}/scripts/gate_parity.py --run --with-local-only
+
+local.ci-strict: local.check-gate-parity ## As local.ci, but an unverifiable gate is a failure
+	@python3 ${ROOT_DIR}/scripts/gate_parity.py --run --with-local-only --strict
+
 audit:
 	-npm audit
 	@echo "[audit] npm audit complete (report-only)"
@@ -40,16 +64,23 @@ gitleaks:
 	gitleaks detect --no-banner --redact
 
 # Cross-repo tenet 12 — SAST (sacred-patterns#347).
-# Strict (no `-` prefix): src/ + tools/ are currently clean (0 findings at
-# baseline). Any new finding is either a regression or a real issue and must
-# surface loudly; report-only would defeat the gate.
+# Strict (no `-` prefix): any finding is either a regression or a real issue and
+# must surface loudly; report-only would defeat the gate.
+# This comment used to say "src/ + tools/ are currently clean (0 findings at
+# baseline)". Nothing ran the scanner after that was written — no hook triggers
+# on tools/ — so nothing rechecked it. The first run through gate-parity.yaml
+# (2026-08-17) returned rc=2 on one: a dynamic urllib.request.urlopen in
+# tools/weave-only-compare.py. Left red rather than baselined away.
 # Install: pip install semgrep
 semgrep:
 	semgrep --config=p/typescript --config=p/security-audit --error --quiet --metrics=off src tools
 
 # Cross-repo tenet 12 — typo surface (sacred-patterns#349).
-# Strict (no `-` prefix): src/ts + tools/ + docs were triaged to 0 at baseline
-# by fixing src/ts/index.ts:60 (shfit → shift). `ans` is a legitimate variable
+# Strict (no `-` prefix). src/ts + tools/ + docs were triaged to 0 at the
+# sacred-patterns#349 baseline by fixing src/ts/index.ts:60 (shfit → shift), and
+# have drifted since: the first run through gate-parity.yaml (2026-08-17) found
+# 11, ten of them in tools/wave-plan-server.py. No hook trigger reaches tools/,
+# so nothing had re-run this. Left red. `ans` is a legitimate variable
 # name (user-answer prompt) in tools/auto-iterate*.py; codespell flags it as
 # "and" — suppressed via -L ans. Other suppressions, all legitimate words
 # codespell misreads: `Couter` (DSL circle identifier C-outer quoted in
@@ -64,6 +95,8 @@ spelling:
 # tools run under has no pytest, and the tools themselves are stdlib-only by
 # convention (see tools/portal_verdict.py docstring). The cross-repo end-to-end
 # test self-skips when uv or the qiyas repo is absent.
+# Wired to nothing, and red: 3 of 63 fail on committed master as of 2026-08-17
+# (test_studio_field_defaults_bounded.py). Reachable only through `make local.ci`.
 tool-tests:
 	python3 -m unittest discover -s tools/tests -v
 
