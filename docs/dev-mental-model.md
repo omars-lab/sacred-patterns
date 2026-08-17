@@ -102,6 +102,20 @@ bikar). When you author a decision via `present-options`, its §0 Premise check
 forces this lookup; when one is falsified via `handle-falsification`, its L0
 branch + `dead_end:` step write the falsification back into the ledger.
 
+That last clause has a second half it did not used to state. "Run from
+`.husky/pre-commit`" is only true if git actually runs that file, and twice now
+it has not: the pre-push gitleaks scan was silently dead until `b371841`, and
+until 2026-08-17 `core.hooksPath` named `.husky/_` — husky's *generated* shim
+directory, which `npm install` creates and git never tracks. `.git/config` is
+shared across worktrees but that directory is not, so every linked worktree and
+every fresh clone inherited the setting without the hooks, and git's response to
+a hooksPath that is not there is to run nothing and print nothing. This repo has
+no CI, so a hook that does not run is the whole gate not running. `core.hooksPath`
+now points at the tracked `.husky/` directly (`npm run setup-hooks`, also the
+`prepare` step), and `npm run test:hooks` asserts it by making a real commit in a
+real linked worktree and requiring it to be *rejected* — the wiring is the half
+that broke, and only git can answer whether git would have run the hook.
+
 → [decision-schema.md](decision-schema.md) · [LEDGER-XREPO.md](decisions/LEDGER-XREPO.md)
 
 ## Decisions that shaped this codebase
