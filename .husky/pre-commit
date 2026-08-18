@@ -119,7 +119,15 @@ fi
 staged_gateparity=$(git diff --cached --name-only --diff-filter=ACMD |
   grep -E '^(\.husky/(pre-commit|pre-push)|gate-parity\.yaml|scripts/gate_parity\.py)$' || true)
 if [ -n "$staged_gateparity" ]; then
-  echo "[pre-commit] gate-parity --check (hooks, manifest, or checker changed)"
+  echo "[pre-commit] gate-parity --self-test + --check (hooks, manifest, or checker changed)"
+  python3 scripts/gate_parity.py --self-test >/dev/null || {
+    python3 scripts/gate_parity.py --self-test
+    echo ""
+    echo "  The parity checker itself no longer fails on manifests that must"
+    echo "  fail. Fix the checker before trusting anything it says about the"
+    echo "  hooks — there is no CI in this repo to catch it downstream."
+    exit 1
+  }
   python3 scripts/gate_parity.py --check || {
     echo ""
     echo "  gate-parity.yaml no longer describes what the hooks gate. Every"

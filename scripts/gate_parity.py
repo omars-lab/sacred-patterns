@@ -46,8 +46,11 @@ unverified.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import re
 import shutil
+import tempfile
 import subprocess
 import sys
 import time
@@ -271,11 +274,212 @@ def run(strict: bool, include_local_only: bool) -> int:
     return 0
 
 
+# ---------------------------------------------------------------- self-test
+#
+# The by-design failure is the load-bearing case. A parity checker that only
+# ever sees a correct manifest reports OK forever, including on the day it
+# stops looking. `--check` on the real repo cannot stand in for this: it is the
+# assertion that everything is fine, so it is green both when the repo is
+# correct and when the checker has gone blind. Only a fixture can hold the
+# counterexample — and the distinction bites hardest on the discoverer.
+# Breaking GATE_RE is caught here only incidentally, because the 15 written
+# entries all report STALE; against an empty manifest the same bug reads
+# "0 hook gates, all mapped", which is the vacuous green.
+#
+# This repo has no CI, so there is no second opinion downstream. That makes the
+# self-test the only thing standing between a silent regression here and a
+# green summary line that a merge decision rests on.
+
+
+def _fixture(tmp: Path, pre_commit: str, manifest: str, pre_push: str = "#!/bin/sh\n") -> None:
+    (tmp / ".husky").mkdir(parents=True, exist_ok=True)
+    (tmp / ".husky" / "pre-commit").write_text(pre_commit, encoding="utf-8")
+    (tmp / ".husky" / "pre-push").write_text(pre_push, encoding="utf-8")
+    (tmp / "gate-parity.yaml").write_text(manifest, encoding="utf-8")
+
+
+@contextlib.contextmanager
+def _rooted(tmp: Path):
+    """Point the module's three path globals at a fixture repo."""
+    global REPO, MANIFEST, HOOKS
+    saved = (REPO, MANIFEST, HOOKS)
+    REPO, MANIFEST, HOOKS = tmp, tmp / "gate-parity.yaml", tmp / ".husky"
+    try:
+        yield
+    finally:
+        REPO, MANIFEST, HOOKS = saved
+
+
+def _capture(fn) -> tuple[int, str]:
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+        rc = fn()
+    return rc, out.getvalue()
+
+
+# The declaration is a comment, which is the one line a shell will never
+# complain about being wrong. Nothing but GATE_RE reads it, so if GATE_RE
+# stops matching the spelling the hooks use, every gate silently vanishes
+# from the manifest's field of view. That is the first case below.
+_HOOK_OK = """\
+#!/bin/sh
+# gate: alpha
+echo a
+
+# gate: beta
+echo b
+"""
+
+_MF_OK = """\
+skip_categories:
+  interactive: needs a human at a keyboard
+gates:
+  - id: 'pre-commit::alpha'
+    wholesale: 'true'
+  - id: 'pre-commit::beta'
+    skip: interactive
+    reason: nothing to run unattended.
+"""
+
+
+def self_test() -> int:
+    failures: list[str] = []
+    ran: list[str] = []
+
+    # The count in the closing line is derived, not typed. A hand-written
+    # "all 14 checks pass" beside 15 expect() calls is the same defect class
+    # this file exists to catch, one level up.
+    def expect(name: str, ok: bool, detail: str = "") -> None:
+        ran.append(name)
+        if ok:
+            print(f"  ok   {name}")
+        else:
+            failures.append(f"{name}{': ' + detail if detail else ''}")
+            print(f"  FAIL {name}{': ' + detail if detail else ''}")
+
+    print("gate-parity --self-test:")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        with _rooted(tmp):
+            # 1. The `# gate:` declarations must actually be seen.
+            _fixture(tmp, _HOOK_OK, _MF_OK)
+            rc, out = _capture(check)
+            expect("`# gate:` declarations are discovered", "2 hook gates" in out, out.strip())
+            expect("a complete manifest passes", rc == 0, out.strip())
+
+            # 2. Drift in either direction is a failure, not a shrug.
+            _fixture(tmp, _HOOK_OK.replace("# gate: beta\necho b\n", ""), _MF_OK)
+            rc, out = _capture(check)
+            expect("a manifest entry for a vanished gate is STALE",
+                   rc == 1 and "STALE" in out, out.strip())
+
+            _fixture(tmp, _HOOK_OK + "\n# gate: gamma\necho g\n", _MF_OK)
+            rc, out = _capture(check)
+            expect("a hook gate with no entry is UNCOVERED",
+                   rc == 1 and "UNCOVERED" in out, out.strip())
+
+            # 3. A hook file that is gone is a gate that is gone — the check
+            #    must say so rather than discovering zero gates and passing.
+            _fixture(tmp, _HOOK_OK, _MF_OK)
+            (tmp / ".husky" / "pre-push").unlink()
+            rc, out = _capture(lambda: _swallow_exit(check))
+            expect("a missing hook file is fatal, not zero gates",
+                   rc != 0 and "does not exist" in out, out.strip())
+
+            # 4. Two blocks cannot share a name, or one of them is invisible.
+            _fixture(tmp, _HOOK_OK + "\n# gate: alpha\necho again\n", _MF_OK)
+            rc, out = _capture(lambda: _swallow_exit(check))
+            expect("a duplicate gate name is rejected",
+                   rc != 0 and "share the id" in out, out.strip())
+
+            # 5. Entry shape. Exactly one of wholesale:/skip:, skip: needs why.
+            _fixture(tmp, _HOOK_OK, _MF_OK.replace(
+                "    wholesale: 'true'",
+                "    wholesale: 'true'\n    skip: interactive\n    reason: both"))
+            rc, out = _capture(check)
+            expect("both `wholesale:` and `skip:` is rejected",
+                   rc == 1 and "exactly one" in out, out.strip())
+
+            _fixture(tmp, _HOOK_OK, _MF_OK.replace("    reason: nothing to run unattended.\n", ""))
+            rc, out = _capture(check)
+            expect("`skip:` without a `reason:` is rejected",
+                   rc == 1 and "needs a `reason:`" in out, out.strip())
+
+            _fixture(tmp, _HOOK_OK, _MF_OK.replace("skip: interactive", "skip: invented"))
+            rc, out = _capture(check)
+            expect("an unlisted skip category is rejected",
+                   rc == 1 and "not in `skip_categories:`" in out, out.strip())
+
+            _fixture(tmp, _HOOK_OK, _MF_OK.replace(
+                "    wholesale: 'true'", "    wholesale: 'true'\n    requires: nosuch"))
+            rc, out = _capture(check)
+            expect("a `requires:` naming no declared precondition is rejected",
+                   rc == 1 and "not in `preconditions:`" in out, out.strip())
+
+            # 6. The summary line. This is the sentence a merge rests on, and
+            #    in a repo with no CI it is the only sentence there is.
+            _fixture(tmp, _HOOK_OK, """\
+preconditions:
+  nope:
+    probe: 'exit 1'
+    hint: deliberately unsatisfiable.
+skip_categories:
+  interactive: needs a human at a keyboard
+gates:
+  - id: 'pre-commit::alpha'
+    wholesale: 'true'
+  - id: 'pre-commit::beta'
+    wholesale: 'true'
+    requires: nope
+""")
+            rc, out = _capture(lambda: run(strict=False, include_local_only=False))
+            expect("an unmet precondition reports NOT VERIFIED",
+                   "NOT VERIFIED" in out, out.strip())
+            expect("the summary never claims all-verified when one went unrun",
+                   "gate-parity: 1 verified, 1 NOT VERIFIED" in out
+                   and "all 2 verified" not in out, out.strip())
+            expect("--run exits 0 on an unmet precondition (a gate that cries "
+                   "wolf gets switched off)", rc == 0, out.strip())
+            rc, out = _capture(lambda: run(strict=True, include_local_only=False))
+            expect("--strict turns the same run into exit 2", rc == 2, out.strip())
+
+            # 7. A failing wholesale command is a failure, full stop.
+            _fixture(tmp, _HOOK_OK, _MF_OK.replace("    wholesale: 'true'", "    wholesale: 'exit 3'"))
+            rc, out = _capture(lambda: run(strict=False, include_local_only=False))
+            expect("a failing gate exits 1 and is named",
+                   rc == 1 and "1 FAILED" in out, out.strip())
+
+    if failures:
+        print(f"\ngate-parity --self-test FAILED ({len(failures)}):", file=sys.stderr)
+        for f in failures:
+            print(f"  - {f}", file=sys.stderr)
+        return 1
+    print(f"gate-parity --self-test: all {len(ran)} checks pass.")
+    return 0
+
+
+def _swallow_exit(fn) -> int:
+    """discover_gates() raises SystemExit for the two structural faults.
+
+    Catching it here keeps those two cases inside the same expect() shape as
+    the rest — the point being that they are loud, not how they are loud.
+    """
+    try:
+        return fn()
+    except SystemExit as e:
+        print(str(e))
+        return 1
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--check", action="store_true", help="prove the manifest covers the hooks")
     group.add_argument("--run", action="store_true", help="run every gate's wholesale form")
+    group.add_argument(
+        "--self-test",
+        action="store_true",
+        help="prove --check and --run fail on manifests that should fail",
+    )
     parser.add_argument(
         "--strict",
         action="store_true",
@@ -287,6 +491,8 @@ def main() -> int:
         help="with --run: also run the checks no hook runs at all",
     )
     args = parser.parse_args()
+    if args.self_test:
+        return self_test()
     if args.check:
         return check()
     if not shutil.which("make"):

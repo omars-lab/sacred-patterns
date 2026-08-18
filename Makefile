@@ -41,6 +41,12 @@ serve:
 # name cannot be read as a claim that something else also ran.
 
 local.check-gate-parity: ## Fail if any git-hook gate is missing from gate-parity.yaml
+	@# --self-test before --check. `--check` is the assertion that everything is
+	@# fine, so it is green both when the repo is correct and when the checker
+	@# has gone blind; only a fixture can hold the counterexample. Breaking
+	@# GATE_RE turns 4 of the 15 fixture checks red, and against an empty
+	@# manifest the same bug would read "0 hook gates, all mapped". ~50ms.
+	@python3 ${ROOT_DIR}/scripts/gate_parity.py --self-test
 	@python3 ${ROOT_DIR}/scripts/gate_parity.py --check
 
 local.gate-parity: local.check-gate-parity ## Run every hook gate's wholesale form
