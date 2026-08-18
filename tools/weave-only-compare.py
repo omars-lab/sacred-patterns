@@ -63,7 +63,33 @@ SESSION_DIR = DROPBOX_ROOT / SESSION
 REFERENCE_JPG = SESSION_DIR / "input" / "reference.jpg"
 OUT_DIR = SESSION_DIR / "weave-only-compare"
 
-STUDIO_URL = os.environ.get("BIKAR_STUDIO_URL", "http://localhost:8765")
+def _studio_url() -> str:
+    """BIKAR_STUDIO_URL, validated to an http(s) origin before urlopen sees it.
+
+    semgrep's `dynamic-urllib-use-detected` fires on the urlopen below because
+    the URL comes from the environment, and the concern is real rather than
+    stylistic: urllib dispatches on the scheme, so `BIKAR_STUDIO_URL=file:///…`
+    would turn fetch_our_weave_svg from an HTTP POST into a local-file read
+    whose bytes this tool then treats as "our weave SVG" and diffs against the
+    owner's reference. Restricting the scheme is what actually removes that,
+    which is why this is a guard and not a `# nosemgrep`.
+
+    Also rejects a URL with no netloc — `BIKAR_STUDIO_URL=localhost:8765`
+    (no scheme) parses with `scheme="localhost"` and fails in a way that reads
+    like the studio is down rather than like a typo.
+    """
+    raw = os.environ.get("BIKAR_STUDIO_URL", "http://localhost:8765").rstrip("/")
+    parsed = urllib.parse.urlparse(raw)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        raise SystemExit(
+            f"BIKAR_STUDIO_URL must be an http:// or https:// origin, got {raw!r}. "
+            f"The studio is an HTTP server; a non-http scheme here would be read "
+            f"as pattern data. Default: http://localhost:8765"
+        )
+    return raw
+
+
+STUDIO_URL = _studio_url()
 
 # qiyas:dev is unauthorized on this machine (confirmed 2026-06-19) — use :latest,
 # which has pixel-diff and is present locally.
@@ -162,6 +188,27 @@ def fetch_our_weave_svg(params: dict) -> str:
         method="POST",
     )
     try:
+        # The rule's own advice is "audit uses of urllib calls to ensure user
+        # data cannot control the URLs", and _studio_url() is that audit made
+        # executable: the scheme is pinned to http/https at import time, so the
+        # file:// read the rule warns about cannot be reached from here. semgrep
+        # is syntactic and cannot see a guard in another function, which is the
+        # only reason this line is suppressed rather than fixed.
+        #
+        # A suppression that outlives its guard is a fallback weaker than the
+        # gate it replaced, so the guard is pinned by a test that runs in the
+        # same `make local.ci`: tools/tests/test_studio_url_scheme_guard.py.
+        # Delete the guard and that test goes red before this comment lies.
+        #
+        # Two syntactic requirements, both of which fail SILENTLY-ish (the
+        # finding simply keeps firing, which is the safe direction but reads
+        # like the suppression is wrong rather than misplaced): the directive
+        # must sit on the finding's own line or the one directly above it, so
+        # it is the LAST line of this block and not the first; and the id must
+        # be the fully-qualified one semgrep prints, whose final segment is
+        # doubled. The short `...audit.dynamic-urllib-use-detected` does not
+        # match. Verified both ways 2026-08-18.
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
         with urllib.request.urlopen(req, timeout=120) as resp:
             return resp.read().decode()
     except Exception as e:  # noqa: BLE001 — surface a plain-language hint

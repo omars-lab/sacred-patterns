@@ -44,7 +44,8 @@ local.check-gate-parity: ## Fail if any git-hook gate is missing from gate-parit
 	@# --self-test before --check. `--check` is the assertion that everything is
 	@# fine, so it is green both when the repo is correct and when the checker
 	@# has gone blind; only a fixture can hold the counterexample. Breaking
-	@# GATE_RE turns 4 of the 15 fixture checks red, and against an empty
+	@# GATE_RE turns 4 of the 20 fixture checks red (re-measured 2026-08-18,
+	@# when the local_only cases took it from 15 to 20), and against an empty
 	@# manifest the same bug would read "0 hook gates, all mapped". ~50ms.
 	@python3 ${ROOT_DIR}/scripts/gate_parity.py --self-test
 	@python3 ${ROOT_DIR}/scripts/gate_parity.py --check
@@ -86,7 +87,27 @@ semgrep:
 # sacred-patterns#349 baseline by fixing src/ts/index.ts:60 (shfit → shift), and
 # have drifted since: the first run through gate-parity.yaml (2026-08-17) found
 # 11, ten of them in tools/wave-plan-server.py. No hook trigger reaches tools/,
-# so nothing had re-run this. Left red. `ans` is a legitimate variable
+# so nothing had re-run this, and it was left red until 2026-08-18.
+#
+# Triaged then, and the split is the point: of the 8 hits, **7 were the gate
+# crying wolf** and 1 was a real typo. `buildin` is a bikar DSL keyword —
+# `animate buildin`, written verbatim in the string this tool emits — and
+# `build-in` is the English the surrounding prose uses for the same thing (the
+# build-in live-render primitive, the build-in assembly viewer). Neither is
+# "building" or "built-in"; substituting either would break the emitted DSL or
+# rename a feature, so the domain vocabulary joins the -L list rather than the
+# code bending to the dictionary. The seventh was `couldn` in a JS string that
+# spelled its apostrophe `\u2019`; the word was never misspelled, only escaped,
+# and it is now "could not" — fixed at the source rather than suppressed, since
+# a bare `couldn` really is a typo everywhere else. The real one, `supprot` in
+# tools/tests/test_portal_studio_url_params.py, is corrected.
+#
+# A gate that cries wolf gets switched off, which is worse than having no gate.
+# Seven false alarms in eight is why this one was left red for a day rather
+# than fixed in ten minutes — so each suppression here states its reason, and
+# an unreasoned one should be read as a bug.
+#
+# `ans` is a legitimate variable
 # name (user-answer prompt) in tools/auto-iterate*.py; codespell flags it as
 # "and" — suppressed via -L ans. Other suppressions, all legitimate words
 # codespell misreads: `Couter` (DSL circle identifier C-outer quoted in
@@ -95,7 +116,7 @@ semgrep:
 # build output (mirrors eslint config ignore). Mirrors qiyas local.spelling
 # + bikar wiring. Install: pip install codespell
 spelling:
-	codespell -L ans,couter,sme,pre-selected --skip="src/js,node_modules,site" src tools .claude docs CLAUDE.md README.md REFERENCES.md
+	codespell -L ans,couter,sme,pre-selected,buildin,build-in --skip="src/js,node_modules,site" src tools .claude docs CLAUDE.md README.md REFERENCES.md
 
 # tools/ test harness — stdlib unittest, not pytest: the system python3 these
 # tools run under has no pytest, and the tools themselves are stdlib-only by

@@ -140,6 +140,25 @@ def check() -> int:
                 f"{gid}: requires {entry['requires']!r}, which is not in `preconditions:`"
             )
 
+    # `local_only:` entries carry a `requires:` too. They were unguarded until
+    # 2026-08-18, and the asymmetry was not cosmetic: exactly half the manifest
+    # could not say NOT VERIFIED, so a missing precondition surfaced as a red
+    # FAILED rc=127. Measured in a fresh worktree with no node_modules — two
+    # entries went red for a reason that had nothing to do with the branch,
+    # which is how a runner teaches people to ignore it.
+    for extra in manifest.get("local_only") or []:
+        cmd = extra.get("command")
+        if not cmd:
+            problems.append(f"local_only entry with no `command:`: {extra!r}")
+            continue
+        if not extra.get("reason"):
+            problems.append(f"local_only {cmd!r}: needs a `reason:`")
+        if "requires" in extra and extra["requires"] not in preconditions:
+            problems.append(
+                f"local_only {cmd!r}: requires {extra['requires']!r}, "
+                f"which is not in `preconditions:`"
+            )
+
     actual = discover_gates()
     uncovered = [gid for gid in actual if gid not in by_id]
     stale = [gid for gid in by_id if gid not in actual]
@@ -231,6 +250,15 @@ def run(strict: bool, include_local_only: bool) -> int:
 
     if include_local_only:
         for extra in manifest.get("local_only") or []:
+            need = extra.get("requires")
+            if need:
+                if need not in probe_cache:
+                    probe_cache[need] = _probe(preconditions.get(need) or {})
+                if not probe_cache[need]:
+                    hint = (preconditions.get(need) or {}).get("hint", "")
+                    unverified.append((extra["command"], hint))
+                    print(f"[NOT VERIFIED] {extra['command']}  ({need} unavailable)")
+                    continue
             print(f"\n==> [no hook runs this] {extra['command']}")
             rc = subprocess.run(extra["command"], shell=True, cwd=REPO).returncode  # noqa: S602
             if rc == 0:
@@ -282,8 +310,9 @@ def run(strict: bool, include_local_only: bool) -> int:
 # assertion that everything is fine, so it is green both when the repo is
 # correct and when the checker has gone blind. Only a fixture can hold the
 # counterexample — and the distinction bites hardest on the discoverer.
-# Breaking GATE_RE is caught here only incidentally, because the 15 written
-# entries all report STALE; against an empty manifest the same bug reads
+# Breaking GATE_RE is caught here only incidentally, because the written
+# entries all report STALE (4 of the 20 checks, re-measured 2026-08-18);
+# against an empty manifest the same bug reads
 # "0 hook gates, all mapped", which is the vacuous green.
 #
 # This repo has no CI, so there is no second opinion downstream. That makes the
@@ -348,7 +377,8 @@ def self_test() -> int:
 
     # The count in the closing line is derived, not typed. A hand-written
     # "all 14 checks pass" beside 15 expect() calls is the same defect class
-    # this file exists to catch, one level up.
+    # this file exists to catch, one level up — and the reason it is worth the
+    # two extra lines is that the count has since changed twice.
     def expect(name: str, ok: bool, detail: str = "") -> None:
         ran.append(name)
         if ok:
@@ -442,6 +472,55 @@ gates:
                    "wolf gets switched off)", rc == 0, out.strip())
             rc, out = _capture(lambda: run(strict=True, include_local_only=False))
             expect("--strict turns the same run into exit 2", rc == 2, out.strip())
+
+            # 6b. The `local_only:` half. It was unguarded until 2026-08-18
+            #     and nobody noticed, because you only see it in a checkout
+            #     where a precondition is actually missing — a fresh worktree
+            #     with no node_modules, which is not how anyone tests a gate.
+            #     Two entries went red there for a reason that had nothing to
+            #     do with the branch. FAILED is a claim about the branch; a
+            #     missing tool is a claim about the machine, and conflating
+            #     them is how a runner teaches people to skim past its output.
+            _LOCAL_ONLY_MF = """\
+preconditions:
+  nope:
+    probe: 'exit 1'
+    hint: deliberately unsatisfiable.
+skip_categories:
+  interactive: needs a human at a keyboard
+gates:
+  - id: 'pre-commit::alpha'
+    wholesale: 'true'
+  - id: 'pre-commit::beta'
+    skip: interactive
+    reason: nothing to run unattended.
+local_only:
+  - command: 'true'
+    requires: nope
+    reason: wired to no hook.
+"""
+            _fixture(tmp, _HOOK_OK, _LOCAL_ONLY_MF)
+            rc, out = _capture(lambda: run(strict=False, include_local_only=True))
+            expect("an unmet precondition on a `local_only:` entry is NOT "
+                   "VERIFIED, not FAILED",
+                   rc == 0 and "NOT VERIFIED" in out and "FAILED" not in out,
+                   out.strip())
+            expect("the summary counts a skipped `local_only:` entry as unrun",
+                   "gate-parity: 1 verified, 1 NOT VERIFIED" in out, out.strip())
+            rc, out = _capture(lambda: run(strict=True, include_local_only=True))
+            expect("--strict escalates a `local_only:` precondition too",
+                   rc == 2, out.strip())
+
+            _fixture(tmp, _HOOK_OK, _LOCAL_ONLY_MF.replace("requires: nope", "requires: nosuch"))
+            rc, out = _capture(check)
+            expect("a `local_only:` `requires:` naming no declared "
+                   "precondition is rejected",
+                   rc == 1 and "not in `preconditions:`" in out, out.strip())
+
+            _fixture(tmp, _HOOK_OK, _LOCAL_ONLY_MF.replace("    reason: wired to no hook.\n", ""))
+            rc, out = _capture(check)
+            expect("a `local_only:` entry without a `reason:` is rejected",
+                   rc == 1 and "needs a `reason:`" in out, out.strip())
 
             # 7. A failing wholesale command is a failure, full stop.
             _fixture(tmp, _HOOK_OK, _MF_OK.replace("    wholesale: 'true'", "    wholesale: 'exit 3'"))

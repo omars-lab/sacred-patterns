@@ -44,6 +44,14 @@ preconditions:
       yq and jq are not both installed (`brew install yq jq`). The decision
       gates read structured frontmatter through them and cannot run without
       them — and with no CI in this repo, nothing else will run them later.
+  node-modules:
+    probe: test -x node_modules/.bin/eslint
+    hint: >-
+      node_modules is not installed (`npm ci`). Every npm-run gate here needs
+      it, and without it they exit 127 "command not found" — which the runner
+      would otherwise report as FAILED, i.e. as a fact about the branch. It is
+      a fact about the checkout. Probes for eslint specifically rather than for
+      the directory, because a half-finished install leaves the directory there.
   gitleaks:
     probe: command -v gitleaks
     hint: >-
@@ -60,6 +68,7 @@ gates:
   # ----------------------------------------------------------- pre-commit
   - id: 'pre-commit::typecheck-lint'
     wholesale: npm run lint && npm run typecheck
+    requires: node-modules
     # The hook runs these only when a staged path matches `^src/ts/.*\.ts$`.
     # `npm run lint` is already `eslint src/ts` — tree-wide — so the wholesale
     # form differs from the hook only in WHEN it runs, which is the whole gap:
@@ -109,8 +118,15 @@ gates:
 # nothing, and therefore run only when a person remembers it. Listing them here
 # is what makes `make local.ci` a superset of the hooks rather than a mirror of
 # them — and what makes the shortfall legible instead of assumed.
+#
+# These take `requires:` on the same terms as the gates above, and it took until
+# 2026-08-18 to notice they did not. An entry with an unmet precondition is NOT
+# VERIFIED, never FAILED: FAILED is a claim about the branch, and "eslint is not
+# installed in this checkout" is not one. The first fresh-worktree run of this
+# file printed two reds that meant exactly that.
 local_only:
   - command: npm run build && npm test
+    requires: node-modules
     reason: >-
       test:hooks (worktree-wiring.sh, the sacred-patterns#39 regression) plus
       test/regression/check.js. No hook runs either; the wiring test in
