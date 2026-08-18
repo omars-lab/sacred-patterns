@@ -1,0 +1,139 @@
+---
+# What every git-hook gate looks like when run over the whole tree.
+#
+# WHY THIS FILE EXISTS. This repo has no CI. There is no `.github/workflows`
+# directory and nothing runs on a push or a pull request — every enforced check
+# lives in `.husky/pre-commit` or `.husky/pre-push`. That makes the sibling
+# repos' question ("can I run what CI runs?") the wrong one here, and a sharper
+# one takes its place: **what runs these gates over the whole tree, ever?**
+#
+# Nothing did. A hook differs from CI in two ways, and both are silent:
+#
+#   1. Scope. `eslint src/ts/` fires only when a staged path matches
+#      `^src/ts/.*\.ts$`. A commit touching only `tools/` never runs it, and
+#      the debt sits in files no commit happens to be touching.
+#   2. `--no-verify`. One flag skips every gate in this repo, and there is no
+#      second line of defence behind it. sacred-patterns#39 is the reminder
+#      that this is not theoretical: `core.hooksPath` pointed at husky's
+#      generated `.husky/_`, which `npm install` creates and git never tracks,
+#      so in a fresh worktree a file failing eslint committed at exit 0 with no
+#      hook output at all.
+#
+# WHY A MANIFEST AND NOT A MAKE TARGET. A hand-maintained "run all the gates"
+# chain drifts the first time somebody adds a hook block, and reports success
+# the whole time it is wrong. So the mapping is data, `scripts/gate_parity.py
+# --check` proves it covers every `# gate:` block in the dispatched hooks, and
+# `--run` executes them. A new gate with no entry is a hard failure, and so is
+# an entry naming a gate that no longer exists. The check runs in both
+# directions on purpose.
+#
+# ENTRY KINDS — exactly one per gate:
+#   wholesale: the same check, run over the tree instead of the staged subset.
+#   requires:  a precondition id (see `preconditions:`) the command needs. When
+#              unmet the gate is reported NOT VERIFIED, never silently skipped.
+#   skip:      a category from `skip_categories:`. Needs a `reason:`.
+#
+# Gate ids are `<hook file>::<gate name>`, and the name is declared in the hook
+# itself as a `# gate: <name>` line above the block. Renaming a gate renames its
+# id, which fails `--check` until this file is updated — that is the point.
+
+preconditions:
+  yq-jq:
+    probe: command -v yq >/dev/null 2>&1 && command -v jq >/dev/null 2>&1
+    hint: >-
+      yq and jq are not both installed (`brew install yq jq`). The decision
+      gates read structured frontmatter through them and cannot run without
+      them — and with no CI in this repo, nothing else will run them later.
+  gitleaks:
+    probe: command -v gitleaks
+    hint: >-
+      gitleaks is not installed (`brew install gitleaks`). History is unscanned
+      and there is no CI backstop; a pushed credential is compromised whether or
+      not the commit is later removed.
+
+skip_categories:
+  no-wholesale-form: >-
+    The staged-subset form IS the whole check — there is no larger tree-wide
+    version of it to run. Skipping here means "already covered", not "not run".
+
+gates:
+  # ----------------------------------------------------------- pre-commit
+  - id: 'pre-commit::typecheck-lint'
+    wholesale: npm run lint && npm run typecheck
+    # The hook runs these only when a staged path matches `^src/ts/.*\.ts$`.
+    # `npm run lint` is already `eslint src/ts` — tree-wide — so the wholesale
+    # form differs from the hook only in WHEN it runs, which is the whole gap:
+    # a branch that never stages a src/ts file never lints at all.
+
+  - id: 'pre-commit::decision-coherence'
+    wholesale: npm run check:decisions
+    requires: yq-jq
+    # check-decision-coherence.sh + gen-decision-ledger.sh --check +
+    # gen-decision-ledger-xrepo.sh --check. The hook runs the same three, gated
+    # on `docs/decisions/` being staged. LEDGER-XREPO.md joins all three repos'
+    # frontmatter, so it goes stale from edits made in bikar and qiyas — commits
+    # this repo's hook never sees.
+
+  - id: 'pre-commit::xrepo-generator-test'
+    wholesale: npm run test:scripts
+    requires: yq-jq
+    # gen-decision-ledger-xrepo.test.sh. The hook runs it when the generator
+    # itself is staged; the wholesale form runs it always, because the generator
+    # reads sibling repos and can break without anything here changing.
+
+  - id: 'pre-commit::gate-parity'
+    wholesale: python3 scripts/gate_parity.py --check
+    # Self-referential on purpose, and it earned the entry: the moment the block
+    # was added to the hook, `--check` reported it UNCOVERED. An unmapped
+    # parity gate is the one hole the mapping could never see.
+
+  - id: 'pre-commit::gitleaks-staged'
+    skip: no-wholesale-form
+    reason: >-
+      Scans the staged hunks. Its tree-wide form is exactly the pre-push gate
+      below (`gitleaks git .` over full history), which is mapped — running both
+      would scan the same content twice and report one finding as two.
+
+  # ------------------------------------------------------------- pre-push
+  - id: 'pre-push::gitleaks-history'
+    wholesale: gitleaks git . --no-banner --redact
+    requires: gitleaks
+    # Matches the hook's own invocation. Note `make gitleaks` still says
+    # `gitleaks detect`, the pre-8.19 spelling of a different subcommand — the
+    # target and the hook had already drifted apart before this file existed.
+
+# Checks that exist in this repo and NO hook runs at all.
+#
+# This half is the direction that is easy to miss. The gates above are at least
+# wired to something; each command below is a check somebody wrote, wired to
+# nothing, and therefore run only when a person remembers it. Listing them here
+# is what makes `make local.ci` a superset of the hooks rather than a mirror of
+# them — and what makes the shortfall legible instead of assumed.
+local_only:
+  - command: npm run build && npm test
+    reason: >-
+      test:hooks (worktree-wiring.sh, the sacred-patterns#39 regression) plus
+      test/regression/check.js. No hook runs either; the wiring test in
+      particular asserts that git dispatches these very hooks, so a hook could
+      not be trusted to run it. `npm run build` is prepended because
+      test/regression/check.js reads site/bundle.js and exits 1 without it —
+      an ordering nothing stated, because nothing ran the pair.
+  - command: make tool-tests
+    reason: >-
+      stdlib unittest over tools/tests. Wired to nothing, and red: the first run
+      through this manifest (2026-08-17) reported 3 of 63 failing against
+      tools/wave-plan-server.py on committed master.
+  - command: make spelling
+    reason: >-
+      codespell over src, tools, .claude, docs. Its target comment says
+      "triaged to 0 at baseline (sacred-patterns#349)"; the first run through
+      this manifest found 11 — ten in tools/wave-plan-server.py, one in
+      tools/tests/. All in tools/, which no hook trigger reaches.
+  - command: make semgrep
+    reason: >-
+      SAST over src + tools (sacred-patterns#347). Its target comment says
+      "0 findings at baseline"; the first run through this manifest found one —
+      a dynamic urllib.request.urlopen in tools/weave-only-compare.py. In
+      tools/ again.
+  - command: make audit
+    reason: 'npm audit, report-only (sacred-patterns#346).'
