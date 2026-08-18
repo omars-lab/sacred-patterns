@@ -96,5 +96,57 @@ class StudioUrlSchemeGuard(unittest.TestCase):
                       "the nosemgrep rationale must name this test file")
 
 
+SERVER = Path(__file__).resolve().parents[1] / "wave-plan-server.py"
+
+
+class ReferenceSquareFetchIsLoopback(unittest.TestCase):
+    """The second `# nosemgrep` in this repo, on the same semgrep rule.
+
+    wave-plan-server.py fetches its own `/reference-square.png` so the raster
+    compare sees the proven endpoint's output rather than a second rendering
+    path. semgrep flags it for the same reason it flagged weave-only-compare —
+    a variable appears in the URL — but here the variable is a port number the
+    process read off its own listening socket, and the scheme and host are
+    literal. No int can make `file://`.
+
+    That reasoning is only worth anything while it stays true of the code, and
+    semgrep stops looking the moment the directive is there. These are what
+    re-check it.
+    """
+
+    def setUp(self) -> None:
+        self.src = SERVER.read_text()
+
+    def test_scheme_and_host_are_literal(self) -> None:
+        """The whole argument is that only the port is dynamic. If the literal
+        prefix is ever replaced by a variable — a configurable host, a scheme
+        read from a header — the suppression is asserting something false."""
+        self.assertIn('f"http://127.0.0.1:{port}/reference-square.png"', self.src,
+                      "the reference-square URL must keep its literal http://127.0.0.1 "
+                      "prefix; if it became configurable, the nosemgrep above it is "
+                      "suppressing a real finding")
+
+    def test_the_port_comes_from_our_own_socket(self) -> None:
+        """`server_address` is the bound socket, not user input. A port taken
+        from a query parameter or an env var would be a different claim."""
+        self.assertIn("port = self.server.server_address[1]", self.src,
+                      "the port must come from this process's own listening socket")
+
+    def test_no_other_urlopen_hides_behind_this_suppression(self) -> None:
+        """A `# nosemgrep` covers the line below it, so a second urlopen added
+        underneath would inherit a rationale written for a different call.
+        One urlopen in this file, and it is the one the comment describes."""
+        self.assertEqual(self.src.count("_urlreq.urlopen("), 1,
+                         "a second urlopen appeared in wave-plan-server.py — the "
+                         "nosemgrep rationale covers exactly one loopback fetch")
+
+    def test_the_suppression_names_this_file(self) -> None:
+        self.assertIn(
+            "nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected",
+            self.src)
+        self.assertIn(Path(__file__).name, self.src,
+                      "the nosemgrep rationale must name this test file")
+
+
 if __name__ == "__main__":
     unittest.main()

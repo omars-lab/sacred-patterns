@@ -1164,7 +1164,7 @@ WEAVE_PROGRESS_HTML = """<!DOCTYPE html>
    el.classList.add('sel'); color = el.dataset.c; render();
  }));
  // Flip both panels to the SHAPES view (owner: "where weaves become black and
- // shapes show", and the correction: "show shapes just inverted, it didnt
+ // shapes show", and the correction: "show shapes just inverted, it did not
  // actually show shapes from original waves"). A CSS invert only photo-negates
  // the weave mask — it does NOT reveal the coloured tiles. So flipping SWAPS the
  // image SOURCE on each side:
@@ -2017,7 +2017,7 @@ def main() -> None:
         # cells: fill the woven CELLS with the reference's value structure.
         #
         # VALUE MOOD (render-gated 2026-06-22 against the photo's centre crop, owner
-        # complaint "the central black isnt the same shape / it's cyan not navy"):
+        # complaint "the central black is not the same shape / it's cyan not navy"):
         # the reference's DEAD-CENTRE rosette is the DARKEST navy (#0F2765 sampled
         # from the photo at 386,361), NOT a bright accent. Bright teal appears only
         # as OUTER-ring rosette-centre accents, never at the focal centre. The prior
@@ -2189,7 +2189,7 @@ def main() -> None:
 
     def _apply_zoom(svg: str, factor: float) -> str:
         # WHY: the reference packs MORE rosettes than our shells-1 field but at the
-        # SAME bold per-rosette size — owner 2026-06-22 "wave 1 still doesnt match …
+        # SAME bold per-rosette size — owner 2026-06-22 "wave 1 still does not match …
         # is it focused on weaves around the central star?" Our shells-1 field has a
         # large central rosette + a sparse first ring, so a small reveal disc catches
         # only the central star; the reference's wave-1 clip already shows central-void
@@ -3986,7 +3986,7 @@ def main() -> None:
                 # WHY a ?mode=shapes twin: the flip toggle ("show shapes") must
                 # reveal the actual COLOURED TILES from the original waves, not a
                 # photo-negative of the strap mask (owner 2026-06-21: "show shapes
-                # just inverted, it didnt actually show shapes from original waves").
+                # just inverted, it did not actually show shapes from original waves").
                 # So mode=shapes keeps the tile pixels in their TRUE colour where
                 # is_shape & silhouette, and blacks out the straps — the exact
                 # complement of the default weave-only view, cropped identically
@@ -4766,6 +4766,25 @@ def main() -> None:
                         # wave on both sides (the page does this with a CSS circle
                         # clip; here we zero pixels outside r = frac * half-side).
                         port = self.server.server_address[1]
+                        # semgrep dynamic-urllib-use flags this because *something* in
+                        # the URL is a variable. What it cannot see is which part: the
+                        # scheme and host are literal `http://127.0.0.1:`, and the only
+                        # interpolation is a port number this process read off its own
+                        # listening socket. The rule's stated harm is `file://` reaching
+                        # urlopen; no value of an int can produce that. This is the
+                        # server calling its own already-proven endpoint.
+                        #
+                        # The suppression is pinned by test_reference_square_fetch_is_loopback
+                        # in tools/tests/test_studio_url_scheme_guard.py, which goes red if
+                        # the literal prefix stops being literal or the port stops coming
+                        # from server_address — because a suppression that outlives its
+                        # guard is a fallback weaker than the gate it replaced.
+                        #
+                        # Two syntax facts, both measured 2026-08-18: the directive must be
+                        # the LAST line above the finding, and the rule id must be the
+                        # fully-qualified doubled form semgrep prints — the short id
+                        # silently does not match.
+                        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
                         with _urlreq.urlopen(
                             f"http://127.0.0.1:{port}/reference-square.png", timeout=30
                         ) as resp:

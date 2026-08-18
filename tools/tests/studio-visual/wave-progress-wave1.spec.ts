@@ -1,6 +1,6 @@
 /**
  * Wave-1 of the weave-progress page must show a STAR, not a donut — driven
- * through a REAL browser (owner 2026-06-21: "[Image #5] wave 1 stiull doesnt
+ * through a REAL browser (owner 2026-06-21: "[Image #5] wave 1 stiull does not
  * match" — the reference's wave 1 is a clean 10-point star, but ours was a tiny
  * hollow ring/donut).
  *
