@@ -68,6 +68,13 @@ BIKAR_CLI_JS = os.environ.get(
     "BIKAR_CLI_JS",
     "/Users/omareid/Workspace/git/bikar/packages/cli/dist/index.js",
 )
+# The qiyas venv python, used ONLY to run `qiyas pixel-diff` for the Phase-0
+# numeric verdict (the fixed ruler — "match" becomes a NUMBER, not an eyeball).
+# The qiyas DETECTOR stays frozen; pixel-diff is a pure raster-compare utility,
+# not a detector tune. Override with QIYAS_PY if your checkout lives elsewhere.
+QIYAS_PY = os.environ.get(
+    "QIYAS_PY", "/Users/omareid/Workspace/git/qiyas/.venv/bin/python"
+)
 
 # Mirrors the design tokens in plan-waves.py's studio CSS — one design system
 # across every page the owner touches (hub, plan, palette).
@@ -926,12 +933,19 @@ WEAVE_PROGRESS_HTML = """<!DOCTYPE html>
               border: 1px solid var(--line); min-height: 240px; }
  /* dark card so the WHITE woven ribbons read against it — the reference is
     white-on-dark, and white straps on a white card would be invisible. */
- .stage .oursvg { width: 100%; display: block; border-radius: 10px; background: #1a1d21;
+ /* PURE BLACK, matching the ref panel's background:#000 (line ~969). The ref
+    photo is white-straps-on-black; ours must sit on the SAME black or the eye
+    reads a navy-vs-black panel mismatch even when the renders agree (owner
+    2026-06-22 "navy between straps, ref is black" — part of it was the #1a1d21
+    panel tint, not just the strap casing). */
+ .stage .oursvg { width: 100%; display: block; border-radius: 10px; background: #000;
               border: 1px solid var(--line); min-height: 240px; overflow: hidden; }
  .stage .oursvg svg { width: 100%; height: auto; display: block; }
  .stage .oursvg.loading { opacity: .55; transition: opacity .2s ease; }
  .stage figcaption { font-size: 14px; color: var(--muted); margin: 6px 2px; font-weight: 600; }
- .ringrow { margin-top: 22px; display: grid; grid-template-columns: auto 1fr auto; gap: 14px;
+ /* Flip button "on" state (showing the shapes view, not the weave view). */
+ #flip.on { background: #2a2f3a; border-color: #2a2f3a; }
+ .ringrow { margin-top: 22px; display: grid; grid-template-columns: auto auto 1fr auto; gap: 14px;
             align-items: center; }
  .ringrow .play { font: inherit; font-size: 16px; font-weight: 700; color: #fff; height: 46px;
             padding: 0 22px; border-radius: 999px; border: 1px solid var(--agree);
@@ -953,26 +967,28 @@ WEAVE_PROGRESS_HTML = """<!DOCTYPE html>
  .spin { display: block; font-size: 13px; color: var(--muted); margin-top: 10px; }
 </style></head><body>
 <header>
- <h1>Watch the weave grow, ring by ring</h1>
- <p class="muted">The white ribbons start as one star in the middle, then a new ring
-  of weaving appears each step until the whole disc is filled &mdash; the same way
-  your photo is built. Drag <b>How many rings</b> or press <b>Play</b> to grow it out
-  from the centre, and match it against your photo on the left.
+ <h1>Watch the weave grow, wave by wave</h1>
+ <p class="muted">The white ribbons start as one star in the middle, then the disc fills
+  outward one wave at a time until the whole flower is woven &mdash; the same way
+  your photo is built. Drag <b>Which wave</b> or press <b>Play</b> to grow it out
+  from the centre. <b>Your photo on the left grows with it</b>, so each wave is matched
+  against the same ring of your picture.
   <a href="/">Back to your review list</a></p>
 </header>
 <main>
  <div class="gate">
   <div class="stage">
-   <figure><img src="/reference.jpg" alt="your photo"><figcaption>your photo</figcaption></figure>
-   <figure><div id="ours" class="oursvg"></div><figcaption id="ringcap">ours</figcaption><span id="spin" class="spin"></span></figure>
+   <figure><div id="refwrap" class="oursvg" style="background:#FFFFFF;aspect-ratio:1/1"><img id="refimg" src="/reference-square.png?mode=shapes" alt="your photo" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:0"></div><figcaption>your photo</figcaption></figure>
+   <figure><div id="ours" class="oursvg" style="background:#FFFFFF"></div><figcaption id="ringcap">ours</figcaption><span id="spin" class="spin"></span></figure>
   </div>
  </div>
 
  <div class="gate">
   <div class="ringrow">
    <button id="play" class="play">&#9654; Play</button>
-   <input type="range" id="shells" min="0" max="3" step="1" value="0">
-   <span class="ringlbl" id="ringV">just the middle</span>
+   <button id="flip" class="play" title="Flip both sides: weaves go black, the shapes/cells show">&#8646; Show shapes</button>
+   <input type="range" id="wave" min="1" max="22" step="1" value="22">
+   <span class="ringlbl" id="ringV">wave 22 of 22 &mdash; full disc</span>
   </div>
  </div>
 
@@ -988,7 +1004,7 @@ WEAVE_PROGRESS_HTML = """<!DOCTYPE html>
     <label>How thick the ribbons are
      <span class="hint">&mdash; bigger = wider white bands</span>
      <span class="val" id="widthV"></span></label>
-    <input type="range" id="width" min="2" max="9" step="0.5" value="5">
+    <input type="range" id="width" min="2" max="9" step="0.5" value="4">
    </div>
    <div class="dial">
     <label>Ribbon colour
@@ -1003,12 +1019,12 @@ WEAVE_PROGRESS_HTML = """<!DOCTYPE html>
    <div class="dial">
     <label>Paint the shapes
      <span class="hint">&mdash; fill the woven cells with the photo's blues</span></label>
-    <label class="toggle"><input type="checkbox" id="cells"> colour the cells</label>
+    <label class="toggle"><input type="checkbox" id="cells" checked> colour the cells</label>
    </div>
    <div class="dial">
     <label>Flower edge
      <span class="hint">&mdash; trim the round disc to the photo's 10-petal flower outline</span></label>
-    <label class="toggle"><input type="checkbox" id="clip"> scalloped edge</label>
+    <label class="toggle"><input type="checkbox" id="clip" checked> scalloped edge</label>
    </div>
   </div>
  </div>
@@ -1017,34 +1033,121 @@ WEAVE_PROGRESS_HTML = """<!DOCTYPE html>
  const ours = document.getElementById('ours');
  const spin = document.getElementById('spin');
  const ringcap = document.getElementById('ringcap');
- const sh = document.getElementById('shells');
+ const wave = document.getElementById('wave');
  const ringV = document.getElementById('ringV');
+ const refimg = document.getElementById('refimg');
  const ctl = { star: document.getElementById('star'), width: document.getElementById('width') };
  const lbl = { star: document.getElementById('starV'), width: document.getElementById('widthV') };
  const cellsBox = document.getElementById('cells');
  const clipBox = document.getElementById('clip');
  let color = '#FFFFFF';
- const RING_WORDS = ['just the middle', 'middle + 1 ring', 'middle + 2 rings', 'the full disc'];
+ // The 22 waves are the reference's RADIAL decomposition: the full converged
+ // girih field (shells 1) revealed out from the centre to a growing radius,
+ // wave/22 of the disc at a time. This is the cumulative one-frame-per-wave —
+ // each step exposes the next concentric ring of the SAME woven field.
+ const WAVES = 22;
+ // Fixed-world-scale field: SHELLS=1 is the converged scale — ~10 BOLD, well-
+ // separated rosettes (the reference's open lattice), sharp {10}-stars with blue
+ // {8}-centers, colour-as-figure / thin-white-straps-as-frame. The shells-2+zoom
+ // path (2026-06-22 morning) was an OVER-CORRECTION: it chased a wave-1 "neighbour-
+ // hood" that the reference does NOT have. Decisive witness — apply the wave-1
+ // reveal fraction (0.34) to the REFERENCE image (/tmp/ref_w1_reveal.png): the
+ // reference's own wave-1 is a SINGLE central rosette, exactly what shells-1 gives.
+ // shells 2 packed ~19 small rosettes into the disc → an unlegible doily of round
+ // nubs (owner "still material differences ... ref = bold sparse stars, ours = fine
+ // doily"). Render-gated /tmp/ref_vs_s1.png (REF | shells-1 full disc, strong match)
+ // + /tmp/sw_s1_z10.png. See medallion10_field_scale_count_coupling.
+ const SHELLS = 1;
+ // ZOOM 1.0 = no crop. shells 1 already renders the rosettes at the bold per-rosette
+ // size the reference shows; cropping (zoom>1) just magnifies the central rosette
+ // and hides the ring — the wrong lever. The auto-fit count↔size coupling is moot
+ // at shells 1 because the count IS the reference's count.
+ const ZOOM = 1.0;          // no crop — shells-1 rosettes are already bold + sparse
  const STAR_WORDS = { 2: 'blunt', 3: 'medium', 4: 'sharp' };
  function syncLabels() {
-   const s = +sh.value;
-   ringV.textContent = RING_WORDS[s] || (s + ' rings');
+   const w = +wave.value;
+   ringV.textContent = (w >= WAVES) ? ('wave ' + WAVES + ' of ' + WAVES + ' \\u2014 full disc')
+                                    : ('wave ' + w + ' of ' + WAVES);
    lbl.star.textContent = STAR_WORDS[+ctl.star.value] || (+ctl.star.value);
    lbl.width.textContent = (+ctl.width.value).toFixed(1);
+ }
+ // Both sides reveal the SAME fraction of THEIR pattern, wave by wave — so the
+ // photo on the left and ours on the right always show the same concentric ring
+ // (owner: "the reference should be focused on the wave when comparing", and "we
+ // don't seem to be properly centred on your photo"). Two different scales reconcile:
+ //   • the photo (square-cropped on the pattern centre) fills the square, so its
+ //     pattern radius == the square half-side → clip `circle(pf*50% at 50% 50%)`.
+ //   • our field auto-fits with a margin: pattern radius ≈ FIELD_FILL of the
+ //     viewBox half-span → field reveal = pf * FIELD_FILL.
+ // pf ∈ [0, 1] is the shared "fraction of the wave progression" (0 at wave 1,
+ // 1 at wave 22). BOTH sides map pf onto the SAME reveal fraction via ONE shared
+ // floor (Phase 0, 2026-06-23) — this is the FIXED RULER. The two fields are
+ // rendered at the same world-scale: our field auto-fits so its content radius
+ // (~139) nearly fills the viewBox half-span (~146, content = 95%), and the
+ // reference square is centroid-cropped so its pattern fills the square. So a
+ // single `sharedFrac(pf)` reveals the SAME fraction of each field's inscribed
+ // content disc on both panels — same on-screen size at every wave. This is the
+ // honest compare: it makes "match" a NUMBER (qiyas pixel-diff), not an eyeball.
+ //
+ // WHY this REPLACES the decoupled OURS_FLOOR=0.34 / REF_FLOOR=0.19 (the prior
+ // asymmetry): the decoupling was tuned by eye to land the same MOTIF on both
+ // panels at wave 1, at the cost of showing them at DIFFERENT on-screen sizes
+ // (owner 2026-06-23 "not same size"). But a render-gated apples-to-apples
+ // measurement of the two weave-only strap-ink radial-density profiles
+ // (/tmp/p0_ours_weave.png vs /tmp/p0_ref_square.png, area-normalized) showed the
+ // motif difference is STRUCTURAL, not a crop artifact: at normalized radius 0.3
+ // ours is 2.1× sparser (a void between central rosette and first ring) and at
+ // 0.9-1.0 ours falls off while the reference packs to the rim. A tuned floor was
+ // HIDING that real skeleton signal. Phase 0 collapses to one shared floor so the
+ // signal surfaces honestly; Phase 1 (falsifiable structural gate) adjudicates it.
+ // Both floors still grow to 1.0 at wave 22 (full disc) — end frames identical.
+ const SHARED_FLOOR = 0.25;    // wave 1 = central rosette band on BOTH at the same scale
+ // pf: shared 0..1 progression position (independent of either field's scale).
+ function waveToProgress(w) {
+   return Math.min(1, Math.max(0, (w - 1) / (WAVES - 1)));   // 0 at wave 1, 1 at 22
+ }
+ function sharedFrac(pf) {
+   // ONE reveal fraction for BOTH panels: SHARED_FLOOR at wave 1 → 1 at wave 22.
+   // The fixed ruler — same fraction of each field's inscribed content disc.
+   return SHARED_FLOOR + pf * (1 - SHARED_FLOOR);
+ }
+ function oursFrac(pf) { return sharedFrac(pf); }   // both route through sharedFrac
+ function refFrac(pf)  { return sharedFrac(pf); }
+ function syncRef(pf) {
+   // ref disc = sharedFrac, mapped to a CSS circle clip (pct = frac*50, so
+   // frac=1 → 50% → the square's inscribed circle = the whole disc).
+   const pct = (sharedFrac(pf) * 50).toFixed(2);
+   refimg.style.clipPath = 'circle(' + pct + '% at 50% 50%)';
  }
  let timer = null;
  async function render() {
    syncLabels();
-   const shells = +sh.value;
+   const w = +wave.value;
+   const pf = waveToProgress(w);     // shared 0..1 progression position
+   // Ours uses the SAME disc fraction as the ref, so both visible discs are the
+   // same size at every wave. The reveal clip and the ref CSS clip both map their
+   // fraction onto the square's inscribed circle, so frac→frac makes them match
+   // (the old `* FIELD_FILL` shrank ours, the cause of the size mismatch).
+   const reveal = oursFrac(pf);
+   syncRef(pf);
+   // Owner 2026-06-22 ("why are we still seeing blue? weaves are still not the
+   // same"): in the WEAVE view both panels must be weave-only — the ref panel is
+   // white-straps-on-black (fills stripped), so ours must be too, or the blue
+   // girih field drowns the straps and the two panels aren't comparable. Cells
+   // belong ONLY to the flipped SHAPES view. So: flipped → cells forced on (tiles
+   // show, matching ref shapes-on-black); not flipped → cells forced OFF (straps
+   // only), regardless of the checkbox. The checkbox now only matters in the
+   // shapes view; in the weave view it's pinned off.
+   const showCells = flipped;
    const params = { star: +ctl.star.value, width: +ctl.width.value, color,
-                    cells: cellsBox.checked, clip: clipBox.checked };
+                    cells: showCells, clip: clipBox.checked, reveal, zoom: ZOOM };
    ours.classList.add('loading');
    spin.textContent = 'building\\u2026';
-   ringcap.textContent = 'ours \\u2014 ' + (RING_WORDS[shells] || (shells + ' rings'));
+   ringcap.textContent = 'ours \\u2014 ' + ((w >= WAVES) ? 'full disc' : ('wave ' + w + ' of ' + WAVES));
    try {
      const r = await fetch('/api/preview-progress-svg', {
        method: 'POST', headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({ params, shells }) });
+       body: JSON.stringify({ params, shells: SHELLS }) });
      if (!r.ok) { spin.textContent = 'could not build the picture \\u2014 try again'; return; }
      ours.innerHTML = await r.text();
      spin.textContent = '';
@@ -1052,7 +1155,7 @@ WEAVE_PROGRESS_HTML = """<!DOCTYPE html>
    finally { ours.classList.remove('loading'); }
  }
  function debounced() { clearTimeout(timer); timer = setTimeout(render, 250); }
- sh.addEventListener('input', () => { syncLabels(); debounced(); });
+ wave.addEventListener('input', () => { syncLabels(); debounced(); });
  for (const k in ctl) ctl[k].addEventListener('input', () => { syncLabels(); debounced(); });
  cellsBox.addEventListener('change', render);
  clipBox.addEventListener('change', render);
@@ -1060,26 +1163,78 @@ WEAVE_PROGRESS_HTML = """<!DOCTYPE html>
    document.querySelectorAll('#swatches .swatch').forEach(s => s.classList.remove('sel'));
    el.classList.add('sel'); color = el.dataset.c; render();
  }));
- // Play: step out from the middle, one ring at a time, pausing so each new ring of
- // weaving registers before the next appears (the wave-by-wave grow).
+ // Flip both panels to the SHAPES view (owner: "where weaves become black and
+ // shapes show", and the correction: "show shapes just inverted, it didnt
+ // actually show shapes from original waves"). A CSS invert only photo-negates
+ // the weave mask — it does NOT reveal the coloured tiles. So flipping SWAPS the
+ // image SOURCE on each side:
+ //   • your photo → /reference-square.png?mode=shapes (the coloured tiles on
+ //     black, straps blacked out — the complement of the weave-only view).
+ //   • ours → re-render with cells on (the coloured faces show, straps recessed).
+ // `flipped` is read inside render(), so wave-stepping while flipped keeps the
+ // shapes view at every wave.
+ const flipBtn = document.getElementById('flip');
+ // Default to the COLOURED-SHAPES DELIVERABLE view (owner 2026-06-25: "our
+ // iteration process is broken … make the page open ON the deliverable"). When
+ // the owner opens this page to judge progress, the FIRST thing they must see is
+ // the finished converged candidate — full disc, coloured cells, scalloped edge,
+ // white backdrop — NOT a degenerate wave-1 weave-only crop ("your photo" = a
+ // blank disc, "ours" = a lone central rosette), which is the crop-trick the
+ // phased plan diagnosed as the root failure. The weave-only strap-compare view
+ // (white-straps-on-black, both panels) is still ONE flip away (the "Show weaves"
+ // toggle, or `?flip=0`/weave). This SUPERSEDES the 2026-06-22 weave-only default:
+ // the weave-only compare is a DEBUG aid for closing the strap gap, not the
+ // surface the owner should land on. The default surface is the deliverable.
+ let flipped = true;
+ // The two panels' backdrop is white-or-black depending on the view (owner
+ // 2026-06-25 "make the page open ON the deliverable"). In the SHAPES view the
+ // reference is coloured-tiles-on-WHITE (the photo's own page is white), so ours
+ // must sit on white too — a colour disc floating on black is NOT the deliverable
+ // and reads as a panel mismatch. In the WEAVE-ONLY view the reference is white-
+ // straps-on-BLACK, so both panels go black or the white straps vanish. So the
+ // backdrop tracks `flipped`: shapes → #FFFFFF, weave → #000. This mirrors the
+ // /weave-progress.png route's card default (cells=1 → #FFFFFF, cells=0 → dark).
+ const refwrap = document.getElementById('refwrap');
+ function applyPanelBg() {
+   const bg = flipped ? '#FFFFFF' : '#000';
+   ours.style.background = bg;
+   refwrap.style.background = bg;
+ }
+ function applyRefSrc() {
+   refimg.src = flipped ? '/reference-square.png?mode=shapes'
+                        : '/reference-square.png';
+   applyPanelBg();
+ }
+ // Reflect the flip state onto the button label/class (it starts in shapes view).
+ function syncFlipBtn() {
+   flipBtn.classList.toggle('on', flipped);
+   flipBtn.innerHTML = flipped ? '\\u21C6 Show weaves' : '\\u21C6 Show shapes';
+ }
+ flipBtn.addEventListener('click', () => {
+   flipped = !flipped;
+   syncFlipBtn();
+   applyRefSrc();
+   render();   // re-render ours with cells toggled to match the flip state
+ });
+ // Play: step out from the centre wave-by-wave (1 … 22), pausing so each new ring
+ // of weaving registers before the next appears (the cumulative wave-by-wave grow).
  let playing = false;
  document.getElementById('play').addEventListener('click', async () => {
    if (playing) return; playing = true;
-   const max = +sh.max;
-   for (let s = 0; s <= max; s++) {
-     sh.value = s; syncLabels();
+   for (let w = 1; w <= WAVES; w++) {
+     wave.value = w; syncLabels();
      await render();
-     await new Promise(r => setTimeout(r, 650));
+     await new Promise(r => setTimeout(r, 420));
    }
    playing = false;
  });
- // All-dial shareable link: ?shells=&star=&width=&color= pre-sets every control,
- // so `open`ing a full-param URL lands the owner on the exact frame (mirrors the
+ // All-dial shareable link: ?wave=&star=&width=&color= pre-sets every control,
+ // so `open`ing a full-param URL lands the owner on the exact wave (mirrors the
  // weave studio's loadFromURL; the URL IS the state — bookmarkable, reproducible).
  (function loadFromURL() {
    const q = new URLSearchParams(location.search);
    const setRange = (el, key) => { const v = q.get(key); if (v !== null && !isNaN(+v)) el.value = v; };
-   setRange(sh, 'shells'); setRange(ctl.star, 'star'); setRange(ctl.width, 'width');
+   setRange(wave, 'wave'); setRange(ctl.star, 'star'); setRange(ctl.width, 'width');
    const c = q.get('color');
    if (c) {
      const hit = [...document.querySelectorAll('#swatches .swatch')].find(s => s.dataset.c.toLowerCase() === c.toLowerCase());
@@ -1090,7 +1245,17 @@ WEAVE_PROGRESS_HTML = """<!DOCTYPE html>
    const truthy = v => v !== null && !['0','false','off',''].includes(v.toLowerCase());
    if (q.has('cells')) cellsBox.checked = truthy(q.get('cells'));
    if (q.has('clip')) clipBox.checked = truthy(q.get('clip'));
+   // Default is the COLOURED-SHAPES DELIVERABLE view (flipped=true, owner
+   // 2026-06-25 "open ON the deliverable"). `?flip=0`/weave/false opts INTO the
+   // weave-only strap-compare DEBUG view; `?flip=1`/shapes/colour keeps the
+   // deliverable default explicit. (all-dial convention — every dial spellable.)
+   if (q.has('flip')) {
+     const v = q.get('flip').toLowerCase();
+     flipped = ['1','true','on','shapes','colour','color','colored','coloured'].includes(v);
+   }
  })();
+ syncFlipBtn();
+ applyRefSrc();
  render();
 </script>
 </body></html>"""
@@ -1830,11 +1995,17 @@ def main() -> None:
         #            at shells≈3 the way the reference packs ten rosettes.
         #   star   — {10/k} chord skip = star SHARPNESS. star 4 is the reference's
         #            sharp deep-valleyed species (bikar 51c43e5); 3 = blunt φ.
-        #   width  — strap band width (white ribbon thickness).
+        #   width  — strap band width (white ribbon thickness). 4, not 5: at 5 the
+        #            bands fuse at crossings into white blobs and swallow the
+        #            over/under casing gap (the navy notch where an under-band dips
+        #            below an over-band), so the weave reads as a flat lattice; at 4
+        #            the bands stay separated and the over/under notch reads, matching
+        #            the reference's woven crossings (render-gated /tmp/xf_w4_crop.png
+        #            vs /tmp/ref_xing.png, decision 2026-06-19-weave-field-method §12).
         #   color  — strap colour (white-on-dark reference → #FFFFFF default).
         edge = float(params.get("edge", 30))
         star = int(params.get("star", 4))
-        width = float(params.get("width", 5))
+        width = float(params.get("width", 4))
         color = str(params.get("color", "#FFFFFF"))
         if star < 2 or star > 4:          # kernel: decagonStarPairs throws else
             star = 4
@@ -1843,29 +2014,98 @@ def main() -> None:
         if shells < 0:
             shells = 0
         cells = bool(params.get("cells", False))
-        # cells: fill the woven CELLS with the reference's navy-dominant colour
-        # ladder (render-gated 2026-06-21, medallion10_field_scale_count_coupling).
-        # The most COMMON face is sides==4, so it carries the dominant navy; bright
-        # teal is reserved for the decagon/octagon rosette CENTRES as accents — this
-        # reproduces the reference's dark-field/bright-pop value structure. Colouring
-        # by side-count is crude (ignores radial position) but matches the value mood.
+        # cells: fill the woven CELLS with the reference's value structure.
+        #
+        # VALUE MOOD (render-gated 2026-06-22 against the photo's centre crop, owner
+        # complaint "the central black isnt the same shape / it's cyan not navy"):
+        # the reference's DEAD-CENTRE rosette is the DARKEST navy (#0F2765 sampled
+        # from the photo at 386,361), NOT a bright accent. Bright teal appears only
+        # as OUTER-ring rosette-centre accents, never at the focal centre. The prior
+        # ladder had this INVERTED (decagon/octagon centres → bright teal/sky), which
+        # is exactly the cyan-octagon centre the owner flagged.
+        #
+        # The honest fix: the LARGE central voids (decagon-10, dodecagon-12,
+        # octagon-8) carry navy — they sit at/near the centre at shells 1. Mid-size
+        # voids (pentagon-5) take periwinkle/royal (the petals); the dominant quad
+        # field stays navy; small triangles take a mid blue. Teal is held back as a
+        # sparing accent on the rare large face only when it is NOT the centre — but
+        # side-count can't tell centre-decagon from outer-decagon (the known radial-
+        # vs-side-count gap, medallion10_ring_attr_too_granular_for_radial_color), so
+        # for now the value mood (dark centre, no cyan focal) wins over per-rosette
+        # accent placement. Radial/per-rosette colouring is the deeper fix (#6).
         cell_block = ""
         if cells:
+            # RADIAL + per-role colouring (bikar `ring_band`, #33 / Tenet 26).
+            # The reference lightens toward the centre — the central rosette's
+            # petals are periwinkle, outer rosettes' petals are navy — and adds
+            # bright TEAL accent kites in the inter-rosette connectors. Side-count
+            # alone can't express that (every petal is `sides==5`, every connector
+            # `sides==4`); `ring_band == K` slices the field into 4 equal-width
+            # radial bands (0 = innermost periwinkle core, 3 = navy rim) so a
+            # `sides AND ring_band` cascade paints role-by-radius. First-match-wins,
+            # so the specific `and` rules precede the generic side-count fallbacks.
+            # Render-gated against /tmp/ref_center_rosette.png (periwinkle centre)
+            # vs /tmp/ref_top_rosette.png (navy outer + teal connectors).
             cell_block = (
                 "  voids detect\n"
+                # Palette hexes sampled from the reference crops (ref center/top
+                # rosette): navy #112658, the royal star-core #4093B8, periwinkle
+                # petals #82A0E4, teal kites #439EC4 — a narrow cohesive blue range,
+                # navy-dominant with periwinkle + teal as gentle lifts.
                 "  palette med10\n"
-                "      navy = #0A2463\n"
-                "      royal = #1B3B8C\n"
+                "      navy = #112658\n"
+                "      royal = #3F77C4\n"
+                "      peri = #82A0E4\n"
                 "      blue = #2E5EAA\n"
-                "      sky = #3FA7D6\n"
-                "      teal = #2AB7C8\n"
-                "  fill void where sides == 10 color teal\n"
-                "  fill void where sides == 12 color teal\n"
-                "  fill void where sides == 8 color sky\n"
-                "  fill void where sides == 5 color royal\n"
+                "      teal = #439EC4\n"
+                "      dnavy = #0F2050\n"
+                # Star-octagon centres are the BRIGHT ROYAL 8-point stars at every
+                # rosette heart (ref crops /tmp/ref_center_rosette.png +
+                # /tmp/ref_top_rosette.png both show a royal-blue star core, NOT navy).
+                "  fill void where sides == 10 color royal\n"
+                "  fill void where sides == 12 color royal\n"
+                "  fill void where sides == 8 color royal\n"
+                # Petals (pentagons): navy everywhere. The reference lightens the
+                # CENTRAL rosette's petals to periwinkle, but `ring_band` slices the
+                # WHOLE field's radial extent — and the central decagon/star occupies
+                # r≈0, so pentagons start at a mid radius and (at edge 30) all land in
+                # bands 2-3, never band 0. `ring_band == 0` therefore lights nothing and
+                # `== 2` lights a mid-RING not the centre (render-probed
+                # /tmp/field_e30_bands.svg: 100 pentagons band2, 40 band3, 0 in 0/1).
+                # The periwinkle-centre lift needs a PER-SHAPE-CLASS radial band (rank
+                # pentagons among themselves), not a global one — filed as the robust
+                # follow-up. For now petals are uniformly navy (scale-independent).
+                "  fill void where sides == 5 color navy\n"
+                # Teal accent rides the small CONNECTOR KITES — a per-role position
+                # repeated in EVERY rosette, scattered across all rings (the reference
+                # sprinkles teal in inner AND outer rosettes alike, NOT a central blob —
+                # the inner-band-only restriction made a teal blob, the #6 v2 mismatch).
+                # `shape == kite` is the discriminator; the muted #439EC4 + navy-
+                # dominant petals/quads keep teal reading as accent, not dominant.
+                "  fill void where shape == kite color teal\n"
                 "  fill void where sides == 4 color navy\n"
-                "  fill void where sides == 3 color blue\n"
+                # Small triangles fill the star-shaped voids the white network
+                # creates at its crossings. In the reference these read as the
+                # DARKEST navy (sampled #0F2050-ish) — punchy dark stars scattered
+                # through the field, the field's deepest value — NOT a mid blue.
+                # The earlier `blue` made them too light, washing out the dark-star
+                # pop (A/B render-gated 2026-06-22 /tmp/faithful_3up.png: dnavy adds
+                # the reference's dark-star depth, blue reads uniform-flat). dnavy is
+                # the recipe's deepest value, matching the "dark centre value mood".
+                "  fill void where sides == 3 color dnavy\n"
             )
+        # Casing = the over/under shadow stroked under each ribbon. In the COLOURED
+        # deliverable (cells true) the engine auto-derives a navy casing that reads
+        # as the woven-depth shadow against the colour cells — keep it. But in the
+        # WEAVE-ONLY compare view (cells false) the field has no colour fills, so the
+        # navy casing strokes (~14k of them, the dominant ink — render-census
+        # /tmp/ww.svg) fill the between-strap area navy and make ours read navy-on-
+        # white while the reference reads pure WHITE-ON-BLACK (owner 2026-06-22 "still
+        # material differences ... navy between straps, ref is black"). Forcing the
+        # casing to BLACK in weave-only mode makes it vanish against the black
+        # backdrop, leaving the bare white strap network — directly comparable to the
+        # reference's white-straps-on-black extraction.
+        casing_line = "" if cells else "    casing #000000\n"
         return (
             "# medallion-10 girih-field weave PROGRESS frame "
             f"(shells {shells}, star {star}, cells {cells}) — convergent reconstruction.\n"
@@ -1879,6 +2119,7 @@ def main() -> None:
             f"    width {width:g}\n"
             "    crossing alternating\n"
             f"    color {color}\n"
+            f"{casing_line}"
         )
 
     def _apply_flower_clip(svg: str) -> str:
@@ -1917,6 +2158,66 @@ def main() -> None:
         svg = svg.replace("</svg>", "</g></svg>", 1)
         return svg
 
+    def _apply_radial_reveal(svg: str, frac: float) -> str:
+        # Reveal the woven field out from the centre to a growing radius — the
+        # "wave 1 … wave 22" playback. WHY a presentation-layer circular clip and
+        # not a re-render at a smaller shell count: the field grows by `shells`,
+        # which has only ~3-4 visually-distinct levels at edge-30 scale (0=20 seg,
+        # 1=220, 2=1220 …), NOT the 22 frames the reference's radial wave-
+        # decomposition has. So we render the FULL converged field ONCE and reveal
+        # it ring-by-ring with a circle clip whose radius steps 1/22 … 22/22 of the
+        # disc half-span — each step exposes the next concentric band of weave
+        # (render-probed /tmp/reveal-probe/reveal-grid.png: 30/60/100% are three
+        # distinct rings). This is the cumulative one-frame-per-wave the owner
+        # asked for, mapped onto the field's actual radial structure.
+        #
+        # Tenet-11-legal: the clip is a mask, the strap geometry under it stays
+        # exact. frac is clamped to (0, 1]; frac>=1 is a no-op (full disc).
+        if frac >= 1.0:
+            return svg
+        frac = max(0.001, frac)
+        m = re.search(r'viewBox="(-?[\d.]+)\s+(-?[\d.]+)\s+([\d.]+)\s+([\d.]+)"', svg)
+        if not m:
+            return svg
+        half = float(m.group(3)) / 2.0
+        r = frac * half
+        defs = f'<defs><clipPath id="reveal"><circle cx="0" cy="0" r="{r:.2f}"/></clipPath></defs>'
+        svg = re.sub(r"(<svg[^>]*>)", r"\1" + defs, svg, count=1)
+        svg = svg.replace(defs, defs + '<g clip-path="url(#reveal)">', 1)
+        svg = svg.replace("</svg>", "</g></svg>", 1)
+        return svg
+
+    def _apply_zoom(svg: str, factor: float) -> str:
+        # WHY: the reference packs MORE rosettes than our shells-1 field but at the
+        # SAME bold per-rosette size — owner 2026-06-22 "wave 1 still doesnt match …
+        # is it focused on weaves around the central star?" Our shells-1 field has a
+        # large central rosette + a sparse first ring, so a small reveal disc catches
+        # only the central star; the reference's wave-1 clip already shows central-void
+        # + ~10 neighbour stars. The renderer auto-fits the content bbox to the viewBox
+        # (medallion10_field_scale_count_coupling), so we cannot get "many + large +
+        # open cells" from shells/edge/width alone: shells 1 = too sparse (7 bold
+        # rosettes), shells 2 = too fine (≈19 tiny ones). The fix the memory names is a
+        # FIXED-WORLD-SCALE render: render shells-2's COUNT, then crop the viewBox to a
+        # centred window of 1/factor the span so the INNER rosettes display at shells-1's
+        # BOLD size while the field still carries shells-2's packing density. The geometry
+        # is untouched (Tenet-11-legal: this is a viewBox crop, not a re-fit) — only the
+        # window onto it shrinks, enlarging what's shown. factor 1.0 is a no-op.
+        #
+        # Example: viewBox "-234 -240 468 481", factor 1.8 → centred window
+        # "-130 -134 260 268" — the central ~55% of the field, enlarged 1.8×.
+        if factor is None or factor <= 1.0:
+            return svg
+        m = re.search(r'viewBox="(-?[\d.]+)\s+(-?[\d.]+)\s+([\d.]+)\s+([\d.]+)"', svg)
+        if not m:
+            return svg
+        x0, y0, w, h = (float(m.group(i)) for i in range(1, 5))
+        cx, cy = x0 + w / 2.0, y0 + h / 2.0
+        nw, nh = w / factor, h / factor
+        nx, ny = cx - nw / 2.0, cy - nh / 2.0
+        new_vb = f'viewBox="{nx:.2f} {ny:.2f} {nw:.2f} {nh:.2f}"'
+        svg = re.sub(r'viewBox="[^"]*"', new_vb, svg, count=1)
+        return svg
+
     def render_progress_svg(params: dict, shells: int) -> str:
         # Live-render one progress frame to SVG (inline-embedded by the page so
         # the strap ribbons carry data-strand and the network overlay can draw
@@ -1940,8 +2241,17 @@ def main() -> None:
                 r'<rect[^>]*fill="#FFFFFF"[^>]*pointer-events="none"[^>]*/>\s*',
                 "", svg, count=1,
             )
+            # Zoom FIRST — it rewrites the viewBox the flower-clip and reveal read
+            # their half-span from, so cropping the window before they run keeps the
+            # scallop and reveal-disc sized to the zoomed field, not the raw one.
+            zoom = params.get("zoom")
+            if zoom is not None:
+                svg = _apply_zoom(svg, float(zoom))
             if bool(params.get("clip", False)):
                 svg = _apply_flower_clip(svg)
+            reveal = params.get("reveal")
+            if reveal is not None:
+                svg = _apply_radial_reveal(svg, float(reveal))
             return svg
 
     def render_progress_png(params: dict, shells: int, height: int = 1024) -> bytes:
@@ -1976,8 +2286,15 @@ def main() -> None:
                 r'<rect[^>]*fill="#FFFFFF"[^>]*pointer-events="none"[^>]*/>\s*',
                 "", svg, count=1,
             )
+            # Zoom FIRST (same ordering as render_progress_svg — see that note).
+            zoom = params.get("zoom")
+            if zoom is not None:
+                svg = _apply_zoom(svg, float(zoom))
             if bool(params.get("clip", False)):
                 svg = _apply_flower_clip(svg)
+            reveal = params.get("reveal")
+            if reveal is not None:
+                svg = _apply_radial_reveal(svg, float(reveal))
             svg_path.write_text(svg)
             # prefer_rsvg: the progress SVG is pure-stroke; magick blanks it (see
             # _rasterize_svg's prefer_rsvg note, 2026-06-21).
@@ -3625,6 +3942,155 @@ def main() -> None:
                 self.end_headers()
                 self.wfile.write(data)
                 return
+            if self.path.split("?")[0] == "/reference-square.png":
+                # The reference cropped to a CENTRED SQUARE on the PATTERN centre,
+                # so the wave-by-wave circle reveal (CSS `circle(R at 50% 50%)`)
+                # aligns exactly with the medallion's middle. WHY this exists: the
+                # raw photo is 753x722 with the pattern's centre ~(383,360) — NOT
+                # the image centre — so clipping the bare <img> at 50%/50% reveals
+                # an off-centre, squashed disc (owner 2026-06-21: "we don't seem to
+                # be properly centred on your photo"). We trim the background, take
+                # the content bbox centre, and crop the largest centred square that
+                # fits — the pattern then sits dead-centre of a true square.
+                #
+                # WHY centroid, not bbox centre: the content bbox is thrown off by
+                # stray non-white edge pixels (JPEG ringing at the image border
+                # pushes the bbox right edge to the full image width), so its centre
+                # lands ~5px off the medallion's true middle — the residual offset
+                # the owner still saw (2026-06-21: "still a bit off"). The CENTROID
+                # (centre of mass of every non-background pixel) is robust to a few
+                # stray edge pixels, so it tracks the medallion's rotational centre.
+                #
+                # WHY weave-only (white straps on black), not the colour photo: this
+                # page compares WEAVE vs WEAVE — our side is white straps on dark, so
+                # the reference must match that polarity, NOT show its colour tiles
+                # (owner 2026-06-21: "why am i seeing color in your photo? I should
+                # only see weaves / we should black out any shapes from waves").
+                #
+                # WHY shape-mask (detected palette), not a lightness threshold: the
+                # reference decomposition already detected the 7 fill colours of the
+                # tiles (input/reference-analysis/reference-palette.json) — so we can
+                # black out the SHAPES by colour exactly and keep the white line,
+                # rather than GUESSING straps by brightness (owner 2026-06-21: "use
+                # those shapes / crop them out / swap with black"). Diffed against the
+                # pixel-threshold method: 85% identical, but shape-mask handles the
+                # navy CENTRE correctly (the wave-1 region — the pixel method's
+                # "bright" floor bled into the lighter navy core) at the cost of
+                # slightly thicker rim straps. The earlier magick Close(Disk:8) twist
+                # eroded the bold central star into spidery lines + a black hole
+                # ("we took too much out in wave 1 of original"); both replacements
+                # preserve it. We still keep only straps INSIDE the pattern silhouette
+                # (tiles closed into a blob via scipy) so the white background outside
+                # the disc drops away, then centre-crop on the strap centroid.
+                #
+                # WHY a ?mode=shapes twin: the flip toggle ("show shapes") must
+                # reveal the actual COLOURED TILES from the original waves, not a
+                # photo-negative of the strap mask (owner 2026-06-21: "show shapes
+                # just inverted, it didnt actually show shapes from original waves").
+                # So mode=shapes keeps the tile pixels in their TRUE colour where
+                # is_shape & silhouette, and blacks out the straps — the exact
+                # complement of the default weave-only view, cropped identically
+                # (same strap centroid) so the two views register pixel-for-pixel.
+                qs = self.path.split("?", 1)[1] if "?" in self.path else ""
+                want_shapes = "mode=shapes" in qs
+                p = session_dir / "input" / "reference.jpg"
+                if not p.exists():
+                    self.send_error(404)
+                    return
+                try:
+                    import io
+                    import json as _json
+                    import numpy as np
+                    from PIL import Image
+                    from scipy import ndimage
+
+                    raw = Image.open(p).convert("RGB")
+                    arr = np.asarray(raw).astype(int)
+
+                    # Detected fill colours of the tiles (the SHAPES). Read from the
+                    # decomposition's palette if present; fall back to the known
+                    # medallion-10 palette so the endpoint never 500s on a missing
+                    # file.
+                    pal = (session_dir / "input" / "reference-analysis"
+                           / "reference-palette.json")
+                    fills = [
+                        (0x13, 0x2A, 0x61), (0x26, 0x61, 0xBF), (0x3E, 0xAA, 0xCC),
+                        (0x02, 0xC5, 0xD4), (0x80, 0xA1, 0xE8), (0x22, 0x40, 0x6C),
+                        (0xB8, 0xB8, 0xB8),
+                    ]
+                    try:
+                        data = _json.loads(pal.read_text())
+                        hexes = [f["hex"].lstrip("#") for f in data["fills"]]
+                        fills = [(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+                                 for h in hexes]
+                    except Exception:
+                        pass
+
+                    # SHAPE mask: a pixel is a tile if it is within L1<60 of any
+                    # detected fill colour. The straps are everything that is NOT a
+                    # tile (and not background).
+                    is_shape = np.zeros(arr.shape[:2], dtype=bool)
+                    for (cr, cg, cb) in fills:
+                        is_shape |= (np.abs(arr - np.array([cr, cg, cb])).sum(axis=2)
+                                     < 60)
+                    # Pattern silhouette: close the shapes into one blob + fill the
+                    # strap gaps, so interior straps count as INSIDE; bg-white outside
+                    # the blob falls away.
+                    r = 16
+                    yy, xx = np.ogrid[-r:r + 1, -r:r + 1]
+                    disk = xx * xx + yy * yy <= r * r
+                    sil = ndimage.binary_fill_holes(
+                        ndimage.binary_closing(is_shape, structure=disk))
+                    straps = (~is_shape) & sil  # non-shape pixels inside the blob
+                    shapes = is_shape & sil      # tile pixels inside the blob
+                    if want_shapes:
+                        # Show the COLOURED tiles on WHITE: keep the original RGB
+                        # where a shape is, white everywhere else (straps + bg).
+                        # WHY white, not black (owner 2026-06-25 "open ON the
+                        # deliverable … white card"): the SHAPES view is the
+                        # DELIVERABLE compare — the reference photo's own page is
+                        # white and our /weave-progress.png deliverable renders on
+                        # a white card (cells=1 → #FFFFFF), so the reference shapes
+                        # panel must also sit on white or the two panels disagree
+                        # on polarity (coloured-disc-on-black vs coloured-disc-on-
+                        # white reads as a mismatch the eye can't get past). The
+                        # WEAVE-ONLY view (mode default, not want_shapes) stays
+                        # white-straps-on-black — that polarity is correct there.
+                        rgb = np.full_like(arr, 255, dtype="uint8")
+                        m = shapes
+                        rgb[m] = arr[m].astype("uint8")
+                        im = Image.fromarray(rgb, "RGB")
+                    else:
+                        out_arr = (straps * 255).astype("uint8")
+                        im = Image.fromarray(out_arr, "L").convert("RGB")
+                    # Centroid of the strap pixels = the medallion's rotational middle.
+                    # ALWAYS use the strap centroid (both views crop identically so the
+                    # weave view and the shapes view register pixel-for-pixel).
+                    ys, xs = np.nonzero(straps)
+                    if len(xs):
+                        cx = float(xs.mean())
+                        cy = float(ys.mean())
+                    else:
+                        cx, cy = im.width / 2.0, im.height / 2.0
+                    # Largest centred square that fits inside the image around
+                    # (cx, cy): half-side limited by every edge distance.
+                    half = min(cx, cy, im.width - cx, im.height - cy)
+                    left, top = int(round(cx - half)), int(round(cy - half))
+                    right, bot = int(round(cx + half)), int(round(cy + half))
+                    sq = im.crop((left, top, right, bot))
+                    buf = io.BytesIO()
+                    sq.save(buf, format="PNG")
+                    out = buf.getvalue()
+                except Exception as e:
+                    self.send_error(500, f"square crop failed: {e}")
+                    return
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", str(len(out)))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(out)
+                return
             # History thumbnail: /gate/<wave>/<iter>/sbs.png — one specific
             # past iteration of a wave (the filmstrip frames). 4 path parts
             # after the leading slash; checked BEFORE the 3-part latest route.
@@ -3807,24 +4273,91 @@ def main() -> None:
                 q = parse_qs(urlparse(self.path).query)
                 def _one(k):
                     return q[k][0] if k in q and q[k] else None
-                shells = 0
+                # Default shells + zoom MUST match the live page's `const SHELLS = 1`
+                # / `const ZOOM = 1.0` (the converged fixed-world-scale per
+                # medallion10_field_scale_count_coupling — shells 1 = ~10 BOLD rosettes,
+                # the reference's open lattice). The shells-2+zoom default (earlier this
+                # session) chased a wave-1 neighbourhood the reference does NOT have
+                # (frac-matched /tmp/ref_w1_reveal.png shows a lone central rosette).
+                # The twin and the page have to agree (Tenet 25b), so both default to
+                # shells 1 / zoom 1.0. A bare twin link reproduces the page render.
+                shells = 1
                 if (v := _one("shells")) is not None:
                     try:
                         shells = max(0, int(v))
                     except ValueError:
-                        shells = 0
-                params: dict = {}
-                for k, cast in (("edge", float), ("star", int), ("width", float)):
+                        shells = 1
+                params: dict = {"zoom": 1.0}
+                # ?zoom=F (F>1) is the fixed-world-scale dial: render shells-2's
+                # rosette COUNT, then crop the viewBox to a centred 1/F window so
+                # the inner rosettes display at shells-1's BOLD per-rosette size.
+                # The reference packs ~19 rosettes at a bold scale that the auto-fit
+                # renderer can't give from shells/edge/width alone (the count↔size
+                # coupling in medallion10_field_scale_count_coupling). zoom decouples
+                # them: high count from shells, bold size from the crop.
+                for k, cast in (("edge", float), ("star", int), ("width", float), ("reveal", float), ("zoom", float)):
                     if (v := _one(k)) is not None:
                         try:
                             params[k] = cast(v)
                         except ValueError:
                             pass
+                # ?wave=N&waves=M is the friendly twin of the page's per-wave
+                # reveal. It MUST reproduce the live page's math for OURS, or the
+                # shared PNG and the page disagree for every wave (Tenet 25b: the
+                # surfaced render has to be the render the owner judges). This PNG
+                # twin renders OUR field only — the reference is a separate static
+                # image clipped CLIENT-SIDE (syncRef/sharedFrac), so the SAME shared
+                # floor applies on both. Phase 0 (2026-06-23) collapsed the prior
+                # decoupled OURS_FLOOR=0.34 / REF_FLOOR=0.19 to ONE SHARED_FLOOR so
+                # both panels reveal the same fraction of their content disc at the
+                # same on-screen size (the fixed ruler; the motif difference at wave 1
+                # is a real Phase-1 structural signal, not a crop artifact to tune
+                # away). This twin MUST match the page's sharedFrac. The math:
+                #   pf     = (w-1)/(waves-1)                  # waveToProgress
+                #   reveal = SHARED_FLOOR + pf*(1-SHARED_FLOOR)
+                SHARED_FLOOR = 0.25
+                if "reveal" not in params:
+                    wv, wn = _one("wave"), _one("waves")
+                    if wv is not None:
+                        try:
+                            total = max(2, int(wn)) if wn is not None else 22
+                            w = max(1, int(wv))
+                            pf = min(1.0, max(0.0, (w - 1) / (total - 1)))
+                            params["reveal"] = SHARED_FLOOR + pf * (1 - SHARED_FLOOR)
+                        except ValueError:
+                            pass
                 if (v := _one("color")) is not None:
                     params["color"] = v  # build_progress_variant validates the hex
-                for flag in ("cells", "clip"):
-                    if (v := _one(flag)) is not None:
-                        params[flag] = v not in ("0", "false", "off", "")
+                # ?card=#RRGGBB sets the backdrop behind the clipped flower disc.
+                # The COLOURED deliverable (cells=1) matches the reference, which
+                # is white interlacing straps framing colour CELLS on a white page
+                # — the white straps read because inside the disc they sit between
+                # saturated colour cells, not against the backdrop (owner verdict
+                # 2026-06-25 "White (match reference)"; ref Read-confirmed). So the
+                # coloured deliverable defaults to WHITE. The WEAVE-ONLY view
+                # (cells=0) is white straps with no colour cells, so it KEEPS the
+                # dark card — on white it would be white-on-white and the strap
+                # skeleton would vanish. render_progress_png falls back to its own
+                # #14171a default when card is unset, so we only set it explicitly
+                # for the coloured deliverable (or when ?card is given).
+                cells_on = _one("cells") not in ("0", "false", "off", "", None)
+                if (v := _one("card")) is not None:
+                    params["card"] = v  # render_progress_png validates the hex
+                elif cells_on:
+                    params["card"] = "#FFFFFF"
+                # The bare twin link defaults to the WEAVE-ONLY view (no coloured
+                # cells, flower clip kept) so it MATCHES the live page's new
+                # flipped=false default — both show the white strap skeleton on
+                # the dark field, NOT the coloured ten-rosette shapes. The owner's
+                # /weave-progress critique was "why are we showing colored shapes"
+                # + "why compare black weaves to white": a weave comparison must
+                # show weave-vs-weave, same scale, both white-straps-on-dark
+                # (Tenet 25b: twin and page must agree; decision
+                # 2026-06-19-weave-field-method §12). Pass cells=1 to opt into the
+                # coloured deliverable; clip stays on so the disc is the flower.
+                for flag, default in (("cells", False), ("clip", True)):
+                    v = _one(flag)
+                    params[flag] = (v not in ("0", "false", "off", "")) if v is not None else default
                 try:
                     png = render_progress_png(params, shells)
                 except subprocess.CalledProcessError as e:
@@ -4184,6 +4717,103 @@ def main() -> None:
                 })
                 save_session(s)
                 self._send_ok()
+            elif self.path == "/api/pixel-diff":
+                # Phase 0 (2026-06-23) — THE FIXED RULER. Make "does the weave match"
+                # a NUMBER instead of an eyeball: render OUR weave-only field PNG at
+                # the requested wave, fetch the reference square (weave-only shape-
+                # mask) at the SAME shared reveal fraction, run `qiyas pixel-diff`,
+                # and return the four coverage keys (shared_pct, only_a_pct,
+                # only_b_pct, color_match_pct) + similarity. The qiyas DETECTOR is
+                # frozen; pixel-diff is a pure raster-compare, no detector tune.
+                #
+                # Body: {params, shells, wave, waves}. We reveal BOTH sides to the
+                # same sharedFrac so the compare is apples-to-apples (the whole point
+                # of Phase 0). A missing qiyas venv / render error returns 500 with a
+                # plain message; the page shows "—" rather than a fake number.
+                try:
+                    data = json.loads(self._read_body())
+                except json.JSONDecodeError:
+                    self.send_error(400, "body must be JSON")
+                    return
+                params = dict(data.get("params", {}))
+                try:
+                    shells = max(0, int(data.get("shells", 1)))
+                except (ValueError, TypeError):
+                    shells = 1
+                # Shared reveal: SHARED_FLOOR=0.25 mirrors the page's sharedFrac.
+                SHARED_FLOOR = 0.25
+                try:
+                    total = max(2, int(data.get("waves", 22)))
+                    w = max(1, int(data.get("wave", 22)))
+                    pf = min(1.0, max(0.0, (w - 1) / (total - 1)))
+                except (ValueError, TypeError):
+                    pf = 1.0
+                frac = SHARED_FLOOR + pf * (1 - SHARED_FLOOR)
+                params["reveal"] = frac
+                params.setdefault("cells", False)   # weave-only compare
+                try:
+                    import io as _io
+                    import urllib.request as _urlreq
+                    import numpy as _np
+                    from PIL import Image as _Image
+                    with tempfile.TemporaryDirectory() as td:
+                        ours_png = Path(td) / "ours.png"
+                        ref_png = Path(td) / "ref.png"
+                        ours_png.write_bytes(render_progress_png(params, shells))
+                        # The reference square (weave-only shape-mask) via the proven
+                        # /reference-square.png endpoint, then masked to the SAME
+                        # reveal disc as ours so the raster compare sees the identical
+                        # wave on both sides (the page does this with a CSS circle
+                        # clip; here we zero pixels outside r = frac * half-side).
+                        port = self.server.server_address[1]
+                        with _urlreq.urlopen(
+                            f"http://127.0.0.1:{port}/reference-square.png", timeout=30
+                        ) as resp:
+                            ref_raw = resp.read()
+                        rim = _Image.open(_io.BytesIO(ref_raw)).convert("RGB")
+                        ra = _np.asarray(rim).copy()
+                        rh, rw = ra.shape[:2]
+                        rcx, rcy = rw / 2.0, rh / 2.0
+                        rr = frac * min(rcx, rcy)
+                        yy, xx = _np.ogrid[:rh, :rw]
+                        outside = (xx - rcx) ** 2 + (yy - rcy) ** 2 > rr * rr
+                        ra[outside] = 0
+                        _Image.fromarray(ra, "RGB").save(ref_png, format="PNG")
+                        out_dir = Path(td) / "diff"
+                        proc = subprocess.run(
+                            [QIYAS_PY, "-c",
+                             "from qiyas.cli import main; main()",
+                             "pixel-diff", str(ref_png), str(ours_png),
+                             "--out", str(out_dir),
+                             "--rasterizer", "magick", "--no-artifacts"],
+                            capture_output=True, text=True,
+                        )
+                        pj = out_dir / "pixel-diff.json"
+                        if not pj.exists():
+                            msg = (proc.stderr or proc.stdout or "pixel-diff produced no json").strip()
+                            self.send_error(500, f"pixel-diff failed: {msg[:300]}")
+                            return
+                        result = json.loads(pj.read_text())
+                except subprocess.CalledProcessError as e:
+                    self.send_error(500, f"render failed: {(e.stderr or e.stdout or str(e)).strip()[:300]}")
+                    return
+                except FileNotFoundError as e:
+                    self.send_error(500, f"qiyas venv not found ({QIYAS_PY}): {e}")
+                    return
+                except Exception as e:
+                    self.send_error(500, f"pixel-diff failed: {e}")
+                    return
+                payload = json.dumps({
+                    "wave": w, "waves": total, "reveal": round(frac, 4),
+                    "similarity_pct": result.get("similarity_pct"),
+                    "color_match_pct": result.get("color_match_pct"),
+                    "coverage": result.get("coverage", {}),
+                }).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
             else:
                 self.send_error(404)
 
