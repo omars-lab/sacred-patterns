@@ -129,6 +129,24 @@ a different subcommand than the one the hooks use. The target and the hook had
 already drifted apart before this file existed — which is the drift the manifest
 now pins.
 
+### `node_modules` missing — two gates report NOT VERIFIED
+
+`npm ci`. Every `npm run` gate needs it, and without it they exit 127 "command
+not found". Until 2026-08-18 the runner reported that as **FAILED**, which is
+the wrong sentence: FAILED is a claim about the branch, and *eslint is not
+installed in this checkout* is a claim about the machine. Two gates
+(`pre-commit::typecheck-lint` and the `npm run build && npm test` local-only
+entry) now carry `requires: node-modules` and say NOT VERIFIED instead.
+
+The gap was structural rather than an oversight in one entry: `local_only:`
+entries had no `requires:` support at all, so exactly half the manifest could
+not express "did not run" — and the half that could not is the half no hook
+covers, which is the half most likely to be missing a tool. It surfaced the
+first time this ran in a fresh git worktree, because that is the only place the
+precondition is genuinely absent; a repo you have been working in all day never
+shows it to you. `--self-test` now carries five cases for the `local_only:`
+half specifically.
+
 ### `codespell` / `semgrep` missing
 
 `pip install codespell semgrep`. Each failure names the command; none is

@@ -374,7 +374,7 @@ PALETTE_HTML = """<!DOCTYPE html>
        return `<div class="pair"><div class="chip" style="background:${p.dsl_hex}"></div>`
          + `${ref}<div class="lab">${p.dsl_name.replace(/_/g,' ')}</div>${tag}</div>`;
      }).join('');
-   } catch (e) { box.innerHTML = '<span class="muted">couldn\\u2019t load the colours</span>'; }
+   } catch (e) { box.innerHTML = '<span class="muted">could not load the colours</span>'; }
  })();
  const agreed = __AGREED__;
  const agreeBtn = document.getElementById('agree');
@@ -520,8 +520,8 @@ WEAVE_STUDIO_HTML = """<!DOCTYPE html>
    <div class="dial" id="fieldWaveDial" style="display:none">
     <label>Which rings weave <span class="hint">— the band of rings (inner→outer) that interlace</span>
      <span class="val" id="fieldWaveVal"></span></label>
-    <input type="range" id="fieldWaveLo" min="1" max="22" step="1" value="17">
-    <input type="range" id="fieldWaveHi" min="1" max="22" step="1" value="17">
+    <input type="range" id="fieldWaveLo" min="1" max="22" step="1" value="5">
+    <input type="range" id="fieldWaveHi" min="1" max="22" step="1" value="16">
    </div>
    <div class="dial" id="netDial" style="display:none">
     <label class="toggle"><input type="checkbox" id="network">

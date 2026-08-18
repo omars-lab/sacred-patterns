@@ -1,6 +1,6 @@
 """Regression: the weave studio is shareable — every knob round-trips via the URL.
 
-Plain-English purpose (2026-06-17): the owner asked "add url param supprot for
+Plain-English purpose (2026-06-17): the owner asked "add url param support for
 all knobs" so a render can be shared/bookmarked by link. Two things must hold,
 and both had a real failure mode this test pins:
 
