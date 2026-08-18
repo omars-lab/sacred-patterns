@@ -88,6 +88,7 @@ working tree because it is the repo being edited.
 | `portal-hypothesis-handoff` | sacred-patterns | sacred-patterns/docs/decisions/2026-06-10-portal-hypothesis-handoff.md | ACCEPTED | A | ★ |
 | `print-gate` | bikar | bikar/docs/decisions/2026-07-29-print-gate-v1-slice-structure.md | ACCEPTED | A | ★ |
 | `rasterizer-fidelity` | bikar | bikar/docs/decisions/2026-05-13-gt-json-image-dims-rasterizer-fidelity.md | ACCEPTED | A | ★ |
+| `redundant-composite-fold` | qiyas | qiyas/docs/decisions/2026-08-17-orb-surplus-and-redundant-composites.md | ACCEPTED | C | ★ |
 | `render-orientation` | bikar | bikar/docs/decisions/2026-08-13-render-orientation.md | ACCEPTED | 1B | ★ |
 | `ribbon-pass-shape-type` | qiyas | qiyas/docs/decisions/2026-08-15-ribbon-pass-shape-type.md | ACCEPTED | C | ★ |
 | `scale-invariant-matching` | qiyas | qiyas/docs/decisions/2026-06-10-scale-invariant-param-drift.md | ACCEPTED | B | ★ |
