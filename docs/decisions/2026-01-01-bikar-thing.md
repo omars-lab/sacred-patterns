@@ -1,9 +1,9 @@
 ---
-tag: qiyas-tag
+tag: bikar-tag
 status_token: ACCEPTED
 picked_option: A
 ---
 
-# qiyas decision
+# bikar decision
 
 Cites 3d-models D-001, which resolves.
