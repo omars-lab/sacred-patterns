@@ -1,0 +1,15 @@
+%% qiyas self-service machine-CV + skill + review-portal journey
+%% Persona: Tenet-29 art-savvy SME judging what the machine SAW (no bikar required)
+flowchart TD
+    A["Any input: raster / SVG / photo<br/>(no producer needed)"] --> B["qiyas review --image --ref<br/>portal on :8731 (standalone)"]
+    B --> C["encode_image()<br/>5 stages: preprocess → primitives → classify → symmetry → assembly"]
+    C --> D[(encoding.json<br/>SCHEMA_VERSION 1.21<br/>confidence = detector confidence)]
+    D --> E[FastAPI serves /encoding /diff /annotations]
+    E --> F[Review portal — Tenet-29 grandma-bar UI<br/>review-portal skill, Q1–Q8 SOP]
+    F --> G{Reviewer judges the machine read}
+    G --> H[Q1–Q12 discriminated union<br/>verdict right / wrong / unsure]
+    H --> I[(annotations.json v3<br/>+ ReviewVerdict v1)]
+    G --> J[Detector wrong repeatedly?]
+    J --> K["iterate-detector-calibration skill<br/>(I1 calibration loop)"]
+    K --> C
+    L[(pattern.gt.json from bikar)] -.->|optional: as ground-truth ref| B

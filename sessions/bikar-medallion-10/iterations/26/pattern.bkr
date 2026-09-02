@@ -1,0 +1,117 @@
+# Medallion-10: Iteration 26 — Layer-isolate the central 20-pointed star
+#
+# iter-25 hypothesis: {20/3} on Cstar20 (r=20) in layer 0 would emit
+# a single 20-vertex inner-star face.
+# iter-25 outcome: FALSIFIED. The {20/3} chords got subdivided by
+# intersections with C1's chord network (r=30) — they pass through the
+# C1 disk and cross `connect every K on C1` chords from layer 0, so
+# bikar's planar-face extractor never sees a closed 20-gon.
+#
+# iter-26 applies Resolution Path #2 from iter-25/evaluation.md:
+# layer isolation. Move `connect every 3 on Cstar20` from layer 0
+# into a new layer 4. Bikar's planar-face extraction runs per-layer
+# (see docs/lessons.md "Multi-layer extraction"), so chords in layer 4
+# do NOT see C1's chord intersections in layer 0. The {20/3} star
+# survives as a single closed face.
+#
+# Predicted Δ vs iter-25:
+#   - A6: 0/18 → 1/18 (PASS for inner-star--star-v20)
+#   - A2/A4/A5: should hold near iter-25's ceiling (cv 0.0365 best,
+#     A4 FULL, A5 COMPLETE) — adding the {20/3} face shouldn't degrade
+#     sector balance since it's centered and 20-fold symmetric (≡ 10-fold
+#     for our dominant-fold detector).
+#   - total_shapes: small increase (the v20 face emerges + however many
+#     extra strapwork crossings the v20 contributes).
+#
+# What this iter validates structurally:
+#   - Layer isolation is the right move for multi-circle inner-zone
+#     constructions that would otherwise subdivide each other.
+#   - The construction can carry MORE inner-star content (8-stars,
+#     6-stars, rhombi from baseline's expected 18 shapes) by
+#     allocating one isolated layer per star family.
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  circle C1 center(0,0) radius 30
+  divide C1 into 10
+  # iter-25 central 20-pointed star scaffold (unchanged)
+  circle Cstar20 center(0,0) radius 20
+  divide Cstar20 into 20
+  circle Cmid2 center(0,0) radius 50
+  divide Cmid2 into 10
+  circle Cmid center(0,0) radius 80
+  divide Cmid into 10
+  # iter-22 named satellites for extend+clip
+  circle S0 center(C0.cpt0) radius 30
+  divide S0 into 10
+  circle S1 center(C0.cpt1) radius 30
+  divide S1 into 10
+  circle S2 center(C0.cpt2) radius 30
+  divide S2 into 10
+  circle S3 center(C0.cpt3) radius 30
+  divide S3 into 10
+  circle S4 center(C0.cpt4) radius 30
+  divide S4 into 10
+  circle S5 center(C0.cpt5) radius 30
+  divide S5 into 10
+  circle S6 center(C0.cpt6) radius 30
+  divide S6 into 10
+  circle S7 center(C0.cpt7) radius 30
+  divide S7 into 10
+  circle S8 center(C0.cpt8) radius 30
+  divide S8 into 10
+  circle S9 center(C0.cpt9) radius 30
+  divide S9 into 10
+  boundary outline = union(C0, S0, S1, S2, S3, S4, S5, S6, S7, S8, S9)
+
+pattern medallion on medallion
+  layer 0
+    connect every 4 on C1
+    connect every 3 on C1
+    connect every 2 on C1
+
+  layer 1
+    extend connect every 4 on S0 beyond 1.5
+    extend connect every 4 on S1 beyond 1.5
+    extend connect every 4 on S2 beyond 1.5
+    extend connect every 4 on S3 beyond 1.5
+    extend connect every 4 on S4 beyond 1.5
+    extend connect every 4 on S5 beyond 1.5
+    extend connect every 4 on S6 beyond 1.5
+    extend connect every 4 on S7 beyond 1.5
+    extend connect every 4 on S8 beyond 1.5
+    extend connect every 4 on S9 beyond 1.5
+
+  layer 2
+    connect every 3 on Cmid
+
+  layer 3
+    connect every 4 on Cmid2
+
+  # NEW iter-26: isolate the central 20-star in its own layer
+  layer 4
+    connect every 3 on Cstar20
+
+  clip pattern to outline
+
+  strapwork
+      width 5
+      crossing over
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 20 color navy
+  fill void where sides >= 5 color cobalt
+
+  edges color navy width 0.5

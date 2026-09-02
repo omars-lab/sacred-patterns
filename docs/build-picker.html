@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Build picker — what do we build next? (2026-06-10)</title>
+<style>
+  body { font-family: Georgia, serif; max-width: 940px; margin: 2rem auto; padding: 0 1rem 6rem;
+         color: #1a2744; line-height: 1.5; }
+  h1 { font-size: 1.5rem; } .sub { color: #555; margin-top: -.6rem; }
+  .decision { border: 1px solid #ccc; border-radius: 10px; padding: 1rem 1.2rem; margin: 1.4rem 0; background: #fbfbf8; }
+  .decision h2 { margin: 0 0 .2rem; font-size: 1.12rem; }
+  .tag { font-family: monospace; font-size: .8rem; background: #eef; padding: .1rem .45rem; border-radius: 4px; }
+  .q { margin: .4rem 0 .15rem; font-size: 1.02rem; }
+  .qtech { font-size: .85rem; color: #666; font-family: "Courier New", monospace; margin-bottom: .6rem; }
+  label.opt { display: block; padding: .55rem .75rem; margin: .35rem 0; border: 1px solid #ddd;
+              border-radius: 7px; cursor: pointer; background: #fff; overflow: auto; }
+  label.opt:has(input:checked) { border-color: #1b6ca8; background: #eaf3fa; }
+  .plain { display: block; font-size: .92rem; margin-top: .2rem; }
+  .plain b.k { color: #2e5d32; }
+  .tech { display: block; font-size: .82rem; color: #555; font-family: "Courier New", monospace; margin-top: .2rem; }
+  .rec { color: #1b6ca8; font-weight: bold; font-size: .8rem; }
+  .optimg { max-width: 240px; border: 1px solid #ddd; border-radius: 6px; float: right; margin-left: .8rem; }
+  textarea.note { width: 100%; box-sizing: border-box; margin-top: .5rem; font-family: inherit;
+                  font-size: .9rem; min-height: 2.2rem; border: 1px solid #ddd; border-radius: 6px; padding: .4rem; }
+  #bar { position: fixed; bottom: 0; left: 0; right: 0; background: #0b1d3a; color: #fff;
+         padding: .7rem 1rem; display: flex; gap: 1rem; align-items: center; justify-content: center; }
+  #bar button { font-size: 1rem; padding: .5rem 1.1rem; border-radius: 8px; border: 0; cursor: pointer; }
+  #copy { background: #2e7d32; color: #fff; } #recall { background: #888; color: #fff; }
+  #preview { white-space: pre-wrap; font-family: "Courier New", monospace; font-size: .82rem;
+             background: #f4f4ee; border: 1px dashed #999; border-radius: 8px; padding: .8rem; }
+</style>
+</head>
+<body>
+<h1>Build picker — what do we build next?</h1>
+<p class="sub">Two cards. The first is a <b>priority</b> pick (tracked as a routing-doc entry,
+not a decision doc — it sets what the loop builds next). The second is the open
+<code>shape-vocabulary</code> decision. Recommended choices pre-selected; copy the prompt and
+paste it back into Claude Code.</p>
+
+<div id="decisions"></div>
+
+<h2 style="margin-top:2rem">Prompt preview</h2>
+<div id="preview"></div>
+
+<div id="bar">
+  <button id="copy">Copy prompt</button>
+  <button id="recall">Reset to recommendations</button>
+  <span id="status"></span>
+</div>
+
+<script>
+const DECISIONS = [
+  {
+    tag: "next-build", repo: "routing pick (not a decision doc)", kind: "routing",
+    doc: "qiyas/.claude/plans/post-i1-task-routing.md (recorded as a routing entry)",
+    q: "Which system build does the loop start next?",
+    qTech: "Priority pick among the five named Tenet-30 builds; sequencing recorded in the routing doc; the non-picked builds stay queued, not cancelled.",
+    options: [
+      { id: "scale", rec: true, label: "Teach the judge about photo sizes", img: "decision-picker-assets/scale-mismatch.png",
+        plain: "Today the judge thinks a photo taken at twice the resolution shows a square four times too big — same square, different camera. Smallest build, design already approved, and every later measurement stays polluted until it lands.",
+        tech: "Scale-invariant param_drift (design ACCEPTED: 2026-06-10-scale-invariant-param-drift.md, Option B pattern-scale normalization; same-frame comparisons provably bit-identical; frozen witness flips on ship)." },
+      { id: "line-d1", label: "Make lines really cut (first slice)", img: "decision-picker-assets/line-cuts.png",
+        plain: "Start the build your line-primitive pick just approved: one line through one square becomes two real pieces. The first slice of real straightedge construction.",
+        tech: "line-primitive Option E, D1 slice: face-walker enrollment for one line through one polygon, Tier-0 witness first (tenet 17); default face_class wiring." },
+      { id: "i2-classifier", label: "Teach the judge to NAME shapes in photos", img: "decision-picker-assets/wall-square.png",
+        plain: "The honesty wall: the judge sees this square perfectly but can't say 'square'. The biggest and most consequential build — the wall tiles start flipping one at a time as it learns.",
+        tech: "Producer-less classification on traced geometry (I2 prerequisite #2; recovery 0/12 baseline; includes the shape-vocabulary expansion; 8 strict-xfail matrix cells flip per capability)." },
+      { id: "girih", label: "Lift the big medallion's ceiling", img: "decision-picker-assets/medallion10.png",
+        plain: "The grand medallion has been stuck because the engine lacks one rule the old masters used for laying tiles. Build that rule once and the ceiling dissolves for every pattern of this family.",
+        tech: "Girih substitution-rule primitive (bikar/.claude/plans/girih-substitution-rule-engine.md; lifts the medallion-10 A6=0 ceiling; independent of the I2 track)." },
+      { id: "training", label: "Mass-produce practice patterns",
+        plain: "Have the drawing program generate thousands of patterns with known answers so the judge can be tested at scale instead of one pattern at a time. The natural substrate for the naming build.",
+        tech: "bikar GT → qiyas verify at scale + B-AFF (sacred-patterns task #5, bikar-as-training-data-generator plan); most valuable after scale-invariance + classifier exist." },
+    ],
+  },
+  {
+    tag: "shape-vocabulary", repo: "qiyas", kind: "decision",
+    doc: "qiyas/docs/decisions/2026-05-18-shape-vocabulary-vs-detector-tolerances.md",
+    q: "Should the judge learn the words 'kite' and 'rhombus' now, or as part of the bigger naming build?",
+    qTech: "Vocabulary expansion (kite/rhombus/irregular_*) timing: standalone now vs folded into the I2 producer-less classifier build; tolerance-widening rejected per Tenet 7.",
+    options: [
+      { id: "D", rec: true, label: "Fold into the naming build", img: "decision-picker-assets/vocab-kite-rhombus.png",
+        plain: "These two real shapes from our test set currently get called 'unknown'. Teach them as part of the photo-naming build, so the new words are learned once, on both clean drawings AND photos.",
+        tech: "Fold Option B's vocabulary into the I2 classifier build: new ShapeType literals + typed variants designed against both bikar-tagged and producer-less inputs; doc stays the spec, build task owns it." },
+      { id: "B", label: "Teach them now, standalone",
+        plain: "Add the words immediately for clean drawings; photos still won't benefit until the naming build happens anyway.",
+        tech: "Ship Option B now: KiteShape/RhombusShape/irregular_* variants + classifier rules on the bikar-tagged path only; I2 path re-touches them later (double-handled)." },
+      { id: "A", label: "Loosen the rules instead",
+        plain: "Make the judge squint harder so existing words stretch to cover these shapes. We have a standing rule against this — it weakens every other judgment.",
+        tech: "Tolerance widening — named Tenet-7 trap in the doc itself; listed for completeness, not viability." },
+    ],
+  },
+];
+
+const container = document.getElementById("decisions");
+for (const d of DECISIONS) {
+  const div = document.createElement("div");
+  div.className = "decision";
+  div.innerHTML = `<h2>${d.tag} <span class="tag">${d.repo}</span></h2>
+    <div class="q">${d.q}</div>
+    <div class="qtech">${d.qTech}</div>` +
+    d.options.map(o => `<label class="opt">
+      ${o.img ? `<img class="optimg" src="${o.img}" alt="">` : ""}
+      <input type="radio" name="${d.tag}" value="${o.id}" ${o.rec ? "checked" : ""}>
+      <b>${o.id}</b> — ${o.label} ${o.rec ? '<span class="rec">★ recommended</span>' : ""}
+      <span class="plain"><b class="k">In plain terms:</b> ${o.plain}</span>
+      <span class="tech"><b class="k">Technically:</b> ${o.tech}</span></label>`).join("") +
+    `<textarea class="note" data-tag="${d.tag}" placeholder="Optional note (sequencing wishes, scope, taste)…"></textarea>`;
+  container.appendChild(div);
+}
+
+function buildPrompt() {
+  const lines = ["Apply my build/decision picks from docs/build-picker.html (2026-06-10).", "", "Picks:"];
+  for (const d of DECISIONS) {
+    const sel = document.querySelector(`input[name="${CSS.escape(d.tag)}"]:checked`);
+    const note = document.querySelector(`textarea[data-tag="${CSS.escape(d.tag)}"]`).value.trim();
+    const opt = d.options.find(o => o.id === sel.value);
+    lines.push(`- ${d.tag} [${d.kind}] (${d.doc}): PICK ${opt.id} — ${opt.label}${note ? `. Owner note: ${note}` : ""}`);
+  }
+  lines.push(
+    "",
+    "Apply: for [decision] picks, update the doc's structured frontmatter (status_token ACCEPTED, picked_option, decided today) + an 'Owner pick' addendum quoting this verbatim + ledger regen + coherence gate + LEDGER-XREPO regen. For [routing] picks, record the priority in the routing doc's next entry and START the picked build (the non-picked builds stay queued as tasks). Report outcomes.",
+  );
+  return lines.join("\n");
+}
+
+function refresh() { document.getElementById("preview").textContent = buildPrompt(); }
+document.body.addEventListener("input", refresh);
+document.getElementById("copy").onclick = async () => {
+  await navigator.clipboard.writeText(buildPrompt());
+  document.getElementById("status").textContent = "Copied — paste into Claude Code.";
+};
+document.getElementById("recall").onclick = () => {
+  for (const d of DECISIONS) {
+    const rec = d.options.find(o => o.rec) || d.options[0];
+    document.querySelector(`input[name="${CSS.escape(d.tag)}"][value="${CSS.escape(rec.id)}"]`).checked = true;
+  }
+  document.querySelectorAll("textarea.note").forEach(t => (t.value = ""));
+  refresh();
+};
+refresh();
+</script>
+
+<p style="margin-top:2.5rem;font-size:.85rem;color:#777;border-top:1px solid #ddd;padding-top:.8rem">
+Built with the <code>present-options-visually</code> skill; every image is a real artifact
+(corpus renders, the traced "photo" fixtures, the falsified-frame composite). The 2026-06-10
+decision queue this follows: <code>docs/decision-picker.html</code> (applied; queue now 2).
+</p>
+</body>
+</html>

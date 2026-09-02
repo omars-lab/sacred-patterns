@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sacred Patterns - Component Showcase</title>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+      background: #0a0a0f;
+      color: #e0e0e0;
+      line-height: 1.5;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #12121a;
+      border-bottom: 1px solid #2a2a3a;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #c9a84c;
+    }
+
+    header p {
+      font-size: 0.85rem;
+      color: #888;
+      flex-basis: 100%;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid #c9a84c;
+      background: transparent;
+      color: #c9a84c;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: #c9a84c;
+      color: #0a0a0f;
+    }
+
+    .btn.copied {
+      background: #2ecc71;
+      border-color: #2ecc71;
+      color: #fff;
+    }
+
+    .filters {
+      padding: 12px 24px;
+      background: #0e0e16;
+      border-bottom: 1px solid #1a1a2a;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 4px 12px;
+      border: 1px solid #333;
+      background: transparent;
+      color: #aaa;
+      border-radius: 16px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover { border-color: #666; color: #fff; }
+    .filter-btn.active { background: #c9a84c; border-color: #c9a84c; color: #0a0a0f; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+      gap: 20px;
+      padding: 24px;
+    }
+
+    .component-card {
+      background: #14141e;
+      border: 1px solid #2a2a3a;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .component-card:hover { border-color: #444; }
+    .component-card.hidden { display: none; }
+
+    .card-header {
+      padding: 14px 16px 10px;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .card-header h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #e8d5a3;
+      font-family: 'Courier New', monospace;
+    }
+
+    .tag {
+      font-size: 0.65rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    .tag-primitive { background: #1a3a2a; color: #5dbb63; }
+    .tag-tiling { background: #3a2a1a; color: #d4a24c; }
+    .tag-strapwork { background: #2a1a3a; color: #9b6dcc; }
+    .tag-repetition { background: #1a2a3a; color: #5dadbb; }
+    .tag-special { background: #3a1a2a; color: #cc6d8a; }
+    .tag-aggregation { background: #3a3a1a; color: #bbbb5d; }
+
+    .description {
+      padding: 0 16px 8px;
+      font-size: 0.82rem;
+      color: #888;
+    }
+
+    .params {
+      padding: 0 16px 10px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .param {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      background: #1a1a28;
+      border: 1px solid #2a2a3a;
+      border-radius: 4px;
+      color: #aaa;
+      font-family: 'Courier New', monospace;
+    }
+
+    .render {
+      background: #0a0a0f;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 8px;
+    }
+
+    .render svg {
+      display: block;
+    }
+
+    .card-footer {
+      padding: 12px 16px;
+    }
+
+    .card-footer textarea {
+      width: 100%;
+      min-height: 60px;
+      background: #0e0e16;
+      border: 1px solid #2a2a3a;
+      border-radius: 4px;
+      color: #ccc;
+      padding: 8px;
+      font-size: 0.82rem;
+      font-family: inherit;
+      resize: vertical;
+    }
+
+    .card-footer textarea:focus {
+      outline: none;
+      border-color: #c9a84c;
+    }
+
+    .card-footer textarea::placeholder { color: #555; }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      background: #2ecc71;
+      color: #fff;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+
+    .toast.show { opacity: 1; }
+
+    a.back-link {
+      color: #c9a84c;
+      text-decoration: none;
+      font-size: 0.85rem;
+    }
+
+    a.back-link:hover { text-decoration: underline; }
+
+    @media (max-width: 500px) {
+      .grid { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
+      header { padding: 12px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Component Showcase</h1>
+    <p style="margin-top: 4px;">Visual validation of each declarative pattern building block. Add feedback below each component, then copy all notes as markdown.</p>
+  </div>
+  <div class="header-actions">
+    <a class="back-link" href="../index.html">Back to Main</a>
+    <button class="btn" id="copyAllBtn" onclick="copyAllFeedback()">Copy All Feedback</button>
+  </div>
+</header>
+
+<div class="filters">
+  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="primitive">Primitives</button>
+  <button class="filter-btn" data-filter="tiling">Tiling</button>
+  <button class="filter-btn" data-filter="strapwork">Strapwork</button>
+  <button class="filter-btn" data-filter="repetition">Repetition</button>
+  <button class="filter-btn" data-filter="special">Special</button>
+  <button class="filter-btn" data-filter="aggregation">Aggregations</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="toast" id="toast">Copied to clipboard!</div>
+
+<script>
+// ============================================================
+// Component Registry
+// ============================================================
+
+var COMPONENTS = [
+  // --- Primitives ---
+  {
+    id: "star-polygon",
+    name: "star-polygon",
+    tag: "primitive",
+    description: "{n/k} star polygon rendered as wireframe lines from tip to tip",
+    params: { n: 10, k: 3, R: 150 },
+    render: renderStarPolygon
+  },
+  {
+    id: "polygon",
+    name: "polygon",
+    tag: "primitive",
+    description: "Regular polygon (wireframe) inscribed in a circle of radius R",
+    params: { n: 8, R: 150 },
+    render: renderPolygon
+  },
+  {
+    id: "circle",
+    name: "circle",
+    tag: "primitive",
+    description: "Single circle with configurable radius, stroke, and fill",
+    params: { R: 150, stroke: "#c9a84c" },
+    render: renderCircle
+  },
+  {
+    id: "line",
+    name: "line",
+    tag: "primitive",
+    description: "Single line segment between two points",
+    params: { length: 300, angle: 30 },
+    render: renderLine
+  },
+
+  // --- Tiling ---
+  {
+    id: "star-tiling",
+    name: "star-tiling",
+    tag: "tiling",
+    description: "{n/k} star decomposed into filled kite and rhombus tiles",
+    params: { n: 10, k: 3, R: 160 },
+    render: renderStarTiling
+  },
+  {
+    id: "filled-rosette",
+    name: "filled-rosette",
+    tag: "tiling",
+    description: "Solid rosette formed by n petal shapes with separation lines",
+    params: { n: 10, R: 150, r_ratio: 0.5 },
+    render: renderFilledRosette
+  },
+  {
+    id: "interstitial-tiles",
+    name: "interstitial-tiles",
+    tag: "tiling",
+    description: "Gap-fill tiles that appear between a central star and its satellites",
+    params: { n: 10, k: 3, R: 160 },
+    render: renderInterstitialTiles
+  },
+  {
+    id: "girih-tile",
+    name: "girih-tile",
+    tag: "tiling",
+    description: "Individual girih tile shapes: decagon, pentagon, bowtie, rhombus, hexagon",
+    params: { types: "all five" },
+    render: renderGirihTiles
+  },
+
+  // --- Strapwork ---
+  {
+    id: "radial-network",
+    name: "radial-network",
+    tag: "strapwork",
+    description: "Concentric ring edge skeleton connecting star tips, mid-ring, and satellites",
+    params: { n: 10, rings: 3 },
+    render: renderRadialNetwork
+  },
+  {
+    id: "interlace-network",
+    name: "interlace-network",
+    tag: "strapwork",
+    description: "Bands with over-under weaving along the radial network edges",
+    params: { n: 8, band_width: 8 },
+    render: renderInterlaceNetwork
+  },
+  {
+    id: "strapwork-band",
+    name: "strapwork-band",
+    tag: "strapwork",
+    description: "Single decorative band with parallel edges following a polyline path",
+    params: { width: 10, segments: 6 },
+    render: renderStrapworkBand
+  },
+
+  // --- Repetition ---
+  {
+    id: "radial-repeat",
+    name: "radial-repeat",
+    tag: "repetition",
+    description: "n copies of a child element rotated evenly around a center point",
+    params: { n: 8, child: "pentagon" },
+    render: renderRadialRepeat
+  },
+  {
+    id: "grid-repeat",
+    name: "grid-repeat",
+    tag: "repetition",
+    description: "Periodic tiling grid repeating a motif across rows and columns",
+    params: { cols: 3, rows: 3 },
+    render: renderGridRepeat
+  },
+
+  // --- Special ---
+  {
+    id: "rosette",
+    name: "rosette",
+    tag: "special",
+    description: "Wireframe petals in pointed, rounded, or ogee styles",
+    params: { n: 12, style: "pointed" },
+    render: renderRosette
+  },
+  {
+    id: "flower-of-life",
+    name: "flower-of-life",
+    tag: "special",
+    description: "Recursive overlapping circles forming the classic flower-of-life pattern",
+    params: { levels: 2, R: 80 },
+    render: renderFlowerOfLife
+  },
+  {
+    id: "muqarnas-projection",
+    name: "muqarnas-projection",
+    tag: "special",
+    description: "2D projection of muqarnas tier geometry showing nested tiers",
+    params: { tiers: 3 },
+    render: renderMuqarnasProjection
+  },
+
+  // --- Aggregations ---
+  {
+    id: "agg-star-satellites",
+    name: "star-tiling + radial-repeat { filled-rosette }",
+    tag: "aggregation",
+    description: "Central star with satellite rosettes arranged radially",
+    params: { n: 10, k: 3, satellites: 10 },
+    render: renderAggStarSatellites
+  },
+  {
+    id: "agg-full-medallion",
+    name: "star-tiling + satellites + radial-network",
+    tag: "aggregation",
+    description: "Full medallion: star + satellite rosettes + strapwork connecting them",
+    params: { n: 10, k: 3 },
+    render: renderAggFullMedallion
+  },
+  {
+    id: "agg-star-interstitial",
+    name: "star-tiling + interstitial-tiles",
+    tag: "aggregation",
+    description: "Star tiling with gap-fill interstitial tiles between points",
+    params: { n: 10, k: 3 },
+    render: renderAggStarInterstitial
+  },
+  {
+    id: "agg-girih-tessellation",
+    name: "girih tessellation",
+    tag: "aggregation",
+    description: "Multiple girih tile shapes tessellated together on a surface",
+    params: { layout: "radial" },
+    render: renderAggGirihTessellation
+  }
+];
+
+// ============================================================
+// Utility Functions
+// ============================================================
+
+var PI = Math.PI;
+
+function polarX(cx, r, angleDeg) {
+  return cx + r * Math.cos(angleDeg * PI / 180);
+}
+
+function polarY(cy, r, angleDeg) {
+  return cy - r * Math.sin(angleDeg * PI / 180);
+}
+
+function starPoints(cx, cy, n, k, R) {
+  var rInner = R * Math.cos(PI * k / n);
+  var pts = [];
+  for (var i = 0; i < n; i++) {
+    var tipAngle = 90 + i * 360 / n;
+    pts.push([polarX(cx, R, tipAngle), polarY(cy, R, tipAngle)]);
+    var valleyAngle = 90 + (i + 0.5) * 360 / n;
+    pts.push([polarX(cx, rInner, valleyAngle), polarY(cy, rInner, valleyAngle)]);
+  }
+  return pts;
+}
+
+function regularPolygonPoints(cx, cy, n, R) {
+  var pts = [];
+  for (var i = 0; i < n; i++) {
+    var angle = 90 + i * 360 / n;
+    pts.push([polarX(cx, R, angle), polarY(cy, R, angle)]);
+  }
+  return pts;
+}
+
+function lineGenerator(points, closed) {
+  var gen = d3.line().x(function(d) { return d[0]; }).y(function(d) { return d[1]; });
+  if (closed) {
+    return gen(points) + "Z";
+  }
+  return gen(points);
+}
+
+// ============================================================
+// Render Functions — Primitives
+// ============================================================
+
+function renderStarPolygon(svg, cx, cy) {
+  var n = 10, k = 3, R = 150;
+  var tips = [];
+  for (var i = 0; i < n; i++) {
+    var angle = 90 + i * 360 / n;
+    tips.push([polarX(cx, R, angle), polarY(cy, R, angle)]);
+  }
+  for (var i = 0; i < n; i++) {
+    var j = (i + k) % n;
+    svg.append("line")
+      .attr("x1", tips[i][0]).attr("y1", tips[i][1])
+      .attr("x2", tips[j][0]).attr("y2", tips[j][1])
+      .attr("stroke", "#c9a84c").attr("stroke-width", 1.5).attr("fill", "none");
+  }
+  svg.append("circle").attr("cx", cx).attr("cy", cy).attr("r", R)
+    .attr("stroke", "#333").attr("stroke-width", 0.5).attr("fill", "none");
+}
+
+function renderPolygon(svg, cx, cy) {
+  var n = 8, R = 150;
+  var pts = regularPolygonPoints(cx, cy, n, R);
+  svg.append("path")
+    .attr("d", lineGenerator(pts, true))
+    .attr("stroke", "#c9a84c").attr("stroke-width", 1.5).attr("fill", "none");
+  svg.append("circle").attr("cx", cx).attr("cy", cy).attr("r", R)
+    .attr("stroke", "#333").attr("stroke-width", 0.5).attr("fill", "none");
+}
+
+function renderCircle(svg, cx, cy) {
+  svg.append("circle").attr("cx", cx).attr("cy", cy).attr("r", 150)
+    .attr("stroke", "#c9a84c").attr("stroke-width", 2).attr("fill", "none");
+  svg.append("circle").attr("cx", cx).attr("cy", cy).attr("r", 3)
+    .attr("fill", "#c9a84c");
+  for (var i = 0; i < 12; i++) {
+    var a = i * 30;
+    svg.append("line")
+      .attr("x1", polarX(cx, 145, a)).attr("y1", polarY(cy, 145, a))
+      .attr("x2", polarX(cx, 155, a)).attr("y2", polarY(cy, 155, a))
+      .attr("stroke", "#555").attr("stroke-width", 1);
+  }
+}
+
+function renderLine(svg, cx, cy) {
+  var angles = [0, 30, 60, 90, 120, 150];
+  angles.forEach(function(a, i) {
+    var opacity = 1 - i * 0.12;
+    svg.append("line")
+      .attr("x1", polarX(cx, 150, a + 180))
+      .attr("y1", polarY(cy, 150, a + 180))
+      .attr("x2", polarX(cx, 150, a))
+      .attr("y2", polarY(cy, 150, a))
+      .attr("stroke", "#c9a84c")
+      .attr("stroke-width", 1.5)
+      .attr("opacity", opacity);
+  });
+}
+
+// ============================================================
+// Render Functions — Tiling
+// ============================================================
+
+function renderStarTiling(svg, cx, cy) {
+  var n = 10, k = 3, R = 160;
+  var rMid = R * Math.cos(PI * k / n);
+  var sectorAngle = 360 / n;
+
+  for (var i = 0; i < n; i++) {
+    var tipAngle = 90 + i * sectorAngle;
+    var nextTipAngle = 90 + (i + 1) * sectorAngle;
+    var valleyAngle = 90 + (i + 0.5) * sectorAngle;
+
+    var tip = [polarX(cx, R, tipAngle), polarY(cy, R, tipAngle)];
+    var nextTip = [polarX(cx, R, nextTipAngle), polarY(cy, R, nextTipAngle)];
+    var valley = [polarX(cx, rMid, valleyAngle), polarY(cy, rMid, valleyAngle)];
+    var center = [cx, cy];
+
+    svg.append("path")
+      .attr("d", lineGenerator([center, tip, valley], true))
+      .attr("fill", "rgba(201, 168, 76, 0.3)")
+      .attr("stroke", "#c9a84c").attr("stroke-width", 0.8);
+
+    svg.append("path")
+      .attr("d", lineGenerator([center, valley, nextTip], true))
+      .attr("fill", "rgba(201, 168, 76, 0.2)")
+      .attr("stroke", "#c9a84c").attr("stroke-width", 0.8);
+  }
+}
+
+function renderFilledRosette(svg, cx, cy) {
+  var n = 10, R = 150, rInner = R * 0.4;
+  var sectorAngle = 360 / n;
+
+  for (var i = 0; i < n; i++) {
+    var a1 = 90 + i * sectorAngle;
+    var a2 = 90 + (i + 1) * sectorAngle;
+    var aMid = 90 + (i + 0.5) * sectorAngle;
+
+    var p1 = [polarX(cx, rInner, a1), polarY(cy, rInner, a1)];
+    var p2 = [polarX(cx, R, aMid), polarY(cy, R, aMid)];
+    var p3 = [polarX(cx, rInner, a2), polarY(cy, rInner, a2)];
+
+    svg.append("path")
+      .attr("d", lineGenerator([p1, p2, p3], true))
+      .attr("fill", i % 2 === 0 ? "rgba(156, 109, 204, 0.4)" : "rgba(93, 173, 187, 0.4)")
+      .attr("stroke", "#c9a84c").attr("stroke-width", 0.8);
+  }
+
+  svg.append("circle").attr("cx", cx).attr("cy", cy).attr("r", rInner)
+    .attr("stroke", "#c9a84c").attr("stroke-width", 0.8).attr("fill", "rgba(201, 168, 76, 0.15)");
+}
+
+function renderInterstitialTiles(svg, cx, cy) {
+  var n = 10, k = 3, R = 160;
+  var rMid = R * Math.cos(PI * k / n);
+  var sectorAngle = 360 / n;
+
+  var starPts = starPoints(cx, cy, n, k, R);
+  svg.append("path")
+    .attr("d", lineGenerator(starPts, true))
+    .attr("fill", "none").attr("stroke", "#333").attr("stroke-width", 0.5);
+
+  var rOuter = R * 1.15;
+  for (var i = 0; i < n; i++) {
+    var tipAngle = 90 + i * sectorAngle;
+    var nextTipAngle = 90 + (i + 1) * sectorAngle;
+    var midAngle = 90 + (i + 0.5) * sectorAngle;
+
+    var tip = [polarX(cx, R, tipAngle), polarY(cy, R, tipAngle)];
+    var nextTip = [polarX(cx, R, nextTipAngle), polarY(cy, R, nextTipAngle)];
+    var outerMid = [polarX(cx, rOuter, midAngle), polarY(cy, rOuter, midAngle)];
+    var valley = [polarX(cx, rMid, midAngle), polarY(cy, rMid, midAngle)];
+
+    svg.append("path")
+      .attr("d", lineGenerator([tip, outerMid, nextTip, valley], true))
+      .attr("fill", "rgba(93, 187, 99, 0.35)")
+      .attr("stroke", "#5dbb63").attr("stroke-width", 0.8);
+  }
+}
+
+function renderGirihTiles(svg, cx, cy) {
+  var tileSize = 50;
+
+  var decPts = regularPolygonPoints(cx, cy, 10, tileSize);
+  svg.append("path")
+    .attr("d", lineGenerator(decPts, true))
+    .attr("fill", "rgba(201, 168, 76, 0.25)")
+    .attr("stroke", "#c9a84c").attr("stroke-width", 1);
+
+  var pentCx = cx + 120, pentCy = cy - 60;
+  var pentPts = regularPolygonPoints(pentCx, pentCy, 5, tileSize * 0.6);
+  svg.append("path")
+    .attr("d", lineGenerator(pentPts, true))
+    .attr("fill", "rgba(93, 173, 187, 0.3)")
+    .attr("stroke", "#5dadbb").attr("stroke-width", 1);
+
+  var bowCx = cx - 120, bowCy = cy - 50;
+  var bowR = tileSize * 0.5;
+  var bow = [
+    [bowCx, bowCy - bowR],
+    [bowCx + bowR * 0.7, bowCy - bowR * 0.2],
+    [bowCx, bowCy],
+    [bowCx + bowR * 0.7, bowCy + bowR * 0.2],
+    [bowCx, bowCy + bowR],
+    [bowCx - bowR * 0.7, bowCy + bowR * 0.2],
+    [bowCx, bowCy],
+    [bowCx - bowR * 0.7, bowCy - bowR * 0.2]
+  ];
+  svg.append("path")
+    .attr("d", lineGenerator(bow, true))
+    .attr("fill", "rgba(204, 109, 138, 0.3)")
+    .attr("stroke", "#cc6d8a").attr("stroke-width", 1);
+
+  var rhCx = cx - 100, rhCy = cy + 80;
+  var rhR = tileSize * 0.5;
+  var rhombus = [
+    [rhCx, rhCy - rhR],
+    [rhCx + rhR * 0.6, rhCy],
+    [rhCx, rhCy + rhR],
+    [rhCx - rhR * 0.6, rhCy]
+  ];
+  svg.append("path")
+    .attr("d", lineGenerator(rhombus, true))
+    .attr("fill", "rgba(93, 187, 99, 0.3)")
+    .attr("stroke", "#5dbb63").attr("stroke-width", 1);
+
+  var hexCx = cx + 110, hexCy = cy + 75;
+  var hexPts = regularPolygonPoints(hexCx, hexCy, 6, tileSize * 0.55);
+  svg.append("path")
+    .attr("d", lineGenerator(hexPts, true))
+    .attr("fill", "rgba(156, 109, 204, 0.3)")
+    .attr("stroke", "#9b6dcc").attr("stroke-width", 1);
+
+  var labels = [
+    [cx, cy + tileSize + 14, "decagon"],
+    [pentCx, pentCy + tileSize * 0.6 + 14, "pentagon"],
+    [bowCx, bowCy + bowR + 14, "bowtie"],
+    [rhCx, rhCy + rhR + 14, "rhombus"],
+    [hexCx, hexCy + tileSize * 0.55 + 14, "hexagon"]
+  ];
+  labels.forEach(function(l) {
+    svg.append("text")
+      .attr("x", l[0]).attr("y", l[1])
+      .attr("text-anchor", "middle")
+      .attr("fill", "#666").attr("font-size", "10px")
+      .text(l[2]);
+  });
+}
+
+// ============================================================
+// Render Functions — Strapwork
+// ============================================================
+
+function renderRadialNetwork(svg, cx, cy) {
+  var n = 10, R = 160;
+  var r1 = R * 0.4, r2 = R * 0.7, r3 = R;
+  var sectorAngle = 360 / n;
+
+  [r1, r2, r3].forEach(function(r) {
+    svg.append("circle").attr("cx", cx).attr("cy", cy).attr("r", r)
+      .attr("stroke", "#c9a84c").attr("stroke-width", 1).attr("fill", "none");
+  });
+
+  for (var i = 0; i < n; i++) {
+    var angle = 90 + i * sectorAngle;
+    svg.append("line")
+      .attr("x1", polarX(cx, r1, angle)).attr("y1", polarY(cy, r1, angle))
+      .attr("x2", polarX(cx, r3, angle)).attr("y2", polarY(cy, r3, angle))
+      .attr("stroke", "#c9a84c").attr("stroke-width", 1);
+  }
+
+  for (var i = 0; i < n; i++) {
+    var a1 = 90 + i * sectorAngle;
+    var a2 = 90 + (i + 0.5) * sectorAngle;
+    svg.append("line")
+      .attr("x1", polarX(cx, r2, a1)).attr("y1", polarY(cy, r2, a1))
+      .attr("x2", polarX(cx, r3, a2)).attr("y2", polarY(cy, r3, a2))
+      .attr("stroke", "#c9a84c").attr("stroke-width", 0.6).attr("opacity", 0.7);
+    svg.append("line")
+      .attr("x1", polarX(cx, r2, a1)).attr("y1", polarY(cy, r2, a1))
+      .attr("x2", polarX(cx, r1, a2)).attr("y2", polarY(cy, r1, a2))
+      .attr("stroke", "#c9a84c").attr("stroke-width", 0.6).attr("opacity", 0.7);
+  }
+
+  for (var i = 0; i < n; i++) {
+    var angle = 90 + i * sectorAngle;
+    [r1, r2, r3].forEach(function(r) {
+      svg.append("circle")
+        .attr("cx", polarX(cx, r, angle)).attr("cy", polarY(cy, r, angle)).attr("r", 3)
+        .attr("fill", "#c9a84c");
+    });
+  }
+}
+
+function renderInterlaceNetwork(svg, cx, cy) {
+  var n = 8, R = 150, bandWidth = 8;
+  var rMid = R * Math.cos(PI / n);
+  var sectorAngle = 360 / n;
+
+  for (var i = 0; i < n; i++) {
+    var tipAngle = 90 + i * sectorAngle;
+    var nextTipAngle = 90 + (i + 1) * sectorAngle;
+    var valleyAngle = 90 + (i + 0.5) * sectorAngle;
+
+    var tip = [polarX(cx, R, tipAngle), polarY(cy, R, tipAngle)];
+    var valley = [polarX(cx, rMid, valleyAngle), polarY(cy, rMid, valleyAngle)];
+    var nextTip = [polarX(cx, R, nextTipAngle), polarY(cy, R, nextTipAngle)];
+
+    svg.append("line")
+      .attr("x1", tip[0]).attr("y1", tip[1])
+      .attr("x2", valley[0]).attr("y2", valley[1])
+      .attr("stroke", "#c9a84c").attr("stroke-width", bandWidth)
+      .attr("stroke-linecap", "round").attr("opacity", 0.9);
+
+    svg.append("line")
+      .attr("x1", valley[0]).attr("y1", valley[1])
+      .attr("x2", nextTip[0]).attr("y2", nextTip[1])
+      .attr("stroke", "#8a7234").attr("stroke-width", bandWidth)
+      .attr("stroke-linecap", "round").attr("opacity", 0.7);
+
+    svg.append("line")
+      .attr("x1", tip[0]).attr("y1", tip[1])
+      .attr("x2", valley[0]).attr("y2", valley[1])
+      .attr("stroke", "#0a0a0f").attr("stroke-width", 1);
+    svg.append("line")
+      .attr("x1", valley[0]).attr("y1", valley[1])
+      .attr("x2", nextTip[0]).attr("y2", nextTip[1])
+      .attr("stroke", "#0a0a0f").attr("stroke-width", 1);
+  }
+}
+
+function renderStrapworkBand(svg, cx, cy) {
+  var bandWidth = 12;
+  var pts = [];
+  var segments = 6;
+  var totalWidth = 320;
+  var amplitude = 60;
+  var startX = cx - totalWidth / 2;
+
+  for (var i = 0; i <= segments; i++) {
+    var x = startX + i * (totalWidth / segments);
+    var y = cy + (i % 2 === 0 ? -amplitude : amplitude);
+    pts.push([x, y]);
+  }
+
+  svg.append("path")
+    .attr("d", d3.line().x(function(d) { return d[0]; }).y(function(d) { return d[1]; }).curve(d3.curveBasis)(pts))
+    .attr("stroke", "#c9a84c").attr("stroke-width", bandWidth)
+    .attr("fill", "none").attr("stroke-linecap", "round");
+
+  svg.append("path")
+    .attr("d", d3.line().x(function(d) { return d[0]; }).y(function(d) { return d[1]; }).curve(d3.curveBasis)(pts))
+    .attr("stroke", "#0a0a0f").attr("stroke-width", 2)
+    .attr("fill", "none");
+
+  [-1, 1].forEach(function(dir) {
+    var edgePts = pts.map(function(p) { return [p[0], p[1] + dir * bandWidth * 0.5]; });
+    svg.append("path")
+      .attr("d", d3.line().x(function(d) { return d[0]; }).y(function(d) { return d[1]; }).curve(d3.curveBasis)(edgePts))
+      .attr("stroke", "#8a7234").attr("stroke-width", 0.8)
+      .attr("fill", "none");
+  });
+}
+
+// ============================================================
+// Render Functions — Repetition
+// ============================================================
+
+function renderRadialRepeat(svg, cx, cy) {
+  var n = 8, childR = 30, orbitR = 120;
+  var sectorAngle = 360 / n;
+
+  svg.append("circle").attr("cx", cx).attr("cy", cy).attr("r", orbitR)
+    .attr("stroke", "#333").attr("stroke-width", 0.5)
+    .attr("fill", "none").attr("stroke-dasharray", "4,4");
+
+  for (var i = 0; i < n; i++) {
+    var angle = 90 + i * sectorAngle;
+    var childCx = polarX(cx, orbitR, angle);
+    var childCy = polarY(cy, orbitR, angle);
+
+    var pts = regularPolygonPoints(childCx, childCy, 5, childR);
+    var rotPts = pts.map(function(p) {
+      var dx = p[0] - childCx, dy = p[1] - childCy;
+      var radAngle = (-angle + 90) * PI / 180;
+      return [
+        childCx + dx * Math.cos(radAngle) - dy * Math.sin(radAngle),
+        childCy + dx * Math.sin(radAngle) + dy * Math.cos(radAngle)
+      ];
+    });
+    svg.append("path")
+      .attr("d", lineGenerator(rotPts, true))
+      .attr("fill", "rgba(93, 173, 187, 0.3)")
+      .attr("stroke", "#5dadbb").attr("stroke-width", 1);
+  }
+
+  svg.append("circle").attr("cx", cx).attr("cy", cy).attr("r", 3).attr("fill", "#c9a84c");
+}
+
+function renderGridRepeat(svg, cx, cy) {
+  var cols = 3, rows = 3, cellSize = 90;
+  var startX = cx - (cols - 1) * cellSize / 2;
+  var startY = cy - (rows - 1) * cellSize / 2;
+
+  for (var r = 0; r < rows; r++) {
+    for (var c = 0; c < cols; c++) {
+      var cellCx = startX + c * cellSize;
+      var cellCy = startY + r * cellSize;
+
+      var starR = cellSize * 0.35;
+      var pts = starPoints(cellCx, cellCy, 6, 2, starR);
+      svg.append("path")
+        .attr("d", lineGenerator(pts, true))
+        .attr("fill", "rgba(201, 168, 76, 0.2)")
+        .attr("stroke", "#c9a84c").attr("stroke-width", 0.8);
+    }
+  }
+
+  for (var r = 0; r <= rows; r++) {
+    var y = startY - cellSize / 2 + r * cellSize;
+    svg.append("line")
+      .attr("x1", startX - cellSize / 2).attr("y1", y)
+      .attr("x2", startX + (cols - 1) * cellSize + cellSize / 2).attr("y2", y)
+      .attr("stroke", "#222").attr("stroke-width", 0.5);
+  }
+  for (var c = 0; c <= cols; c++) {
+    var x = startX - cellSize / 2 + c * cellSize;
+    svg.append("line")
+      .attr("x1", x).attr("y1", startY - cellSize / 2)
+      .attr("x2", x).attr("y2", startY + (rows - 1) * cellSize + cellSize / 2)
+      .attr("stroke", "#222").attr("stroke-width", 0.5);
+  }
+}
+
+// ============================================================
+// Render Functions — Special
+// ============================================================
+
+function renderRosette(svg, cx, cy) {
+  var n = 12, R = 150, rInner = R * 0.3;
+  var sectorAngle = 360 / n;
+
+  for (var i = 0; i < n; i++) {
+    var a1 = 90 + i * sectorAngle;
+    var aMid = 90 + (i + 0.5) * sectorAngle;
+    var a2 = 90 + (i + 1) * sectorAngle;
+
+    var base1 = [polarX(cx, rInner, a1), polarY(cy, rInner, a1)];
+    var tip = [polarX(cx, R, aMid), polarY(cy, R, aMid)];
+    var base2 = [polarX(cx, rInner, a2), polarY(cy, rInner, a2)];
+
+    svg.append("path")
+      .attr("d", lineGenerator([base1, tip, base2], false))
+      .attr("stroke", "#c9a84c").attr("stroke-width", 1.2)
+      .attr("fill", "none");
+  }
+
+  svg.append("circle").attr("cx", cx).attr("cy", cy).attr("r", rInner)
+    .attr("stroke", "#c9a84c").attr("stroke-width", 0.8).attr("fill", "none");
+}
+
+function renderFlowerOfLife(svg, cx, cy) {
+  var R = 80;
+
+  svg.append("circle").attr("cx", cx).attr("cy", cy).attr("r", R)
+    .attr("stroke", "#c9a84c").attr("stroke-width", 1).attr("fill", "none");
+
+  for (var i = 0; i < 6; i++) {
+    var angle = i * 60;
+    svg.append("circle")
+      .attr("cx", polarX(cx, R, angle))
+      .attr("cy", polarY(cy, R, angle))
+      .attr("r", R)
+      .attr("stroke", "#c9a84c").attr("stroke-width", 1).attr("fill", "none");
+  }
+
+  for (var i = 0; i < 6; i++) {
+    var angle = i * 60;
+    svg.append("circle")
+      .attr("cx", polarX(cx, 2 * R, angle))
+      .attr("cy", polarY(cy, 2 * R, angle))
+      .attr("r", R)
+      .attr("stroke", "#c9a84c").attr("stroke-width", 0.6).attr("fill", "none").attr("opacity", 0.6);
+
+    var angle2 = i * 60 + 30;
+    svg.append("circle")
+      .attr("cx", polarX(cx, R * Math.sqrt(3), angle2))
+      .attr("cy", polarY(cy, R * Math.sqrt(3), angle2))
+      .attr("r", R)
+      .attr("stroke", "#c9a84c").attr("stroke-width", 0.6).attr("fill", "none").attr("opacity", 0.6);
+  }
+}
+
+function renderMuqarnasProjection(svg, cx, cy) {
+  var tiers = 3;
+  var maxR = 160;
+
+  for (var t = 0; t < tiers; t++) {
+    var r = maxR * (t + 1) / tiers;
+    var n = 8 + t * 4;
+    var pts = regularPolygonPoints(cx, cy, n, r);
+
+    svg.append("path")
+      .attr("d", lineGenerator(pts, true))
+      .attr("fill", "none")
+      .attr("stroke", "#c9a84c")
+      .attr("stroke-width", 1.2 - t * 0.3)
+      .attr("opacity", 1 - t * 0.2);
+
+    if (t > 0) {
+      var innerR = maxR * t / tiers;
+      var innerN = 8 + (t - 1) * 4;
+      for (var i = 0; i < n; i++) {
+        var angle = 90 + i * 360 / n;
+        var innerAngle = 90 + Math.round(i * innerN / n) * 360 / innerN;
+        svg.append("line")
+          .attr("x1", polarX(cx, r, angle)).attr("y1", polarY(cy, r, angle))
+          .attr("x2", polarX(cx, innerR, innerAngle)).attr("y2", polarY(cy, innerR, innerAngle))
+          .attr("stroke", "#c9a84c").attr("stroke-width", 0.5).attr("opacity", 0.5);
+      }
+    }
+  }
+
+  svg.append("circle").attr("cx", cx).attr("cy", cy).attr("r", 3).attr("fill", "#c9a84c");
+}
+
+// ============================================================
+// Render Functions — Aggregations
+// ============================================================
+
+function renderAggStarSatellites(svg, cx, cy) {
+  var n = 10, k = 3, R = 100;
+  var rMid = R * Math.cos(PI * k / n);
+  var sectorAngle = 360 / n;
+
+  for (var i = 0; i < n; i++) {
+    var tipAngle = 90 + i * sectorAngle;
+    var nextTipAngle = 90 + (i + 1) * sectorAngle;
+    var valleyAngle = 90 + (i + 0.5) * sectorAngle;
+    var tip = [polarX(cx, R, tipAngle), polarY(cy, R, tipAngle)];
+    var nextTip = [polarX(cx, R, nextTipAngle), polarY(cy, R, nextTipAngle)];
+    var valley = [polarX(cx, rMid, valleyAngle), polarY(cy, rMid, valleyAngle)];
+    svg.append("path")
+      .attr("d", lineGenerator([[cx, cy], tip, valley], true))
+      .attr("fill", "rgba(201, 168, 76, 0.3)").attr("stroke", "#c9a84c").attr("stroke-width", 0.6);
+    svg.append("path")
+      .attr("d", lineGenerator([[cx, cy], valley, nextTip], true))
+      .attr("fill", "rgba(201, 168, 76, 0.2)").attr("stroke", "#c9a84c").attr("stroke-width", 0.6);
+  }
+
+  var satDist = R + 50;
+  var satR = 25;
+  for (var i = 0; i < n; i++) {
+    var angle = 90 + i * sectorAngle;
+    var satCx = polarX(cx, satDist, angle);
+    var satCy = polarY(cy, satDist, angle);
+
+    for (var j = 0; j < 5; j++) {
+      var a1 = j * 72;
+      var a2 = (j + 1) * 72;
+      var aMid = (j + 0.5) * 72;
+      var p1 = [polarX(satCx, satR * 0.4, a1), polarY(satCy, satR * 0.4, a1)];
+      var p2 = [polarX(satCx, satR, aMid), polarY(satCy, satR, aMid)];
+      var p3 = [polarX(satCx, satR * 0.4, a2), polarY(satCy, satR * 0.4, a2)];
+      svg.append("path")
+        .attr("d", lineGenerator([p1, p2, p3], true))
+        .attr("fill", "rgba(156, 109, 204, 0.3)").attr("stroke", "#9b6dcc").attr("stroke-width", 0.5);
+    }
+  }
+}
+
+function renderAggFullMedallion(svg, cx, cy) {
+  var n = 10, k = 3, R = 85;
+  var rMid = R * Math.cos(PI * k / n);
+  var sectorAngle = 360 / n;
+
+  for (var i = 0; i < n; i++) {
+    var tipAngle = 90 + i * sectorAngle;
+    var nextTipAngle = 90 + (i + 1) * sectorAngle;
+    var valleyAngle = 90 + (i + 0.5) * sectorAngle;
+    var tip = [polarX(cx, R, tipAngle), polarY(cy, R, tipAngle)];
+    var nextTip = [polarX(cx, R, nextTipAngle), polarY(cy, R, nextTipAngle)];
+    var valley = [polarX(cx, rMid, valleyAngle), polarY(cy, rMid, valleyAngle)];
+    svg.append("path")
+      .attr("d", lineGenerator([[cx, cy], tip, valley], true))
+      .attr("fill", "rgba(201, 168, 76, 0.25)").attr("stroke", "#c9a84c").attr("stroke-width", 0.5);
+    svg.append("path")
+      .attr("d", lineGenerator([[cx, cy], valley, nextTip], true))
+      .attr("fill", "rgba(201, 168, 76, 0.15)").attr("stroke", "#c9a84c").attr("stroke-width", 0.5);
+  }
+
+  var satDist = R + 45;
+  var satR = 22;
+  for (var i = 0; i < n; i++) {
+    var angle = 90 + i * sectorAngle;
+    var satCx = polarX(cx, satDist, angle);
+    var satCy = polarY(cy, satDist, angle);
+    for (var j = 0; j < 5; j++) {
+      var a1 = j * 72, a2 = (j + 1) * 72, aMid = (j + 0.5) * 72;
+      var p1 = [polarX(satCx, satR * 0.4, a1), polarY(satCy, satR * 0.4, a1)];
+      var p2 = [polarX(satCx, satR, aMid), polarY(satCy, satR, aMid)];
+      var p3 = [polarX(satCx, satR * 0.4, a2), polarY(satCy, satR * 0.4, a2)];
+      svg.append("path")
+        .attr("d", lineGenerator([p1, p2, p3], true))
+        .attr("fill", "rgba(156, 109, 204, 0.25)").attr("stroke", "#9b6dcc").attr("stroke-width", 0.4);
+    }
+  }
+
+  for (var i = 0; i < n; i++) {
+    var angle = 90 + i * sectorAngle;
+    var nextAngle = 90 + (i + 1) * sectorAngle;
+    var tip = [polarX(cx, R, angle), polarY(cy, R, angle)];
+    var sat = [polarX(cx, satDist, angle), polarY(cy, satDist, angle)];
+    var nextSat = [polarX(cx, satDist, nextAngle), polarY(cy, satDist, nextAngle)];
+
+    svg.append("line")
+      .attr("x1", tip[0]).attr("y1", tip[1])
+      .attr("x2", sat[0]).attr("y2", sat[1])
+      .attr("stroke", "#c9a84c").attr("stroke-width", 4).attr("opacity", 0.3);
+    svg.append("line")
+      .attr("x1", tip[0]).attr("y1", tip[1])
+      .attr("x2", sat[0]).attr("y2", sat[1])
+      .attr("stroke", "#0a0a0f").attr("stroke-width", 1);
+
+    svg.append("line")
+      .attr("x1", sat[0]).attr("y1", sat[1])
+      .attr("x2", nextSat[0]).attr("y2", nextSat[1])
+      .attr("stroke", "#c9a84c").attr("stroke-width", 4).attr("opacity", 0.3);
+    svg.append("line")
+      .attr("x1", sat[0]).attr("y1", sat[1])
+      .attr("x2", nextSat[0]).attr("y2", nextSat[1])
+      .attr("stroke", "#0a0a0f").attr("stroke-width", 1);
+  }
+}
+
+function renderAggStarInterstitial(svg, cx, cy) {
+  var n = 10, k = 3, R = 130;
+  var rMid = R * Math.cos(PI * k / n);
+  var sectorAngle = 360 / n;
+  var rOuter = R * 1.2;
+
+  for (var i = 0; i < n; i++) {
+    var tipAngle = 90 + i * sectorAngle;
+    var nextTipAngle = 90 + (i + 1) * sectorAngle;
+    var valleyAngle = 90 + (i + 0.5) * sectorAngle;
+    var tip = [polarX(cx, R, tipAngle), polarY(cy, R, tipAngle)];
+    var nextTip = [polarX(cx, R, nextTipAngle), polarY(cy, R, nextTipAngle)];
+    var valley = [polarX(cx, rMid, valleyAngle), polarY(cy, rMid, valleyAngle)];
+    svg.append("path")
+      .attr("d", lineGenerator([[cx, cy], tip, valley], true))
+      .attr("fill", "rgba(201, 168, 76, 0.25)").attr("stroke", "#c9a84c").attr("stroke-width", 0.6);
+    svg.append("path")
+      .attr("d", lineGenerator([[cx, cy], valley, nextTip], true))
+      .attr("fill", "rgba(201, 168, 76, 0.15)").attr("stroke", "#c9a84c").attr("stroke-width", 0.6);
+  }
+
+  for (var i = 0; i < n; i++) {
+    var tipAngle = 90 + i * sectorAngle;
+    var nextTipAngle = 90 + (i + 1) * sectorAngle;
+    var midAngle = 90 + (i + 0.5) * sectorAngle;
+    var tip = [polarX(cx, R, tipAngle), polarY(cy, R, tipAngle)];
+    var nextTip = [polarX(cx, R, nextTipAngle), polarY(cy, R, nextTipAngle)];
+    var outerMid = [polarX(cx, rOuter, midAngle), polarY(cy, rOuter, midAngle)];
+    var valley = [polarX(cx, rMid, midAngle), polarY(cy, rMid, midAngle)];
+    svg.append("path")
+      .attr("d", lineGenerator([tip, outerMid, nextTip, valley], true))
+      .attr("fill", "rgba(93, 187, 99, 0.25)").attr("stroke", "#5dbb63").attr("stroke-width", 0.6);
+  }
+}
+
+function renderAggGirihTessellation(svg, cx, cy) {
+  var tileR = 40;
+
+  var decPts = regularPolygonPoints(cx, cy, 10, tileR);
+  svg.append("path")
+    .attr("d", lineGenerator(decPts, true))
+    .attr("fill", "rgba(201, 168, 76, 0.2)").attr("stroke", "#c9a84c").attr("stroke-width", 0.8);
+
+  for (var i = 0; i < 10; i++) {
+    var midAngle = 90 + (i + 0.5) * 36;
+    var edgeDist = tileR * Math.cos(PI / 10) + tileR * 0.55;
+    var pentCx = polarX(cx, edgeDist, midAngle);
+    var pentCy = polarY(cy, edgeDist, midAngle);
+
+    var pentPts = regularPolygonPoints(pentCx, pentCy, 5, tileR * 0.5);
+    svg.append("path")
+      .attr("d", lineGenerator(pentPts, true))
+      .attr("fill", "rgba(93, 173, 187, 0.2)").attr("stroke", "#5dadbb").attr("stroke-width", 0.8);
+  }
+
+  for (var i = 0; i < 5; i++) {
+    var angle = 90 + i * 72 + 36;
+    var bowDist = tileR * 2.1;
+    var bowCx = polarX(cx, bowDist, angle);
+    var bowCy = polarY(cy, bowDist, angle);
+    var bowR = tileR * 0.35;
+    var bow = [
+      [bowCx, bowCy - bowR],
+      [bowCx + bowR * 0.6, bowCy - bowR * 0.15],
+      [bowCx, bowCy],
+      [bowCx + bowR * 0.6, bowCy + bowR * 0.15],
+      [bowCx, bowCy + bowR],
+      [bowCx - bowR * 0.6, bowCy + bowR * 0.15],
+      [bowCx, bowCy],
+      [bowCx - bowR * 0.6, bowCy - bowR * 0.15]
+    ];
+    svg.append("path")
+      .attr("d", lineGenerator(bow, true))
+      .attr("fill", "rgba(204, 109, 138, 0.2)").attr("stroke", "#cc6d8a").attr("stroke-width", 0.8);
+  }
+}
+
+// ============================================================
+// Page Construction
+// ============================================================
+
+function buildCards() {
+  var grid = d3.select("#grid");
+
+  COMPONENTS.forEach(function(comp) {
+    var card = grid.append("div")
+      .attr("class", "component-card")
+      .attr("data-tags", comp.tag)
+      .attr("data-id", comp.id);
+
+    var hdr = card.append("div").attr("class", "card-header");
+    hdr.append("h3").text(comp.name);
+    var tagClass = "tag tag-" + comp.tag;
+    hdr.append("span").attr("class", tagClass).text(comp.tag);
+
+    card.append("p").attr("class", "description").text(comp.description);
+
+    var paramsDiv = card.append("div").attr("class", "params");
+    Object.keys(comp.params).forEach(function(key) {
+      paramsDiv.append("span").attr("class", "param").text(key + ": " + comp.params[key]);
+    });
+
+    var renderDiv = card.append("div").attr("class", "render");
+    var svgW = 400, svgH = 400;
+    var svg = renderDiv.append("svg")
+      .attr("width", svgW).attr("height", svgH)
+      .attr("viewBox", "0 0 " + svgW + " " + svgH);
+
+    svg.append("rect")
+      .attr("width", svgW).attr("height", svgH)
+      .attr("fill", "#0a0a0f");
+
+    comp.render(svg, svgW / 2, svgH / 2);
+
+    var footer = card.append("div").attr("class", "card-footer");
+    footer.append("textarea")
+      .attr("placeholder", "Feedback on " + comp.name + "...");
+  });
+}
+
+// ============================================================
+// Filtering
+// ============================================================
+
+function setupFilters() {
+  var buttons = document.querySelectorAll(".filter-btn");
+  buttons.forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      buttons.forEach(function(b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+
+      var filter = btn.getAttribute("data-filter");
+      var cards = document.querySelectorAll(".component-card");
+      cards.forEach(function(card) {
+        if (filter === "all" || card.getAttribute("data-tags") === filter) {
+          card.classList.remove("hidden");
+        } else {
+          card.classList.add("hidden");
+        }
+      });
+    });
+  });
+}
+
+// ============================================================
+// Copy Feedback
+// ============================================================
+
+function copyAllFeedback() {
+  var date = new Date().toISOString().slice(0, 10);
+  var md = "# Component Feedback \u2014 " + date + "\n\n";
+  var hasContent = false;
+
+  document.querySelectorAll(".component-card").forEach(function(card) {
+    var text = card.querySelector("textarea").value.trim();
+    if (text) {
+      hasContent = true;
+      var name = card.querySelector("h3").textContent;
+      var tag = card.getAttribute("data-tags");
+      var suffix = tag === "aggregation" ? " (aggregation)" : "";
+      md += "## " + name + suffix + "\n" + text + "\n\n";
+    }
+  });
+
+  if (!hasContent) {
+    showToast("No feedback to copy \u2014 add notes to component cards first.");
+    return;
+  }
+
+  navigator.clipboard.writeText(md).then(function() {
+    showToast("Copied to clipboard!");
+    var btn = document.getElementById("copyAllBtn");
+    btn.classList.add("copied");
+    btn.textContent = "Copied!";
+    setTimeout(function() {
+      btn.classList.remove("copied");
+      btn.textContent = "Copy All Feedback";
+    }, 2000);
+  }).catch(function() {
+    var ta = document.createElement("textarea");
+    ta.value = md;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    showToast("Copied to clipboard!");
+  });
+}
+
+function showToast(msg) {
+  var toast = document.getElementById("toast");
+  toast.textContent = msg;
+  toast.classList.add("show");
+  setTimeout(function() { toast.classList.remove("show"); }, 2500);
+}
+
+// ============================================================
+// Initialize
+// ============================================================
+
+buildCards();
+setupFilters();
+</script>
+</body>
+</html>

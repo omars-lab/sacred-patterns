@@ -1,0 +1,88 @@
+# Medallion-10: Iteration 15 — Add strapwork (interlaced bands)
+#
+# Iter 14 baseline:
+#   composite=0.7842, structural=1/18, A5=BROKEN (17/45 crossings)
+#   warnings[0] still "missing-shapes" but visual diff against reference
+#   shows the dominant missing element is INTERLACED BANDS — every region
+#   in the reference is enclosed by woven strapwork; iter 14 has bare
+#   line-edges only.
+#
+# Mechanical edit: add `strapwork width 5 crossing alternating` before
+# `voids detect`. This converts every line in the construction into a
+# pair of parallel bands separated by a gap, with crossings rendered
+# alternately over/under to create the interlace pattern.
+#
+# Translation table mapping:
+# - "A5 bands BROKEN, 17/45 crossings, expected ~45 for n=10" =
+#   missing strapwork rendering. Fix: add strapwork block.
+#
+# Predicted Δ:
+#   - A5 status BROKEN -> COMPLETE (~+0.10 to overall via svg-audit
+#     score 2/5 -> 3/5)
+#   - composite +0.05 to +0.10 (large effect because A5 is one of 5
+#     binary svg-audit gates)
+#   - pixel similarity may dip 1-3% transiently as bands change
+#     coverage, but the structural gain dominates the rollup
+#   - missing-shapes: rhombi etc may appear naturally as band gaps
+#     close around them
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  circle C1 center(0,0) radius 30
+  divide C1 into 10
+  circle Cmid2 center(0,0) radius 50
+  divide Cmid2 into 10
+  circle Cmid center(0,0) radius 80
+  divide Cmid into 10
+  repeat at C0 depth 1
+    circle center($point) radius 0.3 * $radius
+    divide into 10
+
+pattern medallion on medallion
+  layer 0
+    connect every 4 on C1
+    connect every 3 on C1
+
+  layer 1
+    connect every 4 on @0.0
+    connect every 4 on @0.1
+    connect every 4 on @0.2
+    connect every 4 on @0.3
+    connect every 4 on @0.4
+    connect every 4 on @0.5
+    connect every 4 on @0.6
+    connect every 4 on @0.7
+    connect every 4 on @0.8
+    connect every 4 on @0.9
+
+  layer 2
+    connect every 3 on Cmid
+
+  layer 3
+    connect every 4 on Cmid2
+
+  # NEW iter 15: render every line as a parallel-band pair with
+  # alternating over/under crossings. This produces the interlaced
+  # strapwork visible in the reference image — the dominant visual
+  # element missing from iter 14.
+  strapwork
+      width 5
+      crossing alternating
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 20 color navy
+  fill void where sides >= 5 color cobalt
+
+  edges color navy width 0.5

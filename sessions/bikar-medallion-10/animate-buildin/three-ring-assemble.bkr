@@ -1,0 +1,65 @@
+# Tier-1 witness for the `radial_assemble` animate primitive (Tenet 17 — prove the
+# primitive on a real multi-ring rotational construction before the medallion).
+#
+# WHAT THIS WITNESS PROVES (the question Tier-0 could NOT answer): does the
+# center-first / rim-last stagger work across genuine concentric DISTANCE rings,
+# under real rotational symmetry — i.e. does `faceRings` (computeRingBins on
+# centroid distance) drive the per-wave delay, not just the DSL `layer` tag?
+#
+# Construction: a tiny center square at the origin, then three concentric rings of
+# small squares at radii 30 / 60 / 90, each ring an 8-fold rotational fan
+# (rotate 8 around C0.mpt). The center seats first, then ring-by-ring outward.
+# radial_assemble must:
+#   - send each square outward along ITS OWN centroid axis (distinct directions),
+#   - seat the center (faceRings 0) FIRST, then radius-30 ring, then 60, then 90 LAST,
+#   sequenced by delay_per_layer reading the faceRings distance bin.
+#
+# This is the medallion's structure in miniature: a center + concentric waves,
+# rotational symmetry, ring-staggered build-in. If the stagger reads center→outer
+# here, the primitive is ready for the medallion's 22 waves.
+
+animate buildin
+  keyframes assemble
+    target [sides == 4]
+    property radial_assemble
+    from 1.5
+    to 0
+    duration 1s
+    delay_per_layer 0.4s
+    easing ease_out
+
+style swatch
+  palette pal
+    core = #6C3483
+    inner = #C0392B
+    mid = #E67E22
+    outer = #2C5C5C
+
+  [ring == 0]
+    fill core
+  [ring == 1]
+    fill inner
+  [ring == 2]
+    fill mid
+  [ring == 3]
+    fill outer
+
+blueprint w
+  circle C0 center(0,0) radius 7
+  circle CI center(30,0) radius 8
+  circle CM center(60,0) radius 8
+  circle CO center(90,0) radius 8
+  divide C0 into 4
+  divide CI into 4
+  divide CM into 4
+  divide CO into 4
+
+pattern p on w
+  connect cycle [C0.cpt0 C0.cpt1 C0.cpt2 C0.cpt3]
+  rotate 8 around C0.mpt
+    connect cycle [CI.cpt0 CI.cpt1 CI.cpt2 CI.cpt3]
+    connect cycle [CM.cpt0 CM.cpt1 CM.cpt2 CM.cpt3]
+    connect cycle [CO.cpt0 CO.cpt1 CO.cpt2 CO.cpt3]
+  voids detect
+  style swatch
+  animate buildin

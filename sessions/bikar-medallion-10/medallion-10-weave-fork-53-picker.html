@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Decision picker — medallion-10 weave (fork #53)</title>
+<style>
+  body { font-family: Georgia, serif; max-width: 980px; margin: 2rem auto; padding: 0 1rem 6rem;
+         color: #1a2744; line-height: 1.5; }
+  h1 { font-size: 1.5rem; } .sub { color: #555; margin-top: -.6rem; }
+  .situation { background: #fbfbf8; border: 1px solid #ccc; border-radius: 10px; padding: 1rem 1.2rem; margin: 1.4rem 0; }
+  .situation h2 { margin: 0 0 .5rem; font-size: 1.1rem; }
+  .compare { display: flex; gap: 1.2rem; flex-wrap: wrap; }
+  .compare figure { margin: 0; flex: 1 1 280px; }
+  .compare img { width: 100%; border: 1px solid #ddd; border-radius: 6px; }
+  .compare figcaption { font-size: .85rem; color: #555; margin-top: .3rem; text-align: center; }
+  .compare figcaption b { color: #1a2744; }
+  .decision { border: 1px solid #ccc; border-radius: 10px; padding: 1rem 1.2rem; margin: 1.4rem 0; background: #fbfbf8; }
+  .decision h2 { margin: 0 0 .2rem; font-size: 1.12rem; }
+  .tag { font-family: monospace; font-size: .8rem; background: #eef; padding: .1rem .45rem; border-radius: 4px; }
+  .q { margin: .4rem 0 .15rem; font-size: 1.02rem; }
+  .qtech { font-size: .85rem; color: #666; font-family: "Courier New", monospace; margin-bottom: .6rem; }
+  .unblocks { font-size: .85rem; color: #2e5d32; margin-bottom: .6rem; }
+  label.opt { display: block; padding: .7rem .9rem; margin: .5rem 0; border: 1px solid #ddd;
+              border-radius: 7px; cursor: pointer; background: #fff; }
+  label.opt:has(input:checked) { border-color: #1b6ca8; background: #eaf3fa; }
+  .plain { display: block; font-size: .94rem; margin-top: .25rem; }
+  .plain b.k { color: #2e5d32; font-weight: bold; }
+  .tech { display: block; font-size: .82rem; color: #555; font-family: "Courier New", monospace; margin-top: .25rem; }
+  .tech b.k { color: #555; }
+  .cost { display: block; font-size: .85rem; color: #8a5a00; margin-top: .25rem; }
+  .cost b.k { color: #8a5a00; }
+  .rec { color: #1b6ca8; font-weight: bold; font-size: .8rem; }
+  .optimg { max-width: 215px; border: 1px solid #ddd; border-radius: 6px; float: right; margin-left: .9rem; margin-bottom: .4rem; }
+  textarea.note { width: 100%; box-sizing: border-box; margin-top: .6rem; font-family: inherit;
+                  font-size: .9rem; min-height: 2.4rem; border: 1px solid #ddd; border-radius: 6px; padding: .4rem; }
+  #bar { position: fixed; bottom: 0; left: 0; right: 0; background: #0b1d3a; color: #fff;
+         padding: .7rem 1rem; display: flex; gap: 1rem; align-items: center; justify-content: center; }
+  #bar button { font-size: 1rem; padding: .5rem 1.1rem; border-radius: 8px; border: 0; cursor: pointer; }
+  #copy { background: #2e7d32; color: #fff; } #recall { background: #888; color: #fff; }
+  #status { font-size: .9rem; }
+  #preview { white-space: pre-wrap; font-family: "Courier New", monospace; font-size: .82rem;
+             background: #f4f4ee; border: 1px dashed #999; border-radius: 8px; padding: .8rem; }
+</style>
+</head>
+<body>
+<h1>Medallion-10 — the weave decision</h1>
+<p class="sub">One choice, three ways to go. Each is described twice — <b>in plain terms</b>
+(what it means for the final picture, no jargon) and <b>technically</b> (the precise engineering
+statement). The <span class="rec">★ recommended</span> choice is pre-selected; change it if you
+disagree, add a note, then press <b>Copy prompt</b> and paste the result back into Claude Code.</p>
+
+<div class="situation">
+  <h2>Where we are — and why the weave is stuck</h2>
+  <p>We finished the <b>structure</b> (you approved it) and the <b>colors</b> (you approved those
+  too). The last step was the <b>weave</b> — the white over-and-under ribbon lattice that, in your
+  reference photo, frames every tile across the whole disc. We could not get it to weave, and here
+  is the honest reason, now confirmed by eye:</p>
+  <div class="compare">
+    <figure>
+      <img src="decision-picker-assets/reference.jpg" alt="reference">
+      <figcaption><b>The reference</b> — tiles pack edge-to-edge into a dense disc, a white
+      ribbon weaves over/under all the way out. No empty space.</figcaption>
+    </figure>
+    <figure>
+      <img src="decision-picker-assets/current-sparse.png" alt="current">
+      <figcaption><b>What we have</b> — the 10 rosettes are flung into a sparse ring with a big
+      white void. The "tons of white" you saw is empty <b>background</b>, not weave.</figcaption>
+    </figure>
+  </div>
+  <p style="margin-top:.8rem">The deeper problem: our tiles never <b>touch</b>. A weave can only go
+  over/under where two ribbons <b>cross</b> — and nothing in the current drawing crosses anything
+  (every line is part of a separate closed tile outline). So no weave knob, no matter how it's
+  tuned, can interlace this. The white gap and the un-weavable structure are the same root cause:
+  the tiles are flung apart instead of packed together. That's the choice below.</p>
+</div>
+
+<div id="decisions"></div>
+
+<h2 style="margin-top:2rem">Prompt preview</h2>
+<div id="preview"></div>
+
+<div id="bar">
+  <button id="copy">Copy prompt</button>
+  <button id="recall">Reset to recommendation</button>
+  <span id="status"></span>
+</div>
+
+<script>
+// Single decision (fork #53). Every option carries BOTH registers (plain + tech) plus a
+// `cost` line (what it costs you) and a real `img`. `rec: true` marks the recommendation.
+const DECISIONS = [
+  {
+    tag: "weave-stage", repo: "bikar",
+    doc: "bikar/docs/decisions/2026-06-19-weave-field-method.md",
+    q: "The tiles don't touch, so nothing can weave over/under them. How do you want to resolve it?",
+    qTech: "iter-71 medallion = 2700 degree-2 nodes, zero degree-4 crossings; no strapwork weave (ring/field/boundary/flat) can interlace it. Fork between overlay net / structure re-author / accept flat.",
+    unblocks: "The final medallion-10 deliverable — this is the last open gate.",
+    options: [
+      { id: "2", rec: true, label: "Re-author so the tiles overlap into a dense disc",
+        img: "decision-picker-assets/opt2-overlap.png",
+        plain: "Rebuild the layout so the 10 rosettes pack tight and share edges — exactly like your reference. Where they overlap, real crossings appear, so the white ribbon CAN weave over/under all the way out. This is the only option that gets you the reference picture: it kills the white gap AND makes the weave possible in one move.",
+        tech: "Re-author the medallion construction so wave polygons overlap (shared edges → degree-4 crossing junctions), then apply the already-built field-Hankin weave. The structure change re-opens Stage 1 (needs your structure re-approval), but it's the only path that yields both density and a weavable lattice.",
+        cost: "Re-opens the structure gate you already approved — you'll re-approve a denser layout once. More engine work than the others, but it's the real answer." },
+      { id: "1", label: "Leave the tiles apart, lay an independent weave net on top",
+        img: "decision-picker-assets/opt1-overlay.png",
+        plain: "Keep the structure exactly as you approved it, and draw a SEPARATE woven ribbon lattice on top that crosses itself (so it does go over/under). Fast, keeps your approved structure — BUT the white gaps between the tiles stay, so it still won't look like the dense reference disc.",
+        tech: "Overlay an independent self-crossing strap network (engine ready, studio dial-in) over the existing tiles. Genuine over/under on the net's own crossings, but the disjoint-tile white gap is unchanged — does not reach reference density.",
+        cost: "Keeps your approved structure, no re-gate. But the white gap remains — this does NOT match the reference." },
+      { id: "3", label: "Accept the flat, bordered look as final",
+        img: "decision-picker-assets/opt3-flat.png",
+        plain: "Ship what we have: clean colored tiles with thin white outlines, no weave. It's a finished, tidy pattern — just not the woven dense disc from your photo. Cheapest, fastest, honest about not matching.",
+        tech: "Land the flat approved structure into pattern.bkr (gate #24) with outline borders, no strapwork overlay. Clean deliverable, explicitly NOT the reference's woven field.",
+        cost: "No weave at all, white space stays. Fastest, but it's a different pattern than the reference." },
+    ],
+  },
+];
+
+const container = document.getElementById("decisions");
+for (const d of DECISIONS) {
+  const div = document.createElement("div");
+  div.className = "decision";
+  div.innerHTML = `<h2>${d.tag} <span class="tag">${d.repo}</span></h2>
+    <div class="q">${d.q}</div>
+    <div class="qtech">${d.qTech}</div>
+    <div class="unblocks">Unblocks: ${d.unblocks}</div>` +
+    d.options.map(o => `<label class="opt">
+      ${o.img ? `<img class="optimg" src="${o.img}" alt="">` : ""}
+      <input type="radio" name="${d.tag}" value="${o.id}" ${o.rec ? "checked" : ""}>
+      <b>Option ${o.id}</b> — ${o.label} ${o.rec ? '<span class="rec">★ recommended</span>' : ""}
+      <span class="plain"><b class="k">In plain terms:</b> ${o.plain}</span>
+      <span class="tech"><b class="k">Technically:</b> ${o.tech}</span>
+      <span class="cost"><b class="k">What it costs:</b> ${o.cost}</span>
+      <span style="clear:both;display:block"></span></label>`).join("") +
+    `<textarea class="note" data-tag="${d.tag}" placeholder="Optional note for this pick (constraints, taste, scope)…"></textarea>`;
+  container.appendChild(div);
+}
+
+function buildPrompt() {
+  const lines = [
+    "Apply my decision pick from sessions/bikar-medallion-10/medallion-10-weave-fork-53-picker.html (medallion-10 weave fork #53).",
+    "",
+    "Pick:",
+  ];
+  for (const d of DECISIONS) {
+    const sel = document.querySelector(`input[name="${CSS.escape(d.tag)}"]:checked`);
+    const note = document.querySelector(`textarea[data-tag="${CSS.escape(d.tag)}"]`).value.trim();
+    const opt = d.options.find(o => o.id === sel.value);
+    lines.push(`- ${d.tag} (${d.doc}): PICK Option ${opt.id} — ${opt.label}${note ? `. Owner note: ${note}` : ""}`);
+  }
+  lines.push(
+    "",
+    "This pick is my owner verdict on the weave gate (#23). Apply it: update the decision doc's structured frontmatter (status_token, picked_option, decided: today), append an 'Owner pick' addendum quoting the pick + note verbatim, run bikar's ledger regen + coherence gate, regen sacred-patterns LEDGER-XREPO, then start the immediate follow-on the picked option names:",
+    "  - Option 2 → re-open Stage 1 structure (re-author waves to overlap), surface the new dense structure for my re-approval before any weave.",
+    "  - Option 1 → dial the independent crossing-network overlay in the studio (owner-gated render), then land into pattern.bkr (#24).",
+    "  - Option 3 → land the flat approved structure into pattern.bkr (#24), close the weave stage as 'accepted flat'.",
+    "Report the per-doc outcome and the next concrete step.",
+  );
+  return lines.join("\n");
+}
+
+function refresh() { document.getElementById("preview").textContent = buildPrompt(); }
+document.body.addEventListener("input", refresh);
+document.getElementById("copy").onclick = async () => {
+  await navigator.clipboard.writeText(buildPrompt());
+  document.getElementById("status").textContent = "Copied — paste into Claude Code.";
+};
+document.getElementById("recall").onclick = () => {
+  for (const d of DECISIONS) {
+    const rec = d.options.find(o => o.rec) || d.options[0];
+    document.querySelector(`input[name="${CSS.escape(d.tag)}"][value="${CSS.escape(rec.id)}"]`).checked = true;
+  }
+  document.querySelectorAll("textarea.note").forEach(t => (t.value = ""));
+  refresh();
+};
+refresh();
+</script>
+
+<p style="margin-top:2.5rem;font-size:.85rem;color:#777;border-top:1px solid #ddd;padding-top:.8rem">
+Data-driven: regenerate by swapping the <code>DECISIONS</code> JSON (every option carries both
+registers — <code>plain</code> + <code>tech</code> — plus <code>cost</code> and a real
+<code>img</code>). Recipe: <code>.claude/skills/present-options-visually/</code> ·
+source framing: <code>bikar/docs/decisions/2026-06-19-weave-field-method.md</code> §10.
+</p>
+</body>
+</html>

@@ -1,0 +1,9 @@
+# Engine-native decagonal star-and-cross field (Tenet 26 — use the girih primitive,
+# don't hand-author tiles). girih field grows a GAP-FREE decagonal tiling; each
+# tile carries its hankin-star decoration. Gap-free = shared edges = the no-gap
+# precondition PIC needs to JOIN per-tile outlines into the continuous lattice.
+blueprint g
+  circle C0 center(0,0) radius 100
+
+pattern p on g
+  girih field decagonal 30 shells 1

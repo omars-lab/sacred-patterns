@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>SVG Diff — Tile Comparison</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; }
+        h1 { font-size: 1.4em; margin-bottom: 5px; color: #7fdbca; }
+        h2 { font-size: 1.05em; margin: 12px 0 6px; color: #c792ea; }
+        .subtitle { font-size: 0.8em; color: #888; margin-bottom: 15px; }
+        .layout { display: flex; gap: 15px; flex-wrap: wrap; }
+        .panel { background: #16213e; border-radius: 8px; padding: 12px; }
+        .panel-third { flex: 1; min-width: 250px; }
+        .panel-full { width: 100%; }
+        .controls { margin-bottom: 12px; }
+        .controls label { display: block; margin-bottom: 4px; font-size: 0.82em; color: #82aaff; }
+        input[type="file"] { margin-bottom: 8px; font-size: 0.82em; }
+        button { padding: 5px 14px; background: #3b7dd8; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.82em; margin: 4px 4px 4px 0; }
+        button:hover { background: #5b9de8; }
+        button.active { background: #6bcb77; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8em; margin-top: 6px; }
+        th, td { padding: 4px 6px; text-align: left; border-bottom: 1px solid #2a4a7f; }
+        th { color: #82aaff; font-weight: 600; }
+        .stat { font-size: 1.2em; font-weight: 700; }
+        .stat-green { color: #6bcb77; }
+        .stat-red { color: #ff6b6b; }
+        .stat-blue { color: #4d96ff; }
+        .stat-yellow { color: #ffd93d; }
+        .stat-label { font-size: 0.72em; color: #82aaff; }
+        .stats-row { display: flex; gap: 15px; margin-bottom: 12px; flex-wrap: wrap; }
+        .stat-box { text-align: center; min-width: 70px; }
+        .color-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: middle; margin-right: 4px; border: 1px solid #555; }
+        .diff-view { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .diff-svg-container { background: #0d1b3e; border-radius: 6px; overflow: hidden; text-align: center; padding: 5px; }
+        .diff-svg-container svg { max-width: 380px; max-height: 380px; }
+        .diff-label { font-size: 0.75em; color: #82aaff; margin-bottom: 4px; }
+        .legend { font-size: 0.75em; margin-top: 8px; padding: 6px; background: #0d1b3e; border-radius: 4px; }
+        .legend span { margin-right: 12px; }
+    </style>
+</head>
+<body>
+    <h1>SVG Diff — Tile Comparison</h1>
+    <p class="subtitle">Compare two SVGs at the tile level. Matched tiles shown in green, unmatched in red (current only) or blue (reference only).</p>
+
+    <div class="layout">
+        <div class="panel panel-third">
+            <h2>Current Iteration</h2>
+            <div class="controls">
+                <label>Load HTML/SVG file:</label>
+                <input type="file" id="currentFile" accept=".html,.svg,.htm">
+            </div>
+            <div id="currentStatus" class="stat-label">Not loaded</div>
+        </div>
+        <div class="panel panel-third">
+            <h2>Reference</h2>
+            <div class="controls">
+                <label>Load HTML/SVG file:</label>
+                <input type="file" id="referenceFile" accept=".html,.svg,.htm">
+            </div>
+            <div id="referenceStatus" class="stat-label">Not loaded</div>
+        </div>
+        <div class="panel panel-third">
+            <h2>Actions</h2>
+            <button onclick="runDiff()">Run Diff</button>
+            <button onclick="exportReport()">Export Report</button>
+            <div style="margin-top:8px;">
+                <label style="font-size:0.8em;color:#82aaff;">Match tolerance (px):</label>
+                <input type="number" id="tolerance" value="15" min="1" max="100" style="width:60px;padding:3px;background:#0d1b3e;border:1px solid #2a4a7f;color:#e0e0e0;border-radius:3px;">
+            </div>
+        </div>
+    </div>
+
+    <div class="layout" style="margin-top:15px;">
+        <div class="panel panel-full">
+            <h2>Diff Summary</h2>
+            <div class="stats-row" id="diffStats">
+                <div class="stat-box"><div class="stat stat-green" id="matchedCount">—</div><div class="stat-label">Matched</div></div>
+                <div class="stat-box"><div class="stat stat-red" id="currentOnlyCount">—</div><div class="stat-label">Current Only</div></div>
+                <div class="stat-box"><div class="stat stat-blue" id="refOnlyCount">—</div><div class="stat-label">Reference Only</div></div>
+                <div class="stat-box"><div class="stat stat-yellow" id="matchPct">—</div><div class="stat-label">Match %</div></div>
+            </div>
+
+            <div class="diff-view">
+                <div>
+                    <div class="diff-label">Current (diff-colored)</div>
+                    <div class="diff-svg-container" id="diffCurrent"></div>
+                </div>
+                <div>
+                    <div class="diff-label">Reference (diff-colored)</div>
+                    <div class="diff-svg-container" id="diffReference"></div>
+                </div>
+                <div>
+                    <div class="diff-label">Overlay</div>
+                    <div class="diff-svg-container" id="diffOverlay"></div>
+                </div>
+            </div>
+
+            <div class="legend" id="legend">
+                <span><span class="color-swatch" style="background:#6bcb77"></span> Matched</span>
+                <span><span class="color-swatch" style="background:#ff6b6b"></span> Current only (extra)</span>
+                <span><span class="color-swatch" style="background:#4d96ff"></span> Reference only (missing)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="layout" style="margin-top:15px;">
+        <div class="panel panel-full">
+            <h2>Census Comparison</h2>
+            <table id="censusCompare">
+                <thead><tr><th>Metric</th><th>Current</th><th>Reference</th><th>Delta</th></tr></thead>
+                <tbody></tbody>
+            </table>
+
+            <h2>By Vertex Count</h2>
+            <table id="vertexCompare">
+                <thead><tr><th>Type</th><th>Current</th><th>Reference</th><th>Delta</th></tr></thead>
+                <tbody></tbody>
+            </table>
+
+            <h2>By Color</h2>
+            <table id="colorCompare">
+                <thead><tr><th>Color</th><th>Current</th><th>Reference</th><th>Delta</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+    // ========================================
+    // SHARED CENSUS ENGINE (same as svg-census.html)
+    // ========================================
+    function polygonArea(points) {
+        var n = points.length, area = 0;
+        for (var i = 0; i < n; i++) {
+            var j = (i + 1) % n;
+            area += points[i][0] * points[j][1] - points[j][0] * points[i][1];
+        }
+        return Math.abs(area) / 2;
+    }
+    function polygonCentroid(points) {
+        var cx = 0, cy = 0;
+        for (var i = 0; i < points.length; i++) { cx += points[i][0]; cy += points[i][1]; }
+        return [cx / points.length, cy / points.length];
+    }
+    function parsePoints(pointsStr) {
+        return pointsStr.trim().split(/\s+/).map(function(p) {
+            var parts = p.split(','); return [parseFloat(parts[0]), parseFloat(parts[1])];
+        });
+    }
+    function normalizeColor(c) { return (c||'none').trim().toLowerCase(); }
+
+    function extractCensus(svgEl) {
+        var polygons = svgEl.querySelectorAll('polygon');
+        var lines = svgEl.querySelectorAll('line');
+        var circles = svgEl.querySelectorAll('circle');
+        var tiles = [], totalArea = 0, byVertex = {}, byColor = {};
+        var w = parseFloat(svgEl.getAttribute('width')) || 800;
+        var h = parseFloat(svgEl.getAttribute('height')) || 800;
+
+        polygons.forEach(function(poly) {
+            var ps = poly.getAttribute('points');
+            if (!ps) return;
+            var pts = parsePoints(ps), area = polygonArea(pts);
+            var centroid = polygonCentroid(pts), fill = normalizeColor(poly.getAttribute('fill'));
+            var vc = pts.length;
+            tiles.push({ vertexCount: vc, area: area, centroid: centroid, fill: fill, points: pts, element: poly });
+            totalArea += area;
+            if (!byVertex[vc]) byVertex[vc] = { count: 0, totalArea: 0 };
+            byVertex[vc].count++; byVertex[vc].totalArea += area;
+            if (!byColor[fill]) byColor[fill] = { count: 0, totalArea: 0 };
+            byColor[fill].count++; byColor[fill].totalArea += area;
+        });
+
+        return {
+            totalPolygons: tiles.length, totalLines: lines.length,
+            totalCircles: circles.length, uniqueColors: Object.keys(byColor).length,
+            canvasArea: w * h, totalTileArea: totalArea,
+            coveragePercent: (totalArea / (w * h) * 100).toFixed(1),
+            byVertexCount: byVertex, byColor: byColor, tiles: tiles
+        };
+    }
+
+    function extractSvgFromHtml(htmlString) {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(htmlString, 'text/html');
+        var svg = doc.querySelector('svg');
+        if (svg) return svg;
+        var xmlDoc = parser.parseFromString(htmlString, 'image/svg+xml');
+        return xmlDoc.querySelector('svg');
+    }
+
+    // ========================================
+    // STATE
+    // ========================================
+    var currentSvg = null, referenceSvg = null;
+    var currentCensus = null, referenceCensus = null;
+
+    document.getElementById('currentFile').addEventListener('change', function(e) {
+        var file = e.target.files[0]; if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(evt) {
+            currentSvg = extractSvgFromHtml(evt.target.result);
+            if (currentSvg) {
+                currentCensus = extractCensus(currentSvg);
+                document.getElementById('currentStatus').textContent =
+                    'Loaded: ' + currentCensus.totalPolygons + ' polygons, ' + currentCensus.totalLines + ' lines';
+            } else {
+                document.getElementById('currentStatus').textContent = 'Error: No SVG found';
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    document.getElementById('referenceFile').addEventListener('change', function(e) {
+        var file = e.target.files[0]; if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(evt) {
+            referenceSvg = extractSvgFromHtml(evt.target.result);
+            if (referenceSvg) {
+                referenceCensus = extractCensus(referenceSvg);
+                document.getElementById('referenceStatus').textContent =
+                    'Loaded: ' + referenceCensus.totalPolygons + ' polygons, ' + referenceCensus.totalLines + ' lines';
+            } else {
+                document.getElementById('referenceStatus').textContent = 'Error: No SVG found';
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    // ========================================
+    // DIFF ENGINE
+    // ========================================
+    function distance(p1, p2) {
+        return Math.sqrt((p1[0]-p2[0])*(p1[0]-p2[0]) + (p1[1]-p2[1])*(p1[1]-p2[1]));
+    }
+
+    function matchTiles(currentTiles, refTiles, tolerance) {
+        var matched = [];
+        var currentMatched = new Set();
+        var refMatched = new Set();
+
+        // For each current tile, find the closest reference tile by centroid
+        for (var i = 0; i < currentTiles.length; i++) {
+            var bestDist = Infinity, bestJ = -1;
+            for (var j = 0; j < refTiles.length; j++) {
+                if (refMatched.has(j)) continue;
+                // Must have same vertex count to match
+                if (currentTiles[i].vertexCount !== refTiles[j].vertexCount) continue;
+                var d = distance(currentTiles[i].centroid, refTiles[j].centroid);
+                if (d < bestDist) { bestDist = d; bestJ = j; }
+            }
+            if (bestJ >= 0 && bestDist <= tolerance) {
+                matched.push({ current: i, reference: bestJ, distance: bestDist });
+                currentMatched.add(i);
+                refMatched.add(bestJ);
+            }
+        }
+
+        var currentOnly = [];
+        for (var i = 0; i < currentTiles.length; i++) {
+            if (!currentMatched.has(i)) currentOnly.push(i);
+        }
+        var refOnly = [];
+        for (var j = 0; j < refTiles.length; j++) {
+            if (!refMatched.has(j)) refOnly.push(j);
+        }
+
+        return { matched: matched, currentOnly: currentOnly, refOnly: refOnly };
+    }
+
+    function runDiff() {
+        if (!currentCensus || !referenceCensus) {
+            alert('Load both SVGs first.');
+            return;
+        }
+
+        var tolerance = parseFloat(document.getElementById('tolerance').value) || 15;
+        var result = matchTiles(currentCensus.tiles, referenceCensus.tiles, tolerance);
+
+        // Update stats
+        document.getElementById('matchedCount').textContent = result.matched.length;
+        document.getElementById('currentOnlyCount').textContent = result.currentOnly.length;
+        document.getElementById('refOnlyCount').textContent = result.refOnly.length;
+        var total = Math.max(currentCensus.totalPolygons, referenceCensus.totalPolygons);
+        var pct = total > 0 ? (result.matched.length / total * 100).toFixed(0) : '0';
+        document.getElementById('matchPct').textContent = pct + '%';
+
+        // Render diff-colored SVGs
+        renderDiffSvg('diffCurrent', currentSvg, currentCensus.tiles, result, 'current');
+        renderDiffSvg('diffReference', referenceSvg, referenceCensus.tiles, result, 'reference');
+        renderOverlay(result);
+
+        // Census comparison tables
+        renderCensusCompare();
+        renderVertexCompare();
+        renderColorCompare();
+    }
+
+    function renderDiffSvg(containerId, svgEl, tiles, result, side) {
+        var container = document.getElementById(containerId);
+        container.innerHTML = '';
+
+        var clone = svgEl.cloneNode(true);
+        clone.style.maxWidth = '380px';
+        clone.style.maxHeight = '380px';
+
+        var polys = clone.querySelectorAll('polygon');
+
+        if (side === 'current') {
+            // Color matched tiles green, unmatched red
+            var matchedSet = new Set(result.matched.map(function(m) { return m.current; }));
+            var unmatchedSet = new Set(result.currentOnly);
+            polys.forEach(function(poly, idx) {
+                if (matchedSet.has(idx)) {
+                    poly.setAttribute('fill', '#6bcb77');
+                    poly.setAttribute('stroke', '#4a9e5c');
+                } else if (unmatchedSet.has(idx)) {
+                    poly.setAttribute('fill', '#ff6b6b');
+                    poly.setAttribute('stroke', '#cc5555');
+                } else {
+                    poly.setAttribute('fill', '#333');
+                    poly.setAttribute('stroke', '#444');
+                }
+                poly.setAttribute('stroke-width', '0.8');
+            });
+        } else {
+            // Color matched tiles green, unmatched blue
+            var matchedRefSet = new Set(result.matched.map(function(m) { return m.reference; }));
+            var unmatchedRefSet = new Set(result.refOnly);
+            polys.forEach(function(poly, idx) {
+                if (matchedRefSet.has(idx)) {
+                    poly.setAttribute('fill', '#6bcb77');
+                    poly.setAttribute('stroke', '#4a9e5c');
+                } else if (unmatchedRefSet.has(idx)) {
+                    poly.setAttribute('fill', '#4d96ff');
+                    poly.setAttribute('stroke', '#3a75cc');
+                } else {
+                    poly.setAttribute('fill', '#333');
+                    poly.setAttribute('stroke', '#444');
+                }
+                poly.setAttribute('stroke-width', '0.8');
+            });
+        }
+
+        container.appendChild(clone);
+    }
+
+    function renderOverlay(result) {
+        var container = document.getElementById('diffOverlay');
+        container.innerHTML = '';
+
+        if (!currentSvg) return;
+
+        var w = parseFloat(currentSvg.getAttribute('width')) || 800;
+        var h = parseFloat(currentSvg.getAttribute('height')) || 800;
+
+        var ns = 'http://www.w3.org/2000/svg';
+        var svg = document.createElementNS(ns, 'svg');
+        svg.setAttribute('width', w);
+        svg.setAttribute('height', h);
+        svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+        svg.style.maxWidth = '380px';
+        svg.style.maxHeight = '380px';
+        svg.style.background = '#0d1b3e';
+
+        // Draw matched tiles (green, semi-transparent)
+        result.matched.forEach(function(m) {
+            var tile = currentCensus.tiles[m.current];
+            var poly = document.createElementNS(ns, 'polygon');
+            poly.setAttribute('points', tile.points.map(function(p){return p[0]+','+p[1];}).join(' '));
+            poly.setAttribute('fill', 'rgba(107,203,119,0.4)');
+            poly.setAttribute('stroke', '#6bcb77');
+            poly.setAttribute('stroke-width', '0.5');
+            svg.appendChild(poly);
+        });
+
+        // Draw current-only tiles (red)
+        result.currentOnly.forEach(function(idx) {
+            var tile = currentCensus.tiles[idx];
+            var poly = document.createElementNS(ns, 'polygon');
+            poly.setAttribute('points', tile.points.map(function(p){return p[0]+','+p[1];}).join(' '));
+            poly.setAttribute('fill', 'rgba(255,107,107,0.5)');
+            poly.setAttribute('stroke', '#ff6b6b');
+            poly.setAttribute('stroke-width', '1');
+            svg.appendChild(poly);
+        });
+
+        // Draw reference-only tiles (blue)
+        result.refOnly.forEach(function(idx) {
+            var tile = referenceCensus.tiles[idx];
+            var poly = document.createElementNS(ns, 'polygon');
+            poly.setAttribute('points', tile.points.map(function(p){return p[0]+','+p[1];}).join(' '));
+            poly.setAttribute('fill', 'rgba(77,150,255,0.5)');
+            poly.setAttribute('stroke', '#4d96ff');
+            poly.setAttribute('stroke-width', '1');
+            svg.appendChild(poly);
+        });
+
+        container.appendChild(svg);
+    }
+
+    function renderCensusCompare() {
+        var tbody = document.getElementById('censusCompare').querySelector('tbody');
+        tbody.innerHTML = '';
+        var metrics = [
+            ['Polygons', currentCensus.totalPolygons, referenceCensus.totalPolygons],
+            ['Lines', currentCensus.totalLines, referenceCensus.totalLines],
+            ['Circles', currentCensus.totalCircles, referenceCensus.totalCircles],
+            ['Colors', currentCensus.uniqueColors, referenceCensus.uniqueColors],
+            ['Coverage %', currentCensus.coveragePercent, referenceCensus.coveragePercent]
+        ];
+        metrics.forEach(function(m) {
+            var delta = (typeof m[1] === 'string' ? parseFloat(m[1]) : m[1]) -
+                        (typeof m[2] === 'string' ? parseFloat(m[2]) : m[2]);
+            var sign = delta > 0 ? '+' : '';
+            var color = Math.abs(delta) < 0.01 ? '#6bcb77' : '#ffd93d';
+            var row = document.createElement('tr');
+            row.innerHTML = '<td>' + m[0] + '</td><td>' + m[1] + '</td><td>' + m[2] +
+                '</td><td style="color:' + color + '">' + sign + (typeof delta === 'number' ? delta.toFixed(1) : delta) + '</td>';
+            tbody.appendChild(row);
+        });
+    }
+
+    function renderVertexCompare() {
+        var tbody = document.getElementById('vertexCompare').querySelector('tbody');
+        tbody.innerHTML = '';
+        var allKeys = new Set();
+        Object.keys(currentCensus.byVertexCount).forEach(function(k){allKeys.add(k);});
+        Object.keys(referenceCensus.byVertexCount).forEach(function(k){allKeys.add(k);});
+        Array.from(allKeys).sort(function(a,b){return a-b;}).forEach(function(v) {
+            var cc = (currentCensus.byVertexCount[v] || {count:0}).count;
+            var rc = (referenceCensus.byVertexCount[v] || {count:0}).count;
+            var delta = cc - rc;
+            var sign = delta > 0 ? '+' : '';
+            var color = delta === 0 ? '#6bcb77' : '#ffd93d';
+            var row = document.createElement('tr');
+            row.innerHTML = '<td>' + v + '-gon</td><td>' + cc + '</td><td>' + rc +
+                '</td><td style="color:' + color + '">' + sign + delta + '</td>';
+            tbody.appendChild(row);
+        });
+    }
+
+    function renderColorCompare() {
+        var tbody = document.getElementById('colorCompare').querySelector('tbody');
+        tbody.innerHTML = '';
+        var allColors = new Set();
+        Object.keys(currentCensus.byColor).forEach(function(k){allColors.add(k);});
+        Object.keys(referenceCensus.byColor).forEach(function(k){allColors.add(k);});
+        Array.from(allColors).sort().forEach(function(c) {
+            var cc = (currentCensus.byColor[c] || {count:0}).count;
+            var rc = (referenceCensus.byColor[c] || {count:0}).count;
+            var delta = cc - rc;
+            var sign = delta > 0 ? '+' : '';
+            var color = delta === 0 ? '#6bcb77' : '#ffd93d';
+            var row = document.createElement('tr');
+            row.innerHTML = '<td><span class="color-swatch" style="background:' + c + '"></span>' + c +
+                '</td><td>' + cc + '</td><td>' + rc +
+                '</td><td style="color:' + color + '">' + sign + delta + '</td>';
+            tbody.appendChild(row);
+        });
+    }
+
+    function exportReport() {
+        if (!currentCensus || !referenceCensus) { alert('Run diff first.'); return; }
+        var tolerance = parseFloat(document.getElementById('tolerance').value) || 15;
+        var result = matchTiles(currentCensus.tiles, referenceCensus.tiles, tolerance);
+        var report = {
+            matched: result.matched.length,
+            currentOnly: result.currentOnly.length,
+            referenceOnly: result.refOnly.length,
+            matchPercent: Math.max(currentCensus.totalPolygons, referenceCensus.totalPolygons) > 0
+                ? (result.matched.length / Math.max(currentCensus.totalPolygons, referenceCensus.totalPolygons) * 100).toFixed(1)
+                : 0,
+            current: { polygons: currentCensus.totalPolygons, lines: currentCensus.totalLines, coverage: currentCensus.coveragePercent },
+            reference: { polygons: referenceCensus.totalPolygons, lines: referenceCensus.totalLines, coverage: referenceCensus.coveragePercent },
+            tolerance: tolerance
+        };
+        var blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = 'diff-report.json'; a.click();
+        URL.revokeObjectURL(url);
+    }
+    </script>
+</body>
+</html>

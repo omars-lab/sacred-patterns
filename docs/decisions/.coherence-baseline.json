@@ -1,0 +1,4 @@
+{
+  "_comment": "Append-blocked allowlist for check-decision-coherence.sh. Each entry grandfathers ONE {doc,rule} violation so the gate ships green over pre-existing debt. The checker errors if a NEW {doc,rule} not listed here fires (you can only shrink this list, never grow it) AND if a listed entry no longer fires (stale — remove it to ratchet down). Part D of the decision-hygiene cascade empties this as it backfills. Rules: rule-1 status_token enum, rule-2 ACCEPTED-needs-pick, rule-3 supersede-bidirectional, rule-4 one-authoritative-per-tag, rule-5 tag-in-vocab.",
+  "violations": []
+}

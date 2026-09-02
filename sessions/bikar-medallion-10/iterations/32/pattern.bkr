@@ -1,0 +1,45 @@
+# bikar-medallion-10 iter-32 — decagonal rosette (central decagon + 10-bowtie ring)
+#
+# Plain English: iter-31 proved a single girih decagon tile emits the
+# girih star/rosette vocabulary the chord-overlay couldn't, but A6 scored
+# 0 because one tile has no full-radius medallion — every detected shape
+# landed outside the baseline's zone bands. iter-32 composes the canonical
+# Lu-&-Steinhardt decagonal medallion seed: ring 10 bowtie tiles around the
+# central decagon (one per edge, attached edge-to-edge), giving a
+# full-radius, 10-fold-symmetric figure whose decoration populates the
+# inner-star + rosette zones.
+#
+# Construction (girih tiling, Lu & Steinhardt 2007, Fig 2):
+#   1. Central decagon aliased `core`.
+#   2. 10 bowtie tiles, each attached to one decagon edge (0..9).
+#   The bowties' internal decoration lines weave a second ring of star
+#   points between the central decagon star and the medallion rim.
+#
+# edgeLength 61.8 ≈ central circumradius 100, matching iter-30/iter-31
+# footprint for comparable distance normalization.
+
+pattern medallion_girih_rosette
+  girih decagon 61.8 as core
+  girih bowtie 61.8 attach core edge 0
+  girih bowtie 61.8 attach core edge 1
+  girih bowtie 61.8 attach core edge 2
+  girih bowtie 61.8 attach core edge 3
+  girih bowtie 61.8 attach core edge 4
+  girih bowtie 61.8 attach core edge 5
+  girih bowtie 61.8 attach core edge 6
+  girih bowtie 61.8 attach core edge 7
+  girih bowtie 61.8 attach core edge 8
+  girih bowtie 61.8 attach core edge 9
+  voids detect
+  palette girih
+      gold = #C4A35A
+      azure = #2B4C7E
+      ivory = #F5F0E1
+      white = #F8F6F0
+  classify .central_star where sides >= 8
+  classify .decoration_rhombus where sides == 4
+  classify .decoration_kite where sides == 3
+  classify .tile_field where sides >= 5
+  fill void where sides == 3 color azure
+  fill void where sides == 4 color gold
+  fill void where sides >= 5 color ivory

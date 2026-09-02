@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Sector Decomposition Analysis</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a14; color: #ccc; display: flex; min-height: 100vh; }
+        #sidebar { width: 360px; padding: 16px; background: #12121f; overflow-y: auto; border-right: 1px solid #333; }
+        #main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; }
+        h1 { font-size: 18px; color: #7af; margin-bottom: 8px; }
+        h2 { font-size: 14px; color: #8cf; margin: 12px 0 6px; }
+        .param-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+        .param-row label { width: 100px; font-size: 13px; color: #aaa; }
+        .param-row input { width: 70px; background: #1a1a2a; border: 1px solid #444; color: #fff; padding: 4px 6px; border-radius: 3px; font-size: 13px; }
+        .param-row input[type=range] { width: 100px; }
+        .param-row .val { width: 40px; font-size: 12px; color: #8cf; text-align: right; }
+        button { background: #2a4a8a; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; margin: 4px 2px; }
+        button:hover { background: #3a6aba; }
+        button.active { background: #5a8afa; }
+        #info { margin-top: 12px; font-size: 12px; line-height: 1.6; }
+        .stat { color: #8cf; font-weight: bold; }
+        .sector-btn { width: 36px; height: 28px; font-size: 12px; }
+        .sector-btns { display: flex; flex-wrap: wrap; gap: 3px; margin: 6px 0; }
+        table { border-collapse: collapse; width: 100%; margin-top: 8px; font-size: 11px; }
+        th, td { padding: 3px 6px; border: 1px solid #333; text-align: center; }
+        th { background: #1a1a2a; color: #8cf; }
+        svg text { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h1>Sector Decomposition</h1>
+        <p style="font-size:12px;color:#888;margin-bottom:8px;">Which diagonals pass through each interstitial sector? Are they parallel?</p>
+        <div class="param-row">
+            <label>n:</label><input type="number" id="pN" value="10" min="3" max="24">
+        </div>
+        <div class="param-row">
+            <label>k:</label><input type="number" id="pK" value="4" min="1" max="11">
+        </div>
+        <div class="param-row">
+            <label>R:</label>
+            <input type="range" id="pR" value="0.55" min="0.2" max="0.9" step="0.01">
+            <span class="val" id="pRval">0.55</span>
+        </div>
+        <div class="param-row">
+            <label>Band width:</label>
+            <input type="range" id="pBW" value="0.025" min="0.005" max="0.06" step="0.001">
+            <span class="val" id="pBWval">0.025</span>
+        </div>
+        <div class="param-row">
+            <label>Sat dist:</label>
+            <input type="range" id="pSD" value="0.64" min="0.4" max="0.9" step="0.01">
+            <span class="val" id="pSDval">0.64</span>
+        </div>
+        <div class="param-row">
+            <label>Sat radius:</label>
+            <input type="range" id="pSR" value="0.22" min="0.05" max="0.35" step="0.01">
+            <span class="val" id="pSRval">0.22</span>
+        </div>
+        <h2>Select Sector</h2>
+        <div class="sector-btns" id="sectorBtns"></div>
+        <button onclick="selectAll()">All</button>
+        <button onclick="render()">Update</button>
+        <div id="info"></div>
+    </div>
+    <div id="main"><div id="canvas"></div></div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+    // ================================================================
+    // GEOMETRY LIBRARY
+    // ================================================================
+    function lineIntersect(p1,p2,p3,p4) {
+        var x1=p1[0],y1=p1[1],x2=p2[0],y2=p2[1],x3=p3[0],y3=p3[1],x4=p4[0],y4=p4[1];
+        var d=(x1-x2)*(y3-y4)-(y1-y2)*(x3-x4);
+        if(Math.abs(d)<1e-10) return null;
+        var t=((x1-x3)*(y3-y4)-(y1-y3)*(x3-x4))/d;
+        return [x1+t*(x2-x1),y1+t*(y2-y1)];
+    }
+    function lineCircleIntersections(line, r, cx, cy) {
+        var dx=line.to[0]-line.from[0], dy=line.to[1]-line.from[1];
+        var len=Math.sqrt(dx*dx+dy*dy);
+        if(len<1e-10) return [];
+        var ux=dx/len, uy=dy/len;
+        var ax=line.from[0]-cx, ay=line.from[1]-cy;
+        var a2=ux*ux+uy*uy, b2=2*(ax*ux+ay*uy), c2=ax*ax+ay*ay-r*r;
+        var disc=b2*b2-4*a2*c2;
+        if(disc<0) return [];
+        var sd=Math.sqrt(disc);
+        var t1=(-b2+sd)/(2*a2), t2=(-b2-sd)/(2*a2);
+        return [
+            [line.from[0]+t1*ux, line.from[1]+t1*uy],
+            [line.from[0]+t2*ux, line.from[1]+t2*uy]
+        ];
+    }
+
+    var W = 700, H = 700;
+    var selectedSectors = new Set([0]);
+
+    function buildGeometry(n, k, R, halfBandW, satDist, satR) {
+        var sector = 2*Math.PI/n;
+        var halfSector = Math.PI/n;
+        var scale = Math.min(W,H)/2;
+        var cx = W/2, cy = H/2;
+        var clipR = satDist + satR;
+
+        function pr(r) { return r * scale; }
+        function pp(r, angle) { return [cx + pr(r)*Math.sin(angle), cy - pr(r)*Math.cos(angle)]; }
+
+        var tips = [];
+        for(var i=0;i<n;i++) tips.push(pp(R, i*sector));
+
+        var diags = [];
+        for(var i=0;i<n;i++) {
+            var j=(i+k)%n;
+            var dx=tips[j][0]-tips[i][0], dy=tips[j][1]-tips[i][1];
+            var len=Math.sqrt(dx*dx+dy*dy);
+            var ux=dx/len, uy=dy/len, px=-uy, py=ux;
+            var far=pr(clipR*1.3);
+            var mid=[(tips[i][0]+tips[j][0])/2,(tips[i][1]+tips[j][1])/2];
+            diags.push({
+                from:[mid[0]-ux*far,mid[1]-uy*far],
+                to:[mid[0]+ux*far,mid[1]+uy*far],
+                ux:ux, uy:uy, px:px, py:py,
+                tipFrom:i, tipTo:j
+            });
+        }
+
+        // Identify which diags pass through each sector
+        var sectorData = [];
+        for(var s=0;s<n;s++) {
+            var sStart = s*sector;
+            var sEnd = (s+1)*sector;
+            var sMid = sStart + halfSector;
+            var satAngle = sMid;
+
+            // For each diag, check if it passes through this sector at r > R
+            var passingDiags = [];
+            var testR = R * 1.15; // slightly beyond star tips
+            for(var di=0;di<n;di++) {
+                var pts = lineCircleIntersections(diags[di], pr(testR), cx, cy);
+                for(var pi=0;pi<pts.length;pi++) {
+                    var ang = Math.atan2(pts[pi][0]-cx, -(pts[pi][1]-cy));
+                    if(ang<0) ang += 2*Math.PI;
+                    var inSector = false;
+                    if(s < n-1) {
+                        inSector = ang >= sStart - 0.001 && ang < sEnd + 0.001;
+                    } else {
+                        inSector = ang >= sStart - 0.001 || ang < sector + 0.001;
+                    }
+                    if(inSector) {
+                        passingDiags.push({diag: di, crossAngle: ang, crossPoint: pts[pi]});
+                    }
+                }
+            }
+
+            // Check if passing diags are parallel
+            var isParallel = false;
+            if(passingDiags.length === 2) {
+                var d0 = diags[passingDiags[0].diag];
+                var d1 = diags[passingDiags[1].diag];
+                var cross = d0.ux * d1.uy - d0.uy * d1.ux;
+                isParallel = Math.abs(cross) < 1e-8;
+            }
+
+            // Compute band edge lines and perpendicular separation
+            var separation = null;
+            if(passingDiags.length === 2 && isParallel) {
+                // Perpendicular distance between the two parallel center-lines
+                var dA = diags[passingDiags[0].diag];
+                var dB = diags[passingDiags[1].diag];
+                // Use the perpendicular from a point on line A to line B
+                var ptOnA = dA.from;
+                var proj = (ptOnA[0]-dB.from[0])*dB.px + (ptOnA[1]-dB.from[1])*dB.py;
+                separation = Math.abs(proj) / scale; // back to normalized
+            }
+
+            sectorData.push({
+                index: s,
+                angleStart: sStart,
+                angleEnd: sEnd,
+                angleMid: sMid,
+                passingDiags: passingDiags,
+                isParallel: isParallel,
+                separation: separation
+            });
+        }
+
+        // Satellites
+        var sats = [];
+        for(var i=0;i<n;i++) {
+            sats.push(pp(satDist, i*sector+halfSector));
+        }
+
+        return {n:n, k:k, R:R, halfBandW:halfBandW, satDist:satDist, satR:satR,
+                sector:sector, halfSector:halfSector, scale:scale, cx:cx, cy:cy, clipR:clipR,
+                tips:tips, diags:diags, sectorData:sectorData, sats:sats,
+                pr:pr, pp:pp};
+    }
+
+    function render() {
+        var n = parseInt(document.getElementById('pN').value);
+        var k = parseInt(document.getElementById('pK').value);
+        var R = parseFloat(document.getElementById('pR').value);
+        var bw = parseFloat(document.getElementById('pBW').value);
+        var sd = parseFloat(document.getElementById('pSD').value);
+        var sr = parseFloat(document.getElementById('pSR').value);
+
+        ['pR','pBW','pSD','pSR'].forEach(function(id) {
+            document.getElementById(id+'val').textContent = document.getElementById(id).value;
+        });
+
+        var geo = buildGeometry(n, k, R, bw, sd, sr);
+
+        // Rebuild sector buttons
+        var btnDiv = document.getElementById('sectorBtns');
+        btnDiv.innerHTML = '';
+        for(var s=0;s<n;s++) {
+            var btn = document.createElement('button');
+            btn.className = 'sector-btn' + (selectedSectors.has(s) ? ' active' : '');
+            btn.textContent = s;
+            btn.dataset.sector = s;
+            btn.onclick = function() {
+                var si = parseInt(this.dataset.sector);
+                if(selectedSectors.has(si)) selectedSectors.delete(si);
+                else selectedSectors.add(si);
+                render();
+            };
+            btnDiv.appendChild(btn);
+        }
+
+        d3.select('#canvas').selectAll('*').remove();
+        var svg = d3.select('#canvas').append('svg').attr('width',W).attr('height',H);
+        svg.append('rect').attr('width',W).attr('height',H).attr('fill','#0a0a14');
+
+        var cx=geo.cx, cy=geo.cy;
+
+        // Star boundary circle
+        svg.append('circle').attr('cx',cx).attr('cy',cy).attr('r',geo.pr(R))
+            .attr('fill','none').attr('stroke','#335').attr('stroke-width',1).attr('stroke-dasharray','4,3');
+
+        // Satellite boundary circles
+        geo.sats.forEach(function(sp, si) {
+            svg.append('circle').attr('cx',sp[0]).attr('cy',sp[1]).attr('r',geo.pr(sr))
+                .attr('fill','none').attr('stroke','#335').attr('stroke-width',1).attr('stroke-dasharray','3,3');
+        });
+
+        // Sector wedges (highlight selected)
+        for(var s=0;s<n;s++) {
+            if(!selectedSectors.has(s)) continue;
+            var sd2 = geo.sectorData[s];
+            var arcR = geo.pr(geo.clipR * 0.95);
+            var innerR = geo.pr(R);
+
+            // Draw filled sector wedge
+            var a1 = sd2.angleStart - Math.PI/2;
+            var a2 = sd2.angleEnd - Math.PI/2;
+            var path = d3.path();
+            path.moveTo(cx + innerR*Math.cos(a1), cy + innerR*Math.sin(a1));
+            path.arc(cx, cy, arcR, a1, a2, false);
+            path.lineTo(cx + innerR*Math.cos(a2), cy + innerR*Math.sin(a2));
+            path.arc(cx, cy, innerR, a2, a1, true);
+            path.closePath();
+
+            svg.append('path')
+                .attr('d', path.toString())
+                .attr('fill', '#1a2a4a')
+                .attr('fill-opacity', 0.5)
+                .attr('stroke', '#4af')
+                .attr('stroke-width', 1);
+
+            // Sector label
+            var labelR = geo.pr(geo.clipR * 0.7);
+            var labelA = sd2.angleMid;
+            svg.append('text')
+                .attr('x', cx + labelR * Math.sin(labelA))
+                .attr('y', cy - labelR * Math.cos(labelA))
+                .attr('fill', '#4af')
+                .attr('font-size', '16px')
+                .attr('font-weight', 'bold')
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .text('S' + s);
+        }
+
+        // All diagonals (dim)
+        var diagColors = d3.scaleOrdinal(d3.schemeCategory10);
+        geo.diags.forEach(function(d, i) {
+            svg.append('line')
+                .attr('x1',d.from[0]).attr('y1',d.from[1])
+                .attr('x2',d.to[0]).attr('y2',d.to[1])
+                .attr('stroke',diagColors(i)).attr('stroke-width',0.8).attr('stroke-opacity',0.15);
+        });
+
+        // Highlight diags passing through selected sectors
+        selectedSectors.forEach(function(s) {
+            var sd2 = geo.sectorData[s];
+            sd2.passingDiags.forEach(function(pd) {
+                var d = geo.diags[pd.diag];
+                svg.append('line')
+                    .attr('x1',d.from[0]).attr('y1',d.from[1])
+                    .attr('x2',d.to[0]).attr('y2',d.to[1])
+                    .attr('stroke',diagColors(pd.diag)).attr('stroke-width',2.5).attr('stroke-opacity',0.8);
+
+                // Band edges
+                var offset = geo.pr(bw);
+                ['L','R'].forEach(function(side) {
+                    var o = side==='L' ? offset : -offset;
+                    svg.append('line')
+                        .attr('x1',d.from[0]+d.px*o).attr('y1',d.from[1]+d.py*o)
+                        .attr('x2',d.to[0]+d.px*o).attr('y2',d.to[1]+d.py*o)
+                        .attr('stroke',diagColors(pd.diag)).attr('stroke-width',0.8)
+                        .attr('stroke-opacity',0.4).attr('stroke-dasharray','3,2');
+                });
+
+                // Label the diag
+                svg.append('circle')
+                    .attr('cx',pd.crossPoint[0]).attr('cy',pd.crossPoint[1])
+                    .attr('r',10).attr('fill',diagColors(pd.diag)).attr('fill-opacity',0.8);
+                svg.append('text')
+                    .attr('x',pd.crossPoint[0]).attr('y',pd.crossPoint[1]+4)
+                    .attr('fill','#fff').attr('font-size','10px').attr('font-weight','bold')
+                    .attr('text-anchor','middle').text('d'+pd.diag);
+            });
+
+            // Draw separation distance indicator if parallel
+            if(sd2.isParallel && sd2.passingDiags.length===2) {
+                var cp0 = sd2.passingDiags[0].crossPoint;
+                var cp1 = sd2.passingDiags[1].crossPoint;
+                svg.append('line')
+                    .attr('x1',cp0[0]).attr('y1',cp0[1])
+                    .attr('x2',cp1[0]).attr('y2',cp1[1])
+                    .attr('stroke','#f88').attr('stroke-width',1).attr('stroke-dasharray','2,2');
+            }
+        });
+
+        // Tips
+        geo.tips.forEach(function(tp, i) {
+            svg.append('circle').attr('cx',tp[0]).attr('cy',tp[1]).attr('r',4)
+                .attr('fill','#fff').attr('stroke','#333').attr('stroke-width',1);
+            var ang = i*geo.sector;
+            svg.append('text')
+                .attr('x',tp[0]+16*Math.sin(ang)).attr('y',tp[1]-16*Math.cos(ang)+4)
+                .attr('fill','#fff').attr('font-size','12px').attr('font-weight','bold')
+                .attr('text-anchor','middle').text(i);
+        });
+
+        // Satellite centers
+        geo.sats.forEach(function(sp) {
+            svg.append('circle').attr('cx',sp[0]).attr('cy',sp[1]).attr('r',3)
+                .attr('fill','#558').attr('stroke','#335').attr('stroke-width',1);
+        });
+
+        // INFO
+        var infoHtml = '<h2>Sector Analysis</h2>';
+        infoHtml += '<table><tr><th>Sec</th><th>Diags</th><th>Parallel?</th><th>Sep</th></tr>';
+        geo.sectorData.forEach(function(sd2) {
+            var active = selectedSectors.has(sd2.index);
+            var diagList = sd2.passingDiags.map(function(p){return 'd'+p.diag;}).join(', ');
+            infoHtml += '<tr style="' + (active?'background:#1a2a4a':'') + '">' +
+                '<td>' + sd2.index + '</td>' +
+                '<td>' + diagList + '</td>' +
+                '<td style="color:' + (sd2.isParallel?'#f88':'#8f8') + '">' + (sd2.isParallel?'YES':'NO') + '</td>' +
+                '<td>' + (sd2.separation !== null ? sd2.separation.toFixed(4) : '-') + '</td></tr>';
+        });
+        infoHtml += '</table>';
+
+        infoHtml += '<h2>Key Findings</h2>';
+        var allParallel = geo.sectorData.every(function(s){return s.isParallel;});
+        var avgDiags = geo.sectorData.reduce(function(a,s){return a+s.passingDiags.length;},0) / n;
+        infoHtml += '<div>Avg diags/sector: <span class="stat">' + avgDiags.toFixed(1) + '</span></div>';
+        infoHtml += '<div>All sectors parallel: <span class="stat" style="color:' +
+            (allParallel?'#f88':'#8f8') + '">' + (allParallel?'YES — no interstitial crossings':'NO — some bands cross') + '</span></div>';
+        if(allParallel) {
+            infoHtml += '<div style="color:#fa8;font-size:11px;margin-top:6px;">Since all sector bands are parallel, interstitial tiles CANNOT be formed by line-line intersection. Use per-sector explicit construction with line-circle intersections instead.</div>';
+        }
+
+        document.getElementById('info').innerHTML = infoHtml;
+    }
+
+    function selectAll() {
+        var n = parseInt(document.getElementById('pN').value);
+        selectedSectors.clear();
+        for(var i=0;i<n;i++) selectedSectors.add(i);
+        render();
+    }
+
+    // URL params
+    var params = new URLSearchParams(window.location.search);
+    if(params.has('n')) document.getElementById('pN').value=params.get('n');
+    if(params.has('k')) document.getElementById('pK').value=params.get('k');
+    if(params.has('R')) { document.getElementById('pR').value=params.get('R'); document.getElementById('pRval').textContent=params.get('R'); }
+    if(params.has('bandWidth')) { document.getElementById('pBW').value=params.get('bandWidth'); document.getElementById('pBWval').textContent=params.get('bandWidth'); }
+    if(params.has('satDist')) { document.getElementById('pSD').value=params.get('satDist'); document.getElementById('pSDval').textContent=params.get('satDist'); }
+    if(params.has('satR')) { document.getElementById('pSR').value=params.get('satR'); document.getElementById('pSRval').textContent=params.get('satR'); }
+    if(params.has('sector')) {
+        selectedSectors.clear();
+        params.get('sector').split(',').forEach(function(s){selectedSectors.add(parseInt(s));});
+    }
+
+    // Auto-update sliders
+    ['pR','pBW','pSD','pSR'].forEach(function(id) {
+        document.getElementById(id).addEventListener('input', function() {
+            document.getElementById(id+'val').textContent = this.value;
+        });
+    });
+
+    render();
+    </script>
+</body>
+</html>

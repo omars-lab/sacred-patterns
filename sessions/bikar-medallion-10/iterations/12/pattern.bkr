@@ -1,0 +1,78 @@
+# Medallion-10: Iteration 12 — Add interstitial middle ring (Cmid radius 65)
+#
+# Iter 11 baseline (from validation/svg-audit.json):
+#   A4 coverage: FULL 168.68% (over-tiled bbox; medallion radius bbox-estimated)
+#   A2 symmetry: UNEVEN cv=7.48% (sector 1 has fewer faces than sector 0)
+#   A5 strapwork: BROKEN 5/45 crossings (no strapwork built — expected)
+#   A6 baseline: 1/18 PASS — strongest gaps:
+#     - inner-star polygon-v0: 4 found / 21 expected
+#     - rosette polygon-v0: 0 / 36
+#     - rosette star-v6: 13 / 28
+#     - transition star-v6: 35 / 41 (close — interstitial mostly there)
+#     - transition star-v8: 0 / 4 (missing — 8-pt stars in interstitial)
+#
+# Mechanical edit (per the iterate-pattern-from-qiyas-warnings translation table,
+# warning id "coverage-sparse" / A6 "baseline-shape-missing"):
+#   The interstitial zone (between C1 radius 30 and the satellite ring at radius
+#   ~70-130) has no construction. Add a middle ring Cmid at radius 65 (midpoint
+#   of the gap between C1 and the inner edge of satellites at @0.k radius 30
+#   placed at distance 100). divide Cmid into 10 (matches dominant_fold).
+#   Then `connect every K on Cmid` produces faces in the transition zone.
+#
+# Choosing K for Cmid: try {10/3} (connect every 3) for variety vs the {10/4}
+# everywhere else. {10/3} produces 6-pt stars (matching transition star-v6
+# which already has 35/41 found — strengthens the signal). For 8-pt stars
+# (transition star-v8 expected 4, found 0), we'd need a connect every 2 on
+# the same circle — adding both as separate layers.
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  circle C1 center(0,0) radius 30
+  divide C1 into 10
+  # NEW: middle ring for interstitial zone
+  circle Cmid center(0,0) radius 65
+  divide Cmid into 10
+  repeat at C0 depth 1
+    circle center($point) radius 0.3 * $radius
+    divide into 10
+
+pattern medallion on medallion
+  # Layer 0: Central {10/4} rosette on C1 (unchanged from iter 11)
+  layer 0
+    connect every 4 on C1
+
+  # Layer 1: 10 satellite {10/4} rosettes (unchanged from iter 11)
+  layer 1
+    connect every 4 on @0.0
+    connect every 4 on @0.1
+    connect every 4 on @0.2
+    connect every 4 on @0.3
+    connect every 4 on @0.4
+    connect every 4 on @0.5
+    connect every 4 on @0.6
+    connect every 4 on @0.7
+    connect every 4 on @0.8
+    connect every 4 on @0.9
+
+  # Layer 2: NEW — interstitial middle ring {10/3} rosette
+  # Targets transition--star-v6 deficit (13/28) and adds coverage to the gap
+  layer 2
+    connect every 3 on Cmid
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 20 color navy
+  fill void where sides >= 5 color cobalt
+
+  edges color navy width 0.5

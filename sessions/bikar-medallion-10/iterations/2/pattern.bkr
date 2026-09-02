@@ -1,0 +1,43 @@
+# Medallion-10: Iteration 2 (redo) — Strapwork-first approach
+# Key insight: the reference pattern is defined by its BANDS (white
+#   strapwork), not by edge connections. The colored faces are the
+#   spaces BETWEEN bands. connect every 4 alone creates the {10/4}
+#   star diagonal network; strapwork renders the bands.
+#
+# Changes from iter 1:
+#   - Removed edges from decagon (user feedback: no decagon in reference)
+#   - Removed connect every 2 (creates too many small faces)
+#   - Using ONLY connect every 4 (the primary {10/4} diagonals)
+#   - Wider strapwork (width 8) to match reference band thickness
+#   - Simpler coloring: dark center, blue mid, turquoise accents
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  repeat at C0 depth 1
+    circle center($point) radius $radius
+    divide into 10
+
+pattern medallion on medallion
+  # Only the {10/4} star diagonals — this is the band network
+  connect every 4
+  # Wide strapwork bands (the defining visual feature)
+  strapwork
+      width 8
+      crossing alternating
+  voids detect
+  palette persian_blue
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      cerulean = #5DADE2
+      turquoise = #48C9B0
+  # Center faces dark
+  fill void where ring == 0 color navy
+  # Inner ring: turquoise accents
+  fill void where ring == 1 and sides == 3 color turquoise
+  fill void where ring == 1 color cobalt
+  # Outer
+  fill void where ring == 2 color royal
+  fill void where ring >= 3 color cerulean
+  edges color navy width 0

@@ -1,0 +1,87 @@
+# Medallion-10: Iteration 14 — Add inner-star rhombi via {10/3} overlay on C1
+#
+# Iter 13 baseline (revalidated 2026-05-03 under qiyas:dev with patched
+# symmetry detector — see qiyas changelog #105):
+#   composite = 0.7632 (was 0.6644 — +0.099 from detector fix alone)
+#   warnings[0] (literal) = "missing-shapes" δ=0.107
+#     -> categorization shows 53 missing = 37 circle + 15 lens + 1 girih_rhombus
+#        circles/lenses are encoder-vocabulary noise from photo-traced reference,
+#        NOT real construction gaps. Tenet 6: verified inherited claim before acting.
+#   Real signal (svg-audit A6): inner-star--rhombus-v4 MISSING 0/10
+#     -> zone has zero 4-vertex shapes, expected 10. Concrete, addressable.
+#
+# Mechanical edit: overlay a {10/3} star on C1 alongside the existing {10/4}.
+# The {10/4} edges and {10/3} edges intersect at 10 rhombic regions in the
+# inner-star zone. After `voids detect`, those rhombi become 4-sided faces
+# and inherit the existing `fill void where sides == 4 color royal` rule.
+#
+# Translation table mapping:
+# - "A6 inner-star--rhombus-v4 MISSING 0/10" = baseline-shape-missing.
+#   Fix: add construction whose edges create the missing shape class.
+#
+# Predicted Δcomposite: +0.05 to +0.08
+#   - A6 PASS count 1 -> 2 (~+0.05 structural rollup)
+#   - reduced "missing shapes" baseline noise once rhombi register (~+0.02)
+# Predicted Δstructural: 1/18 -> 2/18
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  circle C1 center(0,0) radius 30
+  divide C1 into 10
+  # Cmid2: inner middle ring (iter 13) — radius 50, between C1 and Cmid
+  circle Cmid2 center(0,0) radius 50
+  divide Cmid2 into 10
+  # Cmid: middle ring (iter 13) — radius 80, sits IN transition zone
+  circle Cmid center(0,0) radius 80
+  divide Cmid into 10
+  repeat at C0 depth 1
+    circle center($point) radius 0.3 * $radius
+    divide into 10
+
+pattern medallion on medallion
+  # Layer 0: Central {10/4} rosette on C1 + NEW {10/3} overlay
+  # The {10/4} and {10/3} edges intersect at 10 rhombic faces in the
+  # inner-star zone. {10/3} alone is a decagram (sharper-pointed star);
+  # combined with {10/4} the void detector finds the rhombi at intersections.
+  layer 0
+    connect every 4 on C1
+    connect every 3 on C1
+
+  # Layer 1: 10 satellite {10/4} rosettes
+  layer 1
+    connect every 4 on @0.0
+    connect every 4 on @0.1
+    connect every 4 on @0.2
+    connect every 4 on @0.3
+    connect every 4 on @0.4
+    connect every 4 on @0.5
+    connect every 4 on @0.6
+    connect every 4 on @0.7
+    connect every 4 on @0.8
+    connect every 4 on @0.9
+
+  # Layer 2: middle ring {10/3} (iter 13: radius 65 -> 80)
+  layer 2
+    connect every 3 on Cmid
+
+  # Layer 3: inner middle ring {10/4} (iter 13)
+  layer 3
+    connect every 4 on Cmid2
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 20 color navy
+  fill void where sides >= 5 color cobalt
+
+  edges color navy width 0.5

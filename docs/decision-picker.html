@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Decision picker — 2026-06-10 queue</title>
+<style>
+  body { font-family: Georgia, serif; max-width: 940px; margin: 2rem auto; padding: 0 1rem 6rem;
+         color: #1a2744; line-height: 1.5; }
+  h1 { font-size: 1.5rem; } .sub { color: #555; margin-top: -.6rem; }
+  .decision { border: 1px solid #ccc; border-radius: 10px; padding: 1rem 1.2rem; margin: 1.4rem 0; background: #fbfbf8; }
+  .decision h2 { margin: 0 0 .2rem; font-size: 1.12rem; }
+  .tag { font-family: monospace; font-size: .8rem; background: #eef; padding: .1rem .45rem; border-radius: 4px; }
+  .q { margin: .4rem 0 .15rem; font-size: 1.02rem; }
+  .qtech { font-size: .85rem; color: #666; font-family: "Courier New", monospace; margin-bottom: .6rem; }
+  .unblocks { font-size: .85rem; color: #2e5d32; margin-bottom: .6rem; }
+  label.opt { display: block; padding: .55rem .75rem; margin: .35rem 0; border: 1px solid #ddd;
+              border-radius: 7px; cursor: pointer; background: #fff; }
+  label.opt:has(input:checked) { border-color: #1b6ca8; background: #eaf3fa; }
+  .plain { display: block; font-size: .92rem; margin-top: .2rem; }
+  .plain b.k { color: #2e5d32; font-weight: bold; }
+  .tech { display: block; font-size: .82rem; color: #555; font-family: "Courier New", monospace; margin-top: .2rem; }
+  .tech b.k { color: #555; }
+  .rec { color: #1b6ca8; font-weight: bold; font-size: .8rem; }
+  .optimg { max-width: 230px; border: 1px solid #ddd; border-radius: 6px; float: right; margin-left: .8rem; }
+  textarea.note { width: 100%; box-sizing: border-box; margin-top: .5rem; font-family: inherit;
+                  font-size: .9rem; min-height: 2.2rem; border: 1px solid #ddd; border-radius: 6px; padding: .4rem; }
+  #bar { position: fixed; bottom: 0; left: 0; right: 0; background: #0b1d3a; color: #fff;
+         padding: .7rem 1rem; display: flex; gap: 1rem; align-items: center; justify-content: center; }
+  #bar button { font-size: 1rem; padding: .5rem 1.1rem; border-radius: 8px; border: 0; cursor: pointer; }
+  #copy { background: #2e7d32; color: #fff; } #recall { background: #888; color: #fff; }
+  #status { font-size: .9rem; }
+  #preview { white-space: pre-wrap; font-family: "Courier New", monospace; font-size: .82rem;
+             background: #f4f4ee; border: 1px dashed #999; border-radius: 8px; padding: .8rem; }
+  .bucketa { background: #f3f7f3; border: 1px solid #cde0cd; border-radius: 10px; padding: .9rem 1.2rem; }
+</style>
+</head>
+<body>
+<h1>Decision picker — June 10, 2026 queue</h1>
+<p class="sub">Each card is one open decision. Every choice is described twice — <b>in plain
+terms</b> (what it means for the project, no jargon) and <b>technically</b> (the precise
+engineering statement). The <span class="rec">★ recommended</span> choice is pre-selected;
+change anything, add notes, then press <b>Copy prompt</b> and paste the result into Claude
+Code — the paste applies every pick through the decision-memory machinery (frontmatter →
+ledgers → follow-on work) so it's durably tracked.</p>
+
+<div class="bucketa">
+  <label><input type="checkbox" id="bucketA" checked>
+  <b>Also run the reconciliation sweep.</b><br>
+  <span class="plain"><b class="k">In plain terms:</b> eight old decisions were already settled by work
+  you approved or that simply shipped — this just files the paperwork so the records match reality.</span>
+  <span class="tech"><b class="k">Technically:</b> close 8 docs (typed-params trio, serialization-d4,
+  anti-symmetry-floor, fill-void, i1-ratchet, scope-rescope, closeout-report-surface, star7 pair)
+  with evidence citations per docs/owner-decision-queue.md Bucket A; frontmatter + ledger regen per repo.</span></label>
+</div>
+
+<div id="decisions"></div>
+
+<h2 style="margin-top:2rem">Prompt preview</h2>
+<div id="preview"></div>
+
+<div id="bar">
+  <button id="copy">Copy prompt</button>
+  <button id="recall">Reset to recommendations</button>
+  <span id="status"></span>
+</div>
+
+<script>
+// Schema: every option carries BOTH registers (plain + tech) — required, never one
+// without the other. `img` is optional per option ("visuals as needed": include one
+// whenever the choice is geometric/visual). `rec: true` marks the recommendation.
+const DECISIONS = [
+  {
+    tag: "derived-shape-naming", repo: "bikar",
+    doc: "bikar/docs/decisions/2026-05-27-derived-shape-naming-convention.md",
+    q: "When a named shape gets mirrored or rotated, what should the copy be called?",
+    qTech: "Suffix convention for transform-derived shape identifiers in the DSL namespace.",
+    unblocks: "Gates mirror-rotate AND the line cascade's naming arm — the highest-leverage pick on the board.",
+    options: [
+      { id: "A", rec: true, label: "Mathematician's names",
+        plain: "Use the official symmetry alphabet (a mirrored copy of 'petal' becomes 'petal__sigma'). Slightly nerdy to read, but two different operations can never end up with the same name.",
+        tech: "Schoenflies suffixes: __C5_2 (rotation), __sigma (reflection), __S5_2 (rotoreflection); hard-error on collision." },
+      { id: "B", label: "Everyday names",
+        plain: "Name copies the obvious way: 'petal__mirror', 'petal__rot1'. Reads instantly — but stacking operations (mirror of a rotation?) can get ambiguous later.",
+        tech: "Ergonomic suffixes __mirror / __rotN; ambiguity risk under composed transforms." },
+      { id: "C", label: "Both (alias system)",
+        plain: "Official names under the hood, friendly nicknames on top. Best of both, but every shape now has two names to keep in sync.",
+        tech: "Ergonomic aliases resolving to Schoenflies canon; dual-name maintenance cost." },
+      { id: "D", label: "No names for copies",
+        plain: "Copies stay anonymous. Cheapest today — but you can never write a rule that says 'color the mirrored petals red'.",
+        tech: "Derived shapes unaddressable by classify/style predicates; forecloses rule targeting." },
+    ],
+  },
+  {
+    tag: "mirror-rotate", repo: "bikar",
+    doc: "bikar/docs/decisions/2026-05-26-mirror-rotate-polygon-body-emission.md",
+    q: "Should mirrored and rotated shapes be full citizens of the pattern, or quiet copies?",
+    qTech: "Emission path for transform-derived polygon bodies: anonymous directFaces vs named map entries; mirror-only vs mirror+rotate scope.",
+    unblocks: "Mirror/rotate transform support in every future pattern.",
+    options: [
+      { id: "A", label: "Quiet copies, mirror only",
+        plain: "The smallest change: mirrored shapes appear in the drawing but rules can't talk about them, and rotation waits for later.",
+        tech: "Anonymous directFaces emission, mirror-only scope; derived faces invisible to the faceClasses map." },
+      { id: "B", rec: true, label: "Full citizens, mirror and rotate",
+        plain: "Copies get proper names (per your pick above) and both operations work the same way — one mechanism, learned once.",
+        tech: "Named emission per the derived-shape convention, symmetric mirror+rotate scope; single code path for both transforms." },
+    ],
+  },
+  {
+    tag: "line-primitive", repo: "bikar",
+    doc: "bikar/docs/decisions/2026-05-26-line-primitive-cascade-D1-D2-D3.md",
+    q: "When you draw a line across a shape, should it actually CUT the shape in two?",
+    qTech: "Enroll line-family primitives in the face-walker (CGAL-style arrangement) vs render-only; default face_class for unclassified sub-faces.",
+    unblocks: "The whole line cascade; every future pattern built with straightedge construction.",
+    options: [
+      { id: "E", rec: true, label: "Cut, and nothing gets lost", img: "decision-picker-assets/line-cuts.png",
+        plain: "Like a real compass-and-straightedge: the line slices the square into two real pieces you can color and count — and any piece you forgot to name still shows up (just unlabeled) instead of silently vanishing.",
+        tech: "Hybrid A+C: line-family primitives enroll in the face-walker; unclassified sub-faces get a default face_class (closes the gt-emitter silent-drop hazard)." },
+      { id: "A", label: "Cut, but unnamed pieces vanish",
+        plain: "The line cuts — but any piece without an explicit name silently disappears from the records. That silent-vanishing has burned us before.",
+        tech: "Face-walker enrollment only; unclassified sub-faces dropped by the gt-emitter (known hazard class, Ticks 54-59)." },
+      { id: "D", label: "Don't cut — lines are just ink", img: "decision-picker-assets/line-deco.png",
+        plain: "The line is decoration drawn on top; the square stays one piece. Honest, but every pattern needing real cuts stays hand-worked-around forever.",
+        tech: "Document line-family as render-only; constructions requiring cuts route through manual intersect + re-authored sub-polygons." },
+    ],
+  },
+  {
+    tag: "arc-lens-partial", repo: "bikar + sacred-patterns",
+    doc: "sacred-patterns/docs/decisions/2026-05-07-partial-shape-rendering-via-construction.md (+ bikar twin, both REOPENED)",
+    q: "An old plan for partial shapes failed twice and the evidence now points somewhere else. Close the old file and open a fresh, focused one?",
+    qTech: "Supersede the REOPENED extend+clip pair (Option A falsified 2x); file Option I (qiyas detector + sliver cleanup) as a fresh narrow decision doc.",
+    unblocks: "Closes a falsified thread cleanly; the partial-shape question gets a current, scoped home.",
+    options: [
+      { id: "yes", rec: true, label: "Yes — close old, open fresh",
+        plain: "The dead end stays on record (we keep falsified plans as archives), and the live question gets a clean page.",
+        tech: "Mark pair SUPERSEDED with dead_end frontmatter intact; author Option-I doc scoped to detector + sliver layer." },
+      { id: "no", label: "No — keep working in the old file",
+        plain: "Everything stays in one place, but the page mixes two failed plans with the live question.",
+        tech: "Pair stays REOPENED as the active surface; Option I appended as a third arc." },
+    ],
+  },
+  {
+    tag: "ci-coverage-telemetry", repo: "qiyas",
+    doc: "qiyas/docs/decisions/2026-05-21-bikar-validate-dsl-contract-ci-shape.md",
+    q: "Which test pattern should the automated cross-checker draw every time, to prove the two programs still speak the same language?",
+    qTech: "Canonical fixture for bikar CI's validate-dsl-contract gate (renders pattern → qiyas validates data-* contract).",
+    unblocks: "Wiring the contract gate into bikar CI (Slice 5c).",
+    options: [
+      { id: "single-petal", rec: true, label: "The simplest one (single petal)",
+        plain: "The atomic test piece: if even the simplest pattern breaks the shared language, you want THAT alarm, and it's the fastest to diagnose.",
+        tech: "Tier-0 single-petal: minimal render time, unambiguous failure isolation per Tenet 17." },
+      { id: "Star-8", label: "A rich one (8-point star)",
+        plain: "Exercises more of the vocabulary in one go, but when it breaks you'll spend longer finding which word broke.",
+        tech: "Star-8 exercises classify/rotate tag emission; multi-cause failures harder to isolate." },
+      { id: "both", label: "Both",
+        plain: "Maximum confidence, two drawings per check run (a bit more CI time each push).",
+        tech: "Tier-0 + Tier-2/3 coverage; two render+validate steps per workflow run (GHA budget note)." },
+    ],
+  },
+  {
+    tag: "stale-pair-verify-close", repo: "qiyas",
+    doc: "closeout-feedback-surface + svg-direct (2026-05-12 / 2026-05-21)",
+    q: "Two old open questions look like life answered them already. Spend ten minutes confirming, then close them?",
+    qTech: "Verify closeout-feedback-surface is satisfied by the shipped review portal and svg-direct by the shipped SVG-direct path + iter-33 convergence; close with evidence or report still-live remainder.",
+    unblocks: "Queue drops to ~2 genuinely open docs.",
+    options: [
+      { id: "yes", rec: true, label: "Yes — verify and close",
+        plain: "Check the code actually does what the old question asked for, write down the proof, close the file.",
+        tech: "C2 pass: confirm against shipped code, mark RESOLVED/SUPERSEDED with commit citations; reopen narrow remainder if any." },
+      { id: "no", label: "No — leave open",
+        plain: "They stay on the open list.",
+        tech: "Docs remain PROPOSED/PENDING in the ledger." },
+    ],
+  },
+];
+
+const container = document.getElementById("decisions");
+for (const d of DECISIONS) {
+  const div = document.createElement("div");
+  div.className = "decision";
+  div.innerHTML = `<h2>${d.tag} <span class="tag">${d.repo}</span></h2>
+    <div class="q">${d.q}</div>
+    <div class="qtech">${d.qTech}</div>
+    <div class="unblocks">Unblocks: ${d.unblocks}</div>` +
+    d.options.map(o => `<label class="opt">
+      ${o.img ? `<img class="optimg" src="${o.img}" alt="">` : ""}
+      <input type="radio" name="${d.tag}" value="${o.id}" ${o.rec ? "checked" : ""}>
+      <b>${o.id}</b> — ${o.label} ${o.rec ? '<span class="rec">★ recommended</span>' : ""}
+      <span class="plain"><b class="k">In plain terms:</b> ${o.plain}</span>
+      <span class="tech"><b class="k">Technically:</b> ${o.tech}</span>
+      <span style="clear:both;display:block"></span></label>`).join("") +
+    `<textarea class="note" data-tag="${d.tag}" placeholder="Optional note for this pick (constraints, taste, scope)…"></textarea>`;
+  container.appendChild(div);
+}
+
+function buildPrompt() {
+  const lines = [
+    "Apply my decision picks from docs/decision-picker.html (2026-06-10 queue).",
+    "",
+    "Picks:",
+  ];
+  for (const d of DECISIONS) {
+    const sel = document.querySelector(`input[name="${CSS.escape(d.tag)}"]:checked`);
+    const note = document.querySelector(`textarea[data-tag="${CSS.escape(d.tag)}"]`).value.trim();
+    const opt = d.options.find(o => o.id === sel.value);
+    lines.push(`- ${d.tag} (${d.doc}): PICK ${opt.id} — ${opt.label}${note ? `. Owner note: ${note}` : ""}`);
+  }
+  if (document.getElementById("bucketA").checked) {
+    lines.push("- ALSO: run the Bucket-A reconciliation sweep from docs/owner-decision-queue.md (8 already-decided docs, close with evidence citations).");
+  }
+  lines.push(
+    "",
+    "For each pick: update the decision doc's structured frontmatter (status_token: ACCEPTED, picked_option, decided: today), append an 'Owner pick' addendum quoting the pick + note verbatim, run the repo's ledger regen + coherence gate, regen sacred-patterns LEDGER-XREPO, then file or start the immediate follow-on work each doc names. Where a pick gates another doc (derived-shape-naming gates mirror-rotate), apply in dependency order. Report per-doc outcomes and the new open-queue count.",
+  );
+  return lines.join("\n");
+}
+
+function refresh() { document.getElementById("preview").textContent = buildPrompt(); }
+document.body.addEventListener("input", refresh);
+document.getElementById("copy").onclick = async () => {
+  await navigator.clipboard.writeText(buildPrompt());
+  document.getElementById("status").textContent = "Copied — paste into Claude Code.";
+};
+document.getElementById("recall").onclick = () => {
+  for (const d of DECISIONS) {
+    const rec = d.options.find(o => o.rec) || d.options[0];
+    document.querySelector(`input[name="${CSS.escape(d.tag)}"][value="${CSS.escape(rec.id)}"]`).checked = true;
+  }
+  document.querySelectorAll("textarea.note").forEach(t => (t.value = ""));
+  document.getElementById("bucketA").checked = true;
+  refresh();
+};
+refresh();
+</script>
+
+<p style="margin-top:2.5rem;font-size:.85rem;color:#777;border-top:1px solid #ddd;padding-top:.8rem">
+Data-driven: future queues regenerate this page by swapping the <code>DECISIONS</code> JSON
+(every option MUST carry both registers — <code>plain</code> + <code>tech</code> — and
+<code>img</code> whenever the choice is visual). Recipe:
+<code>.claude/skills/present-options-visually/</code> ·
+prose digest: <code>docs/owner-decision-queue.md</code> ·
+recording machinery: <code>docs/decision-schema.md</code>.
+</p>
+</body>
+</html>

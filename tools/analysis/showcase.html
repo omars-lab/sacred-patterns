@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geometric Analysis Tools — Sacred Patterns</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0a1628;
+    color: #e0e6ed;
+    line-height: 1.6;
+  }
+  .hero {
+    text-align: center;
+    padding: 60px 20px 40px;
+    background: linear-gradient(135deg, #0a1628 0%, #1a2a4a 50%, #0a1628 100%);
+    border-bottom: 1px solid #2a3a5a;
+  }
+  .hero h1 {
+    font-size: 2.5em;
+    color: #4fc3f7;
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  .hero p {
+    font-size: 1.15em;
+    color: #8899aa;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+  .tool-section {
+    margin: 50px 0;
+    background: #111d30;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #1e2e48;
+  }
+  .tool-header {
+    padding: 24px 32px;
+    background: #152038;
+    border-bottom: 1px solid #1e2e48;
+  }
+  .tool-header h2 {
+    color: #4fc3f7;
+    font-size: 1.5em;
+    margin-bottom: 6px;
+  }
+  .tool-header .subtitle {
+    color: #6a8aaa;
+    font-size: 0.95em;
+  }
+  .tool-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .tool-screenshot {
+    padding: 20px;
+    background: #0d1825;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tool-screenshot img {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid #2a3a5a;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  .tool-details {
+    padding: 28px 32px;
+  }
+  .tool-details h3 {
+    color: #b0c4de;
+    font-size: 1.05em;
+    margin: 18px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+  .tool-details h3:first-child { margin-top: 0; }
+  .tool-details p, .tool-details li {
+    color: #9ab0c8;
+    font-size: 0.92em;
+  }
+  .tool-details ul {
+    padding-left: 18px;
+    margin: 4px 0;
+  }
+  .tool-details li { margin: 3px 0; }
+
+  .insight-box {
+    background: #1a2d48;
+    border-left: 3px solid #4fc3f7;
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .insight-box strong { color: #4fc3f7; }
+  .insight-box p { color: #b0c4de; margin: 0; }
+
+  .param-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 0.88em;
+  }
+  .param-table th {
+    text-align: left;
+    color: #6a8aaa;
+    padding: 4px 8px;
+    border-bottom: 1px solid #1e2e48;
+    font-weight: 600;
+  }
+  .param-table td {
+    color: #9ab0c8;
+    padding: 4px 8px;
+    border-bottom: 1px solid #141e30;
+  }
+  .param-table code {
+    color: #4fc3f7;
+    background: #0d1825;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.95em;
+  }
+
+  .workflow-section {
+    margin: 50px 0;
+    padding: 40px 32px;
+    background: #111d30;
+    border-radius: 12px;
+    border: 1px solid #1e2e48;
+  }
+  .workflow-section h2 {
+    color: #4fc3f7;
+    font-size: 1.5em;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .workflow-steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .workflow-step {
+    background: #152038;
+    border: 1px solid #1e2e48;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+  }
+  .workflow-step .step-num {
+    width: 36px;
+    height: 36px;
+    background: #4fc3f7;
+    color: #0a1628;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    margin: 0 auto 12px;
+    font-size: 1.1em;
+  }
+  .workflow-step h3 {
+    color: #e0e6ed;
+    font-size: 0.95em;
+    margin-bottom: 8px;
+  }
+  .workflow-step p {
+    color: #6a8aaa;
+    font-size: 0.82em;
+    line-height: 1.5;
+  }
+  .workflow-step::after {
+    content: '\2192';
+    position: absolute;
+    right: -14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #2a3a5a;
+    font-size: 1.5em;
+    z-index: 1;
+  }
+  .workflow-step:last-child::after { display: none; }
+
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    padding: 30px 0;
+    margin: 30px 0 0;
+    border-top: 1px solid #1e2e48;
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat .value {
+    font-size: 2em;
+    color: #4fc3f7;
+    font-weight: 700;
+  }
+  .stat .label {
+    color: #6a8aaa;
+    font-size: 0.85em;
+    margin-top: 4px;
+  }
+
+  .footer {
+    text-align: center;
+    padding: 30px 20px;
+    color: #4a5a6a;
+    font-size: 0.85em;
+    border-top: 1px solid #1e2e48;
+    margin-top: 50px;
+  }
+  .footer a { color: #4fc3f7; text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 900px) {
+    .tool-body { grid-template-columns: 1fr; }
+    .workflow-steps { grid-template-columns: 1fr 1fr; }
+    .workflow-step::after { display: none; }
+  }
+  @media (max-width: 600px) {
+    .workflow-steps { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 1.8em; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Geometric Analysis Tools</h1>
+  <p>Interactive D3.js visualization tools for decomposing and understanding Islamic geometric patterns. Each tool reveals a different layer of the pattern's mathematical structure.</p>
+</div>
+
+<div class="container">
+
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="value">4</div>
+      <div class="label">Analysis Tools</div>
+    </div>
+    <div class="stat">
+      <div class="value">40</div>
+      <div class="label">Intersections Mapped</div>
+    </div>
+    <div class="stat">
+      <div class="value">8</div>
+      <div class="label">Tile Shapes per Sector</div>
+    </div>
+    <div class="stat">
+      <div class="value">10</div>
+      <div class="label">Toggleable Layers</div>
+    </div>
+  </div>
+
+  <!-- Tool 1: Star Intersection Map -->
+  <div class="tool-section">
+    <div class="tool-header">
+      <h2>1. Star Intersection Map</h2>
+      <div class="subtitle">Map all diagonal intersections of a {n/k} star polygon</div>
+    </div>
+    <div class="tool-body">
+      <div class="tool-screenshot">
+        <img src="screenshots/star-intersection-map.png" alt="Star Intersection Map showing 40 intersections at 4 concentric radii for a {10/4} star polygon">
+      </div>
+      <div class="tool-details">
+        <h3>What It Reveals</h3>
+        <ul>
+          <li>All intersection points colored by radius group</li>
+          <li>Concentric radius circles at each intersection distance</li>
+          <li>Parallel diagonal pairs highlighted in the sidebar</li>
+          <li>Hover tooltips showing which diagonals create each intersection</li>
+        </ul>
+
+        <div class="insight-box">
+          <strong>Key Insight for {10/4}:</strong>
+          <p>40 total intersections lie on exactly 4 concentric radii. 5 parallel pairs exist (diag i and diag i+5), meaning these pairs create NO intersections in the interstitial zone.</p>
+        </div>
+
+        <h3>Parameters</h3>
+        <table class="param-table">
+          <tr><th>Param</th><th>Default</th><th>Description</th></tr>
+          <tr><td><code>n</code></td><td>10</td><td>Number of star tips</td></tr>
+          <tr><td><code>k</code></td><td>4</td><td>Star polygon skip</td></tr>
+          <tr><td><code>R</code></td><td>0.55</td><td>Star outer radius</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tool 2: Sector Decomposition -->
+  <div class="tool-section">
+    <div class="tool-header">
+      <h2>2. Sector Decomposition</h2>
+      <div class="subtitle">Analyze which diagonals pass through each interstitial gap</div>
+    </div>
+    <div class="tool-body">
+      <div class="tool-screenshot">
+        <img src="screenshots/sector-decomposition.png" alt="Sector Decomposition showing parallel diagonal pairs in each sector gap">
+      </div>
+      <div class="tool-details">
+        <h3>What It Reveals</h3>
+        <ul>
+          <li>Which 2 diagonals enter each sector gap</li>
+          <li>Whether those diagonals are parallel or intersecting</li>
+          <li>Separation distance between parallel pairs</li>
+          <li>Band edge lines (L/R offsets from center-line)</li>
+        </ul>
+
+        <div class="insight-box">
+          <strong>Key Insight for {10/4}:</strong>
+          <p>ALL 10 sectors have parallel diagonal pairs (separation ~0.34). Face decomposition cannot find interstitial tiles here &mdash; must use per-sector explicit tile construction (Strategy 9) instead.</p>
+        </div>
+
+        <h3>Parameters</h3>
+        <table class="param-table">
+          <tr><th>Param</th><th>Default</th><th>Description</th></tr>
+          <tr><td><code>bandWidth</code></td><td>0.025</td><td>Half-width of strapwork bands</td></tr>
+          <tr><td><code>satDist</code></td><td>0.64</td><td>Satellite center distance</td></tr>
+          <tr><td><code>satR</code></td><td>0.22</td><td>Satellite radius</td></tr>
+          <tr><td><code>sector</code></td><td>0</td><td>Comma-separated sector indices</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tool 3: Tile Decomposition -->
+  <div class="tool-section">
+    <div class="tool-header">
+      <h2>3. Tile Decomposition</h2>
+      <div class="subtitle">Compute and label all tile vertices in one fundamental sector</div>
+    </div>
+    <div class="tool-body">
+      <div class="tool-screenshot">
+        <img src="screenshots/tile-decomposition.png" alt="Tile Decomposition showing 8 labeled tile shapes in sector 0">
+      </div>
+      <div class="tool-details">
+        <h3>What It Reveals</h3>
+        <ul>
+          <li>All tile shapes with labeled outlines (kite, rhombus, petal, wing, between-band)</li>
+          <li>Exact vertex coordinates with construction formulas</li>
+          <li>Toggleable layers: star tiles, interstitial, band edges, vertices</li>
+          <li>Edge lengths and vertex angles for each tile</li>
+        </ul>
+
+        <div class="insight-box">
+          <strong>Key Insight for {10/4}:</strong>
+          <p>8 distinct tiles per sector: Kite, Rhombus A/B (star zone), Petal A/B, Between-band, Wing A/B (interstitial zone). Star tiles use diagonal intersection points; interstitial tiles use line-circle intersections.</p>
+        </div>
+
+        <h3>Parameters</h3>
+        <table class="param-table">
+          <tr><th>Param</th><th>Default</th><th>Description</th></tr>
+          <tr><td><code>sector</code></td><td>0</td><td>Which sector to analyze (0 to n-1)</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tool 4: Construction Overlay -->
+  <div class="tool-section">
+    <div class="tool-header">
+      <h2>4. Construction Overlay</h2>
+      <div class="subtitle">Master visualization with all layers combined and toggleable</div>
+    </div>
+    <div class="tool-body">
+      <div class="tool-screenshot">
+        <img src="screenshots/construction-overlay.png" alt="Construction Overlay showing full pattern with diagonals, intersections, tiles, and satellites">
+      </div>
+      <div class="tool-details">
+        <h3>What It Reveals</h3>
+        <ul>
+          <li>Full pattern rendering with all geometric elements</li>
+          <li>10 toggleable layers: diagonals, band edges, intersections, radii, sectors, star tiles, interstitial, satellites, strapwork, labels</li>
+          <li>Interactive parameter sliders for real-time adjustment</li>
+          <li>Statistics panel: tile counts, intersection count, radii</li>
+        </ul>
+
+        <div class="insight-box">
+          <strong>Key Insight:</strong>
+          <p>Toggle layers on/off to see how construction lines create the tile pattern. Adjust sliders to explore how parameter changes affect the geometry in real time.</p>
+        </div>
+
+        <h3>Interactive Controls</h3>
+        <table class="param-table">
+          <tr><th>Control</th><th>Type</th><th>Description</th></tr>
+          <tr><td>R slider</td><td>Range</td><td>Star outer radius (0.2 &ndash; 0.9)</td></tr>
+          <tr><td>Band W slider</td><td>Range</td><td>Band half-width (0.005 &ndash; 0.06)</td></tr>
+          <tr><td>Layer checkboxes</td><td>Toggle</td><td>Show/hide each construction layer</td></tr>
+          <tr><td>All On / All Off</td><td>Buttons</td><td>Quick layer management</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workflow -->
+  <div class="workflow-section">
+    <h2>Recommended Workflow</h2>
+    <p style="text-align: center; color: #6a8aaa; margin-bottom: 24px;">Use these tools before the first iteration of any new pattern session</p>
+    <div class="workflow-steps">
+      <div class="workflow-step">
+        <div class="step-num">1</div>
+        <h3>Map Intersections</h3>
+        <p>Identify all diagonal intersections, concentric radii, and parallel pairs</p>
+      </div>
+      <div class="workflow-step">
+        <div class="step-num">2</div>
+        <h3>Analyze Sectors</h3>
+        <p>Determine if bands cross or run parallel in each interstitial gap</p>
+      </div>
+      <div class="workflow-step">
+        <div class="step-num">3</div>
+        <h3>Decompose Tiles</h3>
+        <p>Compute exact tile vertices and identify all shapes per sector</p>
+      </div>
+      <div class="workflow-step">
+        <div class="step-num">4</div>
+        <h3>Verify Overlay</h3>
+        <p>Confirm full pattern with all layers toggled, isolate problem areas</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <p>Part of <a href="../">Sacred Patterns</a> &mdash; a TypeScript library for generating sacred geometric patterns</p>
+  <p style="margin-top: 8px;"><a href="../gallery/">Gallery</a> &middot; <a href="https://github.com/omareid/sacred-patterns">GitHub</a></p>
+</div>
+
+</body>
+</html>

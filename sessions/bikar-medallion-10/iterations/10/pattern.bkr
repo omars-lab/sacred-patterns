@@ -1,0 +1,29 @@
+# Medallion-10: Iteration 10 — Zone 0: Center rosette, size-matched
+# Observation: iter 9 center rosette was way too large (radius 100)
+# Reference center rosette is ~same size as satellites (radius ~30)
+# Fix: add inner circle C1 at radius 30, connect every 4 on C1
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  circle C1 center(0,0) radius 30
+  divide C1 into 10
+
+pattern medallion on medallion
+  connect every 4 on C1
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 20 color navy
+
+  edges color navy width 0.5

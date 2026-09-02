@@ -1,0 +1,56 @@
+# Medallion-10: Iteration 7 — 11 isolated rosettes, no strapwork
+# Goal: 1 central {10/4} rosette + 10 satellite {10/4} rosettes
+# Approach: layers isolate center from satellites
+#   Layer 0: center hankin star
+#   Layer 1: 10 satellite connect-every-4 stars (chords self-intersect within each circle)
+# Satellite radius 0.5x to keep stars compact and non-overlapping
+# Strapwork removed — focus on fundamental geometry first
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  repeat at C0 depth 1
+    circle center($point) radius 0.3 * $radius
+    divide into 10
+
+pattern medallion on medallion
+  # Layer 0: Central rosette
+  layer 0
+    hankin angle 54
+
+  # Layer 1: 10 satellite {10/4} stars — full chords that intersect within each circle
+  layer 1
+    connect every 4 on @0.0
+    connect every 4 on @0.1
+    connect every 4 on @0.2
+    connect every 4 on @0.3
+    connect every 4 on @0.4
+    connect every 4 on @0.5
+    connect every 4 on @0.6
+    connect every 4 on @0.7
+    connect every 4 on @0.8
+    connect every 4 on @0.9
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      cerulean = #5DADE2
+      turquoise = #48C9B0
+
+  # Center star (layer 0)
+  fill void where layer == 0 and sides == 10 color deep_navy
+  fill void where layer == 0 and sides == 4 color royal
+  fill void where layer == 0 and sides == 3 color cobalt
+  fill void where layer == 0 color navy
+
+  # Satellite stars (layer 1)
+  fill void where layer == 1 and sides >= 8 color deep_navy
+  fill void where layer == 1 and sides == 4 color cobalt
+  fill void where layer == 1 and sides == 3 color turquoise
+  fill void where layer == 1 color royal
+
+  edges color navy width 0.5

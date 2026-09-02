@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>medallion-10 iter-70 — refit scope picker</title>
+<style>
+  :root { --ink:#1d2330; --muted:#5a6473; --line:#e2e6ec; --bg:#f6f8fb; --rec:#1a7f4b; --accent:#2661BF; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,Segoe UI,Roboto,sans-serif; color:var(--ink); background:var(--bg); line-height:1.5; }
+  .wrap { max-width:980px; margin:0 auto; padding:28px 20px 80px; }
+  h1 { font-size:24px; margin:0 0 4px; }
+  .sub { color:var(--muted); font-size:15px; margin:0 0 24px; }
+  .evidence { background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:26px; }
+  .evidence h2 { font-size:15px; margin:0 0 10px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+  .evidence img { width:100%; border-radius:8px; border:1px solid var(--line); display:block; margin:8px 0; }
+  .evidence p { font-size:14px; margin:8px 0 0; color:var(--ink); }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:22px; }
+  .q { font-size:18px; font-weight:650; margin:0 0 4px; }
+  .qtech { font-size:13px; color:var(--muted); margin:0 0 16px; font-style:italic; }
+  .opt { border:2px solid var(--line); border-radius:10px; padding:14px 16px; margin:10px 0; cursor:pointer; transition:.12s; display:flex; gap:14px; align-items:flex-start; }
+  .opt:hover { border-color:#b9c4d6; }
+  .opt.sel { border-color:var(--accent); background:#f0f5ff; }
+  .opt input { margin-top:4px; transform:scale(1.3); }
+  .opt .body { flex:1; }
+  .opt .lab { font-weight:650; font-size:15px; }
+  .opt .star { color:var(--rec); font-weight:700; }
+  .opt .plain { font-size:14px; margin:6px 0 4px; }
+  .opt .tech { font-size:12.5px; color:var(--muted); font-family:ui-monospace,Menlo,monospace; background:#f4f6f9; padding:6px 8px; border-radius:6px; margin-top:6px; }
+  .note { width:100%; margin-top:12px; font-size:13px; padding:8px; border:1px solid var(--line); border-radius:8px; resize:vertical; min-height:42px; }
+  .bar { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--line); padding:12px 20px; display:flex; gap:12px; justify-content:center; }
+  button { font-size:14px; font-weight:600; padding:10px 18px; border-radius:9px; border:1px solid var(--accent); cursor:pointer; }
+  .primary { background:var(--accent); color:#fff; }
+  .ghost { background:#fff; color:var(--accent); }
+  #out { white-space:pre-wrap; background:#0f1626; color:#d6e0f0; font-family:ui-monospace,Menlo,monospace; font-size:12.5px; border-radius:10px; padding:16px; margin-top:18px; display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>medallion-10 iter-70 — refit scope</h1>
+  <p class="sub">One decision. How far should the next iteration go in fixing the white-lattice gap? · 2026-06-21 · source: <code>docs/issues/2026-06-12-medallion10-band-width-is-tile-bleed-not-stroke.md</code></p>
+
+  <div class="evidence">
+    <h2>What we see</h2>
+    <img src="iter70-picker-assets/white-gap.png" alt="reference vs render white space">
+    <p><b>The reference (left) is airy</b> — wide white weave between the star rosettes. <b>Our render (right) is crowded</b> — colored tiles fill the channels. Measured: reference is <b>55% white</b> inside the medallion, ours only <b>34%</b>. The white isn't too thin; the tiles are too fat.</p>
+  </div>
+
+  <div class="evidence">
+    <h2>Which tiles are the culprits</h2>
+    <img src="iter70-picker-assets/iou-ranking.png" alt="per-wave IoU ranking">
+    <p>I measured every tile ring against the photo. <b>The slate-gray (deep_navy) rings cluster at the bottom</b> (w19, w15, w16, w10, w7, w11, w21 — fit scores 0.20–0.26) — they spill over the white the worst. <b>The two rings the task originally named, w8 and w12 (red outline), sit mid-pack</b> (0.33 / 0.46) — w8 is actually slightly too <i>small</i>. So the original "fix w8/w12" scope was aimed at the wrong tiles; the real fix is the slate-gray family.</p>
+  </div>
+
+  <div class="card" id="card">
+    <div class="q">How much should iter-70 take on?</div>
+    <div class="qtech">Refit deep_navy (#3C3F47, layer-2 overlay, 210 faces) tile geometry to open white lattice channels; iterations/70 (iter-69 FROZEN/G1); four-gate protocol + Tenet-27 portal verdict. Do NOT change strapwork width (Tenet 7).</div>
+    <div id="opts"></div>
+    <textarea class="note" id="note" placeholder="Optional note for this pick (recorded verbatim in the paste-back prompt)…"></textarea>
+  </div>
+
+  <div id="out"></div>
+</div>
+
+<div class="bar">
+  <button class="ghost" onclick="reset()">Reset to recommendation</button>
+  <button class="primary" onclick="gen()">Copy paste-back prompt</button>
+</div>
+
+<script>
+const OPTIONS = [
+  { id:"A", rec:true, label:"Fix the 2 worst slate-gray rings first (w19 + w15)",
+    plain:"Smallest safe step. Shrink/reshape just the two worst-fitting slate-gray rings, ship it, re-measure how much white space we got back, then decide whether the rest are worth it. Also tells us — on the first ring — whether the fix is 'make the tiles smaller' or 'these tiles shouldn't be here at all', before we touch anything else.",
+    tech:"Refit deep_navy w19 (IoU 0.204) + w15 (0.243) in iterations/70. First ring resolves the shrink-vs-delete question. Re-measure white-in-disk; gate per four-gate protocol; record Tenet-27 verdict before extending." },
+  { id:"B", rec:false, label:"Fix all 7 slate-gray rings at once",
+    plain:"Bigger swing. Refit the whole slate-gray family in one iteration to close the full white gap (34%→55%) in a single pass. More impact, but if one ring goes wrong it's harder to tell which, and a currently-OK ring could regress.",
+    tech:"Refit all of deep_navy w7/w10/w11/w15/w16/w19/w21 in iterations/70. Higher per-iter risk; per-wave IoU regression must be checked across the family, not just the worst." },
+  { id:"C", rec:false, label:"Pause #23 — start the training-pipeline task (#22)",
+    plain:"Park this refit. Switch to building the test factory: have the pattern generator crank out lots of patterns automatically and the checker grade them at scale. Come back to the medallion later.",
+    tech:"Defer iter-70; pick up #22 cross-repo auto-generated training pipeline (bikar GT → qiyas verify at scale)." },
+];
+
+let sel = OPTIONS.find(o=>o.rec).id;
+const optsEl = document.getElementById("opts");
+function render(){
+  optsEl.innerHTML="";
+  OPTIONS.forEach(o=>{
+    const d=document.createElement("label");
+    d.className="opt"+(o.id===sel?" sel":"");
+    d.innerHTML=`<input type="radio" name="opt" ${o.id===sel?"checked":""}>
+      <div class="body">
+        <div class="lab">${o.rec?'<span class="star">★ </span>':''}${o.label}</div>
+        <div class="plain">${o.plain}</div>
+        <div class="tech">${o.tech}</div>
+      </div>`;
+    d.onclick=()=>{ sel=o.id; render(); };
+    optsEl.appendChild(d);
+  });
+}
+function reset(){ sel=OPTIONS.find(o=>o.rec).id; render(); document.getElementById("note").value=""; document.getElementById("out").style.display="none"; }
+function gen(){
+  const o=OPTIONS.find(x=>x.id===sel);
+  const note=document.getElementById("note").value.trim();
+  const prompt=
+`Apply my pick from docs/iter70-picker.html (2026-06-21), medallion-10 iter-70 refit scope:
+
+medallion-10-iter70-scope (docs/issues/2026-06-12-medallion10-band-width-is-tile-bleed-not-stroke.md): PICK ${o.id} — ${o.label}
+${note?`Owner note: ${note}`:""}
+
+This pick IS an owner decision — record it as such:
+- Append an owner-pick addendum to the issue doc quoting this prompt + date.
+- If PICK A or B: author iterations/70 per the four-gate per-slice protocol (geometry keyset; gt fill census + param-delta confinement; wave-diff holds; Tenet-26 delta-tint eyeball), then record a Tenet-27 review-portal verdict re-recording the band_width aspect before shipping. Do NOT change strapwork width.
+- If PICK C: set #23 to pending with the deferral reason, mark #22 in_progress, begin the training-pipeline build.
+- Update task #23, commit the addendum (docs-only, [skip ci]), and report the outcome.`;
+  const out=document.getElementById("out");
+  out.textContent=prompt; out.style.display="block";
+  navigator.clipboard?.writeText(prompt).then(()=>{},()=>{});
+  out.scrollIntoView({behavior:"smooth"});
+}
+render();
+</script>
+</body>
+</html>

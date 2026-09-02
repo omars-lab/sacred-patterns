@@ -1,0 +1,42 @@
+{
+  "description": "Structured output each Stage-3 map subagent returns for ONE chunk packet. Cite timestamps (evidence_ts) from the packet; do not speculate beyond the provided text.",
+  "type": "object",
+  "required": ["window_range", "approaches_tried", "mistakes", "pivots", "open_questions"],
+  "properties": {
+    "window_range": { "type": "string", "description": "the lo..hi date range of this packet" },
+    "approaches_tried": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["what", "outcome", "evidence_ts"],
+        "properties": {
+          "what": { "type": "string", "description": "the approach in one sentence (e.g. 'gate F2 retrieval on author shape_id')" },
+          "outcome": { "enum": ["worked", "failed", "abandoned", "in-progress", "unclear"] },
+          "evidence_ts": { "type": "string", "description": "timestamp(s) from the packet supporting this" },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "mistakes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["description", "evidence_ts"],
+        "properties": {
+          "description": { "type": "string", "description": "what went wrong, in the team's own terms" },
+          "tenet_violated": { "type": "string", "description": "the named tenet if identifiable (e.g. 'don't tune constants', 'prove primitive first'), else empty" },
+          "evidence_ts": { "type": "string" },
+          "human_pushback": { "type": "boolean", "description": "true if a human correction in the packet flagged this" }
+        }
+      }
+    },
+    "pivots": {
+      "type": "array",
+      "items": { "type": "string", "description": "a direction change in this window (from X to Y, and why)" }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": { "type": "string", "description": "alternatives raised but not executed in this window" }
+    }
+  }
+}

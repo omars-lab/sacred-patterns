@@ -1,0 +1,21 @@
+# medallion-10 girih field — SHARP STARS (task #9, owner 2026-06-21).
+#
+# The default `girih field` decorates each decagon with a {10/3} star
+# (sharpness φ≈1.618 — BLUNT stubby nubs). The owner flagged a material
+# difference vs the reference, whose stars are sharp deep-valleyed 10-pointed
+# stars. The fix is the new `star <k>` keyword: `star 4` = {10/4} chord skip,
+# sharpness ≈3.08 — deep valleys, sharp spikes — matching the reference's
+# star-and-cross network species. (Engine: decagonStarPairs, girih-tiles.ts.)
+#
+# Render-confirmed vs reference center 2026-06-21 (Tenet 24/25): the central
+# 10-pointed star tightens to a sharp deep star and the ring becomes a dense
+# star-and-cross network — the reference's interior topology.
+blueprint g
+  circle C0 center(0,0) radius 100
+
+pattern p on g
+  girih field decagonal 30 shells 1 star 4
+  strapwork
+    width 5
+    crossing alternating
+    color #FFFFFF

@@ -1,0 +1,55 @@
+# Medallion-10: Iteration 40 — wave-1 gate: center star scale (2026-06-11)
+#
+# DELTA-FROM-ITER-39: one construction idea — shells 2 -> shells 1. First
+# wave-driven iteration under the agreed wave plan: wave 1 (the navy center
+# star) failed its gate (coverage 60.4%, iou 42.2%; our star measured 2.09x
+# too small by area). The girih {10/3} decoration has no scale knob relative
+# to its host decagon, so field extent is the only parameter lever on the
+# star/medallion ratio. Expected ~1.5x linear star growth after registration
+# (needed: 1.45x). Whole-image similarity is expected to DROP (outer ring
+# vanishes) — trend-only under the wave protocol; waves 2+ own the rest.
+# Hypothesis + falsifier: iterations/40/hypothesis.md
+
+pattern medallion10_iter40
+  girih field decagonal 62 shells 1 pockets star
+
+  # The field emits strapwork segments; voids detect closes them into faces so
+  # the gt-emitter has shapes to measure (without this, gt.json has 0 shapes).
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #262E3D
+      navy = #132A61
+      royal = #2B61B7
+      cobalt = #32B0CA
+      turquoise = #BBC5D5
+
+  # Classify rules give every face a face_class — bikar's gt-emitter drops
+  # unclassified polygons, so without these the field renders but exports 0
+  # shapes (the iter-33 first-render finding, 2026-05-28).
+  classify .pocket where source == _girih_hexagon_star and area >= 360
+  classify .deep_navy where sides == 10
+  classify .royal where sides == 4
+  classify .turquoise where sides == 3
+  classify .cobalt where sides == 5
+  classify .navy where sides >= 6
+
+  fill void where source == _girih_hexagon_star and area >= 360 color cobalt
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 5 and area >= 360 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 5 color cobalt
+  fill void where sides >= 6 color navy
+
+  # Edges near-invisible: the white strapwork bands carry the line work now, so
+  # the tile/decoration edge strokes would only add clutter under the bands.
+  edges color deep_navy width 0.2
+
+  # Slice-4 overlay: weave the decoration centerlines into white interlacing
+  # bands. Deco-only weaving (bikar#653 kernel change) excludes tile outlines so
+  # the band network traces the rosette motif, not the tiling scaffold.
+  strapwork
+      width 8
+      crossing alternating
+      color #FFFFFF

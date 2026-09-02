@@ -1,0 +1,52 @@
+# Medallion-10: Iteration 3 (redo) — Hankin for both center + satellites
+# Key insight: connect every 4 creates long chords spanning the full
+#   diameter. The reference has SHORT star points that only extend ~40%
+#   of the radius. Hankin construction with a controlled angle produces
+#   compact stars that stay within their zone.
+#
+# Approach: hankin angle on C0 (center) + hankin on each @0.N (satellites)
+#   All at the same angle for consistent star shape
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  repeat at C0 depth 1
+    circle center($point) radius $radius
+    divide into 10
+
+pattern medallion on medallion
+  # Central rosette
+  hankin angle 54
+
+  # 10 satellite rosettes
+  hankin angle 54 on @0.0
+  hankin angle 54 on @0.1
+  hankin angle 54 on @0.2
+  hankin angle 54 on @0.3
+  hankin angle 54 on @0.4
+  hankin angle 54 on @0.5
+  hankin angle 54 on @0.6
+  hankin angle 54 on @0.7
+  hankin angle 54 on @0.8
+  hankin angle 54 on @0.9
+
+  strapwork
+      width 6
+      crossing alternating
+      color #FFFFFF
+  voids detect
+  palette persian_blue
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      cerulean = #5DADE2
+      turquoise = #48C9B0
+  fill void where sides == 10 color navy
+  fill void where ring == 0 color navy
+  fill void where ring == 1 and sides == 3 color turquoise
+  fill void where ring == 1 color cobalt
+  fill void where ring == 2 and sides == 3 color cerulean
+  fill void where ring == 2 color royal
+  fill void where ring >= 3 and sides == 3 color turquoise
+  fill void where ring >= 3 color cobalt
+  edges color navy width 0

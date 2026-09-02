@@ -1,0 +1,73 @@
+# Medallion-10: Iteration 6 — Refinement of iter 3 (best structural result)
+# Base: hankin angle 54 for both center and all 10 satellites
+# Changes from iter 3:
+#   - Better color mapping: more graduated blues matching reference
+#   - Classify faces for finer-grained styling
+#   - Adjusted fill rules to match reference color distribution
+#
+# Reference color zones (from center outward):
+#   Zone 0: navy decagonal void at center
+#   Zone 1: royal/cobalt kites radiating from center star
+#   Zone 2: interstitial zone — mixed cobalt/cerulean
+#   Zone 3: satellite rosettes — navy centers, turquoise tips
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  repeat at C0 depth 1
+    circle center($point) radius $radius
+    divide into 10
+
+pattern medallion on medallion
+  # Central rosette — compact {10/4} star via hankin
+  hankin angle 54
+
+  # 10 satellite rosettes — same construction on each ring-1 circle
+  hankin angle 54 on @0.0
+  hankin angle 54 on @0.1
+  hankin angle 54 on @0.2
+  hankin angle 54 on @0.3
+  hankin angle 54 on @0.4
+  hankin angle 54 on @0.5
+  hankin angle 54 on @0.6
+  hankin angle 54 on @0.7
+  hankin angle 54 on @0.8
+  hankin angle 54 on @0.9
+
+  strapwork
+      width 7
+      crossing alternating
+      color #FFFFFF
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      steel = #3498DB
+      cerulean = #5DADE2
+      turquoise = #48C9B0
+      sky = #85C1E9
+
+  # Center decagonal void — darkest navy
+  fill void where sides == 10 color deep_navy
+
+  # Ring 0 (center star kites/triangles) — navy to royal
+  fill void where ring == 0 and sides == 4 color royal
+  fill void where ring == 0 and sides == 3 color cobalt
+  fill void where ring == 0 color navy
+
+  # Ring 1 (transition zone) — cobalt to steel
+  fill void where ring == 1 and sides == 4 color cobalt
+  fill void where ring == 1 and sides == 3 color cerulean
+  fill void where ring == 1 color steel
+
+  # Ring 2+ (satellite zone) — reference shows turquoise spikes with navy voids
+  fill void where ring >= 2 and sides >= 9 color navy
+  fill void where ring >= 2 and sides == 4 color royal
+  fill void where ring >= 2 and sides == 3 color turquoise
+  fill void where ring >= 2 color cobalt
+
+  edges color navy width 0

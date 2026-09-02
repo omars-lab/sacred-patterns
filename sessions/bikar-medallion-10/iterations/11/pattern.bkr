@@ -1,0 +1,49 @@
+# Medallion-10: Iteration 11 — Zone 0 + Zone 3: Center + 10 satellites
+# Zone 0: center rosette on C1 (radius 30) — verified in iter 10
+# Zone 3: 10 satellite rosettes on repeat circles (radius 0.3 * 100 = 30)
+# Both same size, both {10/4}, isolated via layers
+# No strapwork — structure first per feedback
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  circle C1 center(0,0) radius 30
+  divide C1 into 10
+  repeat at C0 depth 1
+    circle center($point) radius 0.3 * $radius
+    divide into 10
+
+pattern medallion on medallion
+  # Layer 0: Central {10/4} rosette on C1
+  layer 0
+    connect every 4 on C1
+
+  # Layer 1: 10 satellite {10/4} rosettes
+  layer 1
+    connect every 4 on @0.0
+    connect every 4 on @0.1
+    connect every 4 on @0.2
+    connect every 4 on @0.3
+    connect every 4 on @0.4
+    connect every 4 on @0.5
+    connect every 4 on @0.6
+    connect every 4 on @0.7
+    connect every 4 on @0.8
+    connect every 4 on @0.9
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 20 color navy
+  fill void where sides >= 5 color cobalt
+
+  edges color navy width 0.5

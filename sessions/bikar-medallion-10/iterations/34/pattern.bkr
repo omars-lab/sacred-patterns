@@ -1,0 +1,61 @@
+# Medallion-10: Iteration 34 — Slice-4 strapwork overlay (bikar#653, 2026-06-07)
+#
+# iter-33 (commit ddb2e98 girih field) converged the gap-free decagonal field
+# but renders it as flat blue filled faces — A5 band-integrity scored 0 BY
+# DESIGN because no strapwork is woven. iter-34 is the deferred Slice-4 half of
+# the girih-ceiling decision (bikar docs/decisions/2026-05-28-medallion10-girih-
+# ceiling.md, close-2): a RENDER-STYLE upgrade that draws the SAME decoration
+# centerlines the field already emits as white interlacing strapwork bands —
+# recovering the reference's defining white-lattice-over-blue-stars look and
+# making A5 live.
+#
+# Per memory feedback_girih_strapwork_is_render_style_not_geometry: strapwork is
+# HOW the decoration lines are drawn (woven over/under bands), NOT new tile
+# geometry or pocket-filling. computeStrapwork (evaluator.ts:631) runs over the
+# full edgeGraph; girihTileSegments(tile, withDecoration=true) already pushed the
+# decoration centerlines into env.segments (evaluator.ts:2183), so the band
+# weaver has lines to weave with no construction change.
+#
+# DELTA-FROM-ITER-33: + strapwork block (width/crossing/color). Field geometry,
+# palette, classify, fill, edges all unchanged from iter-33.
+
+pattern medallion10_iter34
+  girih field decagonal 62 shells 2
+
+  # The field emits strapwork segments; voids detect closes them into faces so
+  # the gt-emitter has shapes to measure (without this, gt.json has 0 shapes).
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  # Classify rules give every face a face_class — bikar's gt-emitter drops
+  # unclassified polygons, so without these the field renders but exports 0
+  # shapes (the iter-33 first-render finding, 2026-05-28).
+  classify .deep_navy where sides == 10
+  classify .royal where sides == 4
+  classify .turquoise where sides == 3
+  classify .cobalt where sides == 5
+  classify .navy where sides >= 6
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 5 color cobalt
+  fill void where sides >= 6 color navy
+
+  # Edges near-invisible: the white strapwork bands carry the line work now, so
+  # the tile/decoration edge strokes would only add clutter under the bands.
+  edges color deep_navy width 0.2
+
+  # Slice-4 overlay: weave the decoration centerlines into white interlacing
+  # bands. Deco-only weaving (bikar#653 kernel change) excludes tile outlines so
+  # the band network traces the rosette motif, not the tiling scaffold.
+  strapwork
+      width 6
+      crossing alternating
+      color #FFFFFF

@@ -1,0 +1,38 @@
+# bikar-medallion-10 iter-31 — central girih decagon tile (Tier-0 probe)
+#
+# Plain English: the chord-overlay construction (iters 13-30) hit a hard
+# ceiling — it produces a spiky rosette but ZERO of the girih strapwork
+# vocabulary the reference medallion actually uses (white interlace bands,
+# explicit 10-pointed star tiles, decagon rosette frames). See
+# iterations/30/visual-verdict.md. This iteration switches construction
+# PHILOSOPHY to girih tiling (Lu & Steinhardt 2007), using bikar's native
+# `girih` primitive. iter-31 stands up only the CENTRAL decagon tile to
+# prove the primitive renders + audits before composing the full ring
+# (iter-32+ via `attach <name> edge <N>`). Per Tenet 17: prove the
+# primitive before composing it.
+#
+# Construction: a single decagon girih tile centered at origin. Its
+# internal decoration lines (DECORATION_PAIRS in girih-tiles.ts) form a
+# {10/3} 10-pointed star at the center plus a ring of rhombus/kite
+# decoration faces — the inner-star vocabulary the baseline expects
+# (inner-star--star-v20 at dist 0.00-0.07, girih_rhombus at 0.25-0.39).
+#
+# edgeLength 61.8 ≈ circumradius 100 × 2·sin(18°), matching the iter-30
+# C0 radius 100 footprint so the audit's distance normalization is
+# comparable across iterations.
+
+pattern medallion_girih_central
+  girih decagon 61.8
+  voids detect
+  palette girih
+      gold = #C4A35A
+      azure = #2B4C7E
+      ivory = #F5F0E1
+      white = #F8F6F0
+  classify .central_star where sides >= 8
+  classify .decoration_rhombus where sides == 4
+  classify .decoration_kite where sides == 3
+  classify .tile_field where sides >= 5
+  fill void where sides == 3 color azure
+  fill void where sides == 4 color gold
+  fill void where sides >= 5 color ivory

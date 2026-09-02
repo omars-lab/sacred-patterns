@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Tile Decomposition Analysis</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a14; color: #ccc; display: flex; min-height: 100vh; }
+        #sidebar { width: 360px; padding: 16px; background: #12121f; overflow-y: auto; border-right: 1px solid #333; }
+        #main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; }
+        h1 { font-size: 18px; color: #7af; margin-bottom: 4px; }
+        h2 { font-size: 14px; color: #8cf; margin: 12px 0 6px; }
+        .subtitle { font-size: 12px; color: #888; margin-bottom: 8px; }
+        .param-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+        .param-row label { width: 100px; font-size: 13px; color: #aaa; }
+        .param-row input { width: 70px; background: #1a1a2a; border: 1px solid #444; color: #fff; padding: 4px 6px; border-radius: 3px; font-size: 13px; }
+        .param-row input[type=range] { width: 100px; }
+        .param-row .val { width: 40px; font-size: 12px; color: #8cf; text-align: right; }
+        .param-row select { background: #1a1a2a; border: 1px solid #444; color: #fff; padding: 4px; border-radius: 3px; font-size: 13px; }
+        button { background: #2a4a8a; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; margin: 4px 2px; }
+        button:hover { background: #3a6aba; }
+        .toggle { display: flex; gap: 4px; flex-wrap: wrap; margin: 4px 0; }
+        .toggle label { font-size: 11px; display: flex; align-items: center; gap: 3px; cursor: pointer; }
+        #info { margin-top: 12px; font-size: 11px; line-height: 1.5; }
+        .stat { color: #8cf; font-weight: bold; }
+        table { border-collapse: collapse; width: 100%; margin-top: 6px; font-size: 10px; }
+        th, td { padding: 2px 4px; border: 1px solid #333; text-align: center; }
+        th { background: #1a1a2a; color: #8cf; }
+        .tile-row { cursor: pointer; }
+        .tile-row:hover { background: #1a2a4a; }
+        svg text { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h1>Tile Decomposition</h1>
+        <div class="subtitle">Compute and label all tile vertices for one sector</div>
+        <div class="param-row"><label>n:</label><input type="number" id="pN" value="10" min="3" max="24"></div>
+        <div class="param-row"><label>k:</label><input type="number" id="pK" value="4" min="1" max="11"></div>
+        <div class="param-row"><label>R:</label><input type="range" id="pR" value="0.55" min="0.2" max="0.9" step="0.01"><span class="val" id="pRval">0.55</span></div>
+        <div class="param-row"><label>Band width:</label><input type="range" id="pBW" value="0.025" min="0.005" max="0.06" step="0.001"><span class="val" id="pBWval">0.025</span></div>
+        <div class="param-row"><label>Sat dist:</label><input type="range" id="pSD" value="0.64" min="0.4" max="0.9" step="0.01"><span class="val" id="pSDval">0.64</span></div>
+        <div class="param-row"><label>Sat radius:</label><input type="range" id="pSR" value="0.22" min="0.05" max="0.35" step="0.01"><span class="val" id="pSRval">0.22</span></div>
+        <div class="param-row"><label>Sector:</label><select id="pSector"></select></div>
+        <h2>Show Layers</h2>
+        <div class="toggle">
+            <label><input type="checkbox" id="showStarTiles" checked> Star tiles</label>
+            <label><input type="checkbox" id="showInterstitial" checked> Interstitial</label>
+            <label><input type="checkbox" id="showBands" checked> Band edges</label>
+            <label><input type="checkbox" id="showVertices" checked> Vertices</label>
+            <label><input type="checkbox" id="showLabels" checked> Labels</label>
+            <label><input type="checkbox" id="showDiags" checked> Diagonals</label>
+        </div>
+        <button onclick="render()">Update</button>
+        <div id="info"></div>
+    </div>
+    <div id="main"><div id="canvas"></div></div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+    // ================================================================
+    // GEOMETRY LIBRARY (shared across analysis tools)
+    // ================================================================
+    function lineIntersect(p1,p2,p3,p4) {
+        var x1=p1[0],y1=p1[1],x2=p2[0],y2=p2[1],x3=p3[0],y3=p3[1],x4=p4[0],y4=p4[1];
+        var d=(x1-x2)*(y3-y4)-(y1-y2)*(x3-x4);
+        if(Math.abs(d)<1e-10) return null;
+        var t=((x1-x3)*(y3-y4)-(y1-y3)*(x3-x4))/d;
+        return [x1+t*(x2-x1),y1+t*(y2-y1)];
+    }
+    function lineCircle(line, r, cx, cy, nearAngle) {
+        var dx=line.to[0]-line.from[0], dy=line.to[1]-line.from[1];
+        var len=Math.sqrt(dx*dx+dy*dy), ux=dx/len, uy=dy/len;
+        var ax=line.from[0]-cx, ay=line.from[1]-cy;
+        var a2=ux*ux+uy*uy, b2=2*(ax*ux+ay*uy), c2=ax*ax+ay*ay-r*r;
+        var disc=b2*b2-4*a2*c2;
+        if(disc<0) return null;
+        var t1=(-b2+Math.sqrt(disc))/(2*a2), t2=(-b2-Math.sqrt(disc))/(2*a2);
+        var p1=[line.from[0]+t1*ux,line.from[1]+t1*uy];
+        var p2=[line.from[0]+t2*ux,line.from[1]+t2*uy];
+        var a1f=Math.atan2(p1[0]-cx,-(p1[1]-cy)); if(a1f<0)a1f+=2*Math.PI;
+        var a2f=Math.atan2(p2[0]-cx,-(p2[1]-cy)); if(a2f<0)a2f+=2*Math.PI;
+        var d1=Math.abs(a1f-nearAngle); if(d1>Math.PI)d1=2*Math.PI-d1;
+        var d2=Math.abs(a2f-nearAngle); if(d2>Math.PI)d2=2*Math.PI-d2;
+        return d1<d2?p1:p2;
+    }
+    function distToLine(pt, line) {
+        var dx=line.to[0]-line.from[0], dy=line.to[1]-line.from[1];
+        var len=Math.sqrt(dx*dx+dy*dy);
+        return Math.abs((pt[0]-line.from[0])*(-dy/len)+(pt[1]-line.from[1])*(dx/len));
+    }
+    function distFC(p, cx, cy, scale) {
+        return Math.sqrt((p[0]-cx)*(p[0]-cx)+(p[1]-cy)*(p[1]-cy))/scale;
+    }
+
+    var W = 700, H = 700;
+
+    function render() {
+        var n=parseInt(document.getElementById('pN').value);
+        var k=parseInt(document.getElementById('pK').value);
+        var R=parseFloat(document.getElementById('pR').value);
+        var halfBandW=parseFloat(document.getElementById('pBW').value);
+        var satDist=parseFloat(document.getElementById('pSD').value);
+        var satR=parseFloat(document.getElementById('pSR').value);
+        var selSector=parseInt(document.getElementById('pSector').value||'0');
+
+        var showStarTiles=document.getElementById('showStarTiles').checked;
+        var showInterstitial=document.getElementById('showInterstitial').checked;
+        var showBands=document.getElementById('showBands').checked;
+        var showVertices=document.getElementById('showVertices').checked;
+        var showLabels=document.getElementById('showLabels').checked;
+        var showDiags=document.getElementById('showDiags').checked;
+
+        ['pR','pBW','pSD','pSR'].forEach(function(id){
+            document.getElementById(id+'val').textContent=document.getElementById(id).value;
+        });
+
+        // Populate sector dropdown
+        var sel = document.getElementById('pSector');
+        if(sel.options.length !== n) {
+            sel.innerHTML='';
+            for(var i=0;i<n;i++) {
+                var opt=document.createElement('option');
+                opt.value=i; opt.text='Sector '+i;
+                sel.appendChild(opt);
+            }
+        }
+        sel.value=selSector;
+
+        var sector=2*Math.PI/n;
+        var halfSector=Math.PI/n;
+        var scale=Math.min(W,H)/2;
+        var cx=W/2, cy=H/2;
+        var clipR=satDist+satR;
+        var satInnerR=satDist-satR*0.45;
+
+        function pr(r){return r*scale;}
+        function pp(r,a){return [cx+pr(r)*Math.sin(a),cy-pr(r)*Math.cos(a)];}
+
+        var tips=[];
+        for(var i=0;i<n;i++) tips.push(pp(R,i*sector));
+
+        var diags=[];
+        for(var i=0;i<n;i++){
+            var j=(i+k)%n;
+            var dx=tips[j][0]-tips[i][0], dy=tips[j][1]-tips[i][1];
+            var len=Math.sqrt(dx*dx+dy*dy);
+            var ux=dx/len, uy=dy/len;
+            var far=pr(clipR*1.3);
+            var mid=[(tips[i][0]+tips[j][0])/2,(tips[i][1]+tips[j][1])/2];
+            diags.push({from:[mid[0]-ux*far,mid[1]-uy*far],to:[mid[0]+ux*far,mid[1]+uy*far],ux:ux,uy:uy,px:-uy,py:ux});
+        }
+
+        function edgeLine(di,side){
+            var d=diags[di],o=pr(halfBandW)*(side==='L'?1:-1);
+            return {from:[d.from[0]+d.px*o,d.from[1]+d.py*o],to:[d.to[0]+d.px*o,d.to[1]+d.py*o]};
+        }
+
+        // All intersections
+        var allInt=[];
+        for(var i=0;i<n;i++) for(var j=i+1;j<n;j++){
+            if((i+Math.floor(n/2))%n===j) continue;
+            var pt=lineIntersect(diags[i].from,diags[i].to,diags[j].from,diags[j].to);
+            if(pt && distFC(pt,cx,cy,scale)<=clipR) allInt.push({p:pt,l:[i,j],r:distFC(pt,cx,cy,scale)});
+        }
+
+        // Per-diagonal sorted intersections
+        function diagSorted(di){
+            var pts=[];
+            var dx2=diags[di].to[0]-diags[di].from[0], dy2=diags[di].to[1]-diags[di].from[1];
+            for(var p=0;p<allInt.length;p++){
+                if(allInt[p].l[0]===di||allInt[p].l[1]===di){
+                    var t=Math.abs(dx2)>Math.abs(dy2)
+                        ?(allInt[p].p[0]-diags[di].from[0])/dx2
+                        :(allInt[p].p[1]-diags[di].from[1])/dy2;
+                    var other=allInt[p].l[0]===di?allInt[p].l[1]:allInt[p].l[0];
+                    pts.push({p:allInt[p].p,t:t,r:allInt[p].r,other:other});
+                }
+            }
+            pts.sort(function(a,b){return a.t-b.t;});
+            return pts;
+        }
+        var diagPts=[];
+        for(var i=0;i<n;i++) diagPts.push(diagSorted(i));
+
+        function tipData(s){
+            var diagA=s, diagB=(s+n-k)%n;
+            var tipPx=tips[s];
+            function sortFromTip(pts){
+                return pts.slice().sort(function(a,b){
+                    var da=(a.p[0]-tipPx[0])*(a.p[0]-tipPx[0])+(a.p[1]-tipPx[1])*(a.p[1]-tipPx[1]);
+                    var db=(b.p[0]-tipPx[0])*(b.p[0]-tipPx[0])+(b.p[1]-tipPx[1])*(b.p[1]-tipPx[1]);
+                    return da-db;
+                });
+            }
+            return {diagA:diagA,diagB:diagB,ptsA:sortFromTip(diagPts[diagA]),ptsB:sortFromTip(diagPts[diagB])};
+        }
+
+        // ================================================================
+        // COMPUTE TILES FOR SELECTED SECTOR
+        // ================================================================
+        var s = selSector;
+        var nextS = (s+1)%n;
+        var tiles = [];
+
+        // --- STAR TILES for tip[s] ---
+        if(showStarTiles) {
+            var td = tipData(s);
+            var inA=td.ptsA.filter(function(p){return p.r<R*0.99;});
+            var inB=td.ptsB.filter(function(p){return p.r<R*0.99;});
+
+            if(inA.length>=1 && inB.length>=1){
+                var vA=inA[0].p, otA=inA[0].other;
+                var vB=inB[0].p, otB=inB[0].other;
+                var inner=lineIntersect(diags[otA].from,diags[otA].to,diags[otB].from,diags[otB].to);
+                if(inner){
+                    tiles.push({name:'Kite (tip '+s+')',type:'kite',pts:[tips[s],vA,inner,vB],
+                        color:'rgba(64,217,217,0.5)',labels:['tip'+s,'vA(d'+td.diagA+'×d'+otA+')','inner(d'+otA+'×d'+otB+')','vB(d'+td.diagB+'×d'+otB+')']});
+                }
+                // Inner rhombus A
+                if(inA.length>=2){
+                    var vA2=inA[1].p, otA2=inA[1].other;
+                    var rhP=lineIntersect(diags[otA2].from,diags[otA2].to,diags[otA].from,diags[otA].to);
+                    if(rhP && inner){
+                        tiles.push({name:'Rhombus A (tip '+s+')',type:'rhombus',pts:[vA,vA2,rhP,inner],
+                            color:'rgba(42,92,170,0.5)',labels:['vA','vA2(d'+td.diagA+'×d'+otA2+')','rh(d'+otA2+'×d'+otA+')','inner']});
+                    }
+                }
+                // Inner rhombus B
+                if(inB.length>=2){
+                    var vB2=inB[1].p, otB2=inB[1].other;
+                    var rhP2=lineIntersect(diags[otB2].from,diags[otB2].to,diags[otB].from,diags[otB].to);
+                    if(rhP2 && inner){
+                        tiles.push({name:'Rhombus B (tip '+s+')',type:'rhombus',pts:[vB,vB2,rhP2,inner],
+                            color:'rgba(59,125,216,0.5)',labels:['vB','vB2','rh','inner']});
+                    }
+                }
+            }
+        }
+
+        // --- INTERSTITIAL TILES for sector gap s ---
+        if(showInterstitial) {
+            var satAngle=s*sector+halfSector;
+            var diagFromS=(s+n-k)%n;
+            var diagFromN=nextS;
+            var bisectorPt=pp(clipR,satAngle);
+
+            var eLS=edgeLine(diagFromS,'L'), eRS=edgeLine(diagFromS,'R');
+            var innerSideS=distToLine(bisectorPt,eLS)<distToLine(bisectorPt,eRS)?'L':'R';
+            var outerSideS=innerSideS==='L'?'R':'L';
+            var eLN=edgeLine(diagFromN,'L'), eRN=edgeLine(diagFromN,'R');
+            var innerSideN=distToLine(bisectorPt,eLN)<distToLine(bisectorPt,eRN)?'L':'R';
+            var outerSideN=innerSideN==='L'?'R':'L';
+
+            var innerLineS=edgeLine(diagFromS,innerSideS);
+            var outerLineS=edgeLine(diagFromS,outerSideS);
+            var innerLineN=edgeLine(diagFromN,innerSideN);
+            var outerLineN=edgeLine(diagFromN,outerSideN);
+
+            var otherDiagS=s;
+            var p1S=lineIntersect(outerLineS.from,outerLineS.to,diags[otherDiagS].from,diags[otherDiagS].to);
+            var p4S=lineIntersect(innerLineS.from,innerLineS.to,diags[otherDiagS].from,diags[otherDiagS].to);
+            var p2S=lineCircle(outerLineS,pr(satInnerR),cx,cy,satAngle);
+            var p3S=lineCircle(innerLineS,pr(satInnerR),cx,cy,satAngle);
+
+            if(p1S&&p2S&&p3S&&p4S){
+                tiles.push({name:'Petal A (from tip '+s+')',type:'petal',pts:[p1S,p2S,p3S,p4S],
+                    color:'rgba(42,92,170,0.5)',labels:['outerEdge×d'+otherDiagS,'outerEdge×satCircle','innerEdge×satCircle','innerEdge×d'+otherDiagS]});
+            }
+
+            var otherDiagN=(nextS+n-k)%n;
+            var p1N=lineIntersect(outerLineN.from,outerLineN.to,diags[otherDiagN].from,diags[otherDiagN].to);
+            var p4N=lineIntersect(innerLineN.from,innerLineN.to,diags[otherDiagN].from,diags[otherDiagN].to);
+            var p2N=lineCircle(outerLineN,pr(satInnerR),cx,cy,satAngle);
+            var p3N=lineCircle(innerLineN,pr(satInnerR),cx,cy,satAngle);
+
+            if(p1N&&p2N&&p3N&&p4N){
+                tiles.push({name:'Petal B (from tip '+nextS+')',type:'petal',pts:[p1N,p2N,p3N,p4N],
+                    color:'rgba(26,58,110,0.5)',labels:['outerEdge×d'+otherDiagN,'outerEdge×satCircle','innerEdge×satCircle','innerEdge×d'+otherDiagN]});
+            }
+
+            // Between-band tile
+            if(p4S&&p3S&&p3N&&p4N){
+                tiles.push({name:'Between-band',type:'between',pts:[p4S,p3S,p3N,p4N],
+                    color:'rgba(26,58,110,0.4)',labels:['A-inner×d'+otherDiagS,'A-inner×sat','B-inner×sat','B-inner×d'+otherDiagN]});
+            }
+
+            // Wing A
+            var adjDiagS=s;
+            var eL_adjS=edgeLine(adjDiagS,'L'),eR_adjS=edgeLine(adjDiagS,'R');
+            var adjSideS=distToLine(bisectorPt,eL_adjS)<distToLine(bisectorPt,eR_adjS)?'L':'R';
+            var adjLineS=edgeLine(adjDiagS,adjSideS);
+            var adjStartS=lineIntersect(adjLineS.from,adjLineS.to,diags[diagFromS].from,diags[diagFromS].to);
+            var adjEndS=lineCircle(adjLineS,pr(satInnerR),cx,cy,satAngle);
+
+            if(p1S&&p2S&&adjEndS&&adjStartS&&distFC(adjStartS,cx,cy,scale)<clipR){
+                tiles.push({name:'Wing A',type:'wing',pts:[p1S,p2S,adjEndS,adjStartS],
+                    color:'rgba(107,159,212,0.4)',labels:['petalA-outer-start','petalA-outer-end','adjEdge×sat','adjEdge×diagFromS']});
+            }
+
+            // Wing B
+            var adjDiagN=(nextS+n-k)%n;
+            var eL_adjN=edgeLine(adjDiagN,'L'),eR_adjN=edgeLine(adjDiagN,'R');
+            var adjSideN=distToLine(bisectorPt,eL_adjN)<distToLine(bisectorPt,eR_adjN)?'L':'R';
+            var adjLineN=edgeLine(adjDiagN,adjSideN);
+            var adjStartN=lineIntersect(adjLineN.from,adjLineN.to,diags[diagFromN].from,diags[diagFromN].to);
+            var adjEndN=lineCircle(adjLineN,pr(satInnerR),cx,cy,satAngle);
+
+            if(p1N&&p2N&&adjEndN&&adjStartN&&distFC(adjStartN,cx,cy,scale)<clipR){
+                tiles.push({name:'Wing B',type:'wing',pts:[p1N,p2N,adjEndN,adjStartN],
+                    color:'rgba(59,125,216,0.4)',labels:['petalB-outer-start','petalB-outer-end','adjEdge×sat','adjEdge×diagFromN']});
+            }
+        }
+
+        // ================================================================
+        // RENDER
+        // ================================================================
+        d3.select('#canvas').selectAll('*').remove();
+        var svg=d3.select('#canvas').append('svg').attr('width',W).attr('height',H);
+        svg.append('rect').attr('width',W).attr('height',H).attr('fill','#0a0a14');
+
+        // Sector wedge highlight
+        var a1s=s*sector-Math.PI/2, a2s=(s+1)*sector-Math.PI/2;
+        var arcR2=pr(clipR*0.95);
+        var path=d3.path();
+        path.moveTo(cx,cy);
+        path.lineTo(cx+arcR2*Math.cos(a1s),cy+arcR2*Math.sin(a1s));
+        path.arc(cx,cy,arcR2,a1s,a2s,false);
+        path.closePath();
+        svg.append('path').attr('d',path.toString()).attr('fill','#111828').attr('stroke','#335').attr('stroke-width',1);
+
+        // Circles
+        svg.append('circle').attr('cx',cx).attr('cy',cy).attr('r',pr(R))
+            .attr('fill','none').attr('stroke','#446').attr('stroke-width',1).attr('stroke-dasharray','4,3');
+        svg.append('circle').attr('cx',cx).attr('cy',cy).attr('r',pr(satInnerR))
+            .attr('fill','none').attr('stroke','#644').attr('stroke-width',1).attr('stroke-dasharray','3,3');
+
+        // Satellite circle
+        var satPt=pp(satDist,s*sector+halfSector);
+        svg.append('circle').attr('cx',satPt[0]).attr('cy',satPt[1]).attr('r',pr(satR))
+            .attr('fill','none').attr('stroke','#446').attr('stroke-width',1).attr('stroke-dasharray','3,3');
+
+        // Diagonals (dim)
+        if(showDiags){
+            var diagColors=d3.scaleOrdinal(d3.schemeCategory10);
+            diags.forEach(function(d,i){
+                svg.append('line').attr('x1',d.from[0]).attr('y1',d.from[1]).attr('x2',d.to[0]).attr('y2',d.to[1])
+                    .attr('stroke',diagColors(i)).attr('stroke-width',0.6).attr('stroke-opacity',0.2);
+            });
+        }
+
+        // Band edges
+        if(showBands){
+            var diagFromS2=(s+n-k)%n, diagFromN2=nextS;
+            [diagFromS2,diagFromN2].forEach(function(di){
+                ['L','R'].forEach(function(side){
+                    var el=edgeLine(di,side);
+                    svg.append('line').attr('x1',el.from[0]).attr('y1',el.from[1]).attr('x2',el.to[0]).attr('y2',el.to[1])
+                        .attr('stroke','#fff').attr('stroke-width',0.8).attr('stroke-opacity',0.3).attr('stroke-dasharray','3,3');
+                });
+                // Center line
+                svg.append('line').attr('x1',diags[di].from[0]).attr('y1',diags[di].from[1])
+                    .attr('x2',diags[di].to[0]).attr('y2',diags[di].to[1])
+                    .attr('stroke','#fff').attr('stroke-width',1.5).attr('stroke-opacity',0.5);
+            });
+        }
+
+        // Tile polygons
+        tiles.forEach(function(tile,ti){
+            if(!tile.pts||tile.pts.length<3) return;
+            var valid=true;
+            for(var i=0;i<tile.pts.length;i++) if(!tile.pts[i]) valid=false;
+            if(!valid) return;
+
+            svg.append('polygon')
+                .attr('points',tile.pts.map(function(p){return p[0]+','+p[1];}).join(' '))
+                .attr('fill',tile.color)
+                .attr('stroke','#fff')
+                .attr('stroke-width',1.5);
+
+            // Vertex dots and labels
+            if(showVertices){
+                tile.pts.forEach(function(pt,vi){
+                    svg.append('circle').attr('cx',pt[0]).attr('cy',pt[1]).attr('r',4)
+                        .attr('fill','#ff0').attr('stroke','#000').attr('stroke-width',1);
+
+                    if(showLabels && tile.labels && tile.labels[vi]){
+                        // Offset label outward from tile centroid
+                        var centX=0,centY=0;
+                        tile.pts.forEach(function(p2){centX+=p2[0];centY+=p2[1];});
+                        centX/=tile.pts.length; centY/=tile.pts.length;
+                        var dx2=pt[0]-centX, dy2=pt[1]-centY;
+                        var dl=Math.sqrt(dx2*dx2+dy2*dy2);
+                        if(dl<1) dl=1;
+                        var offx=dx2/dl*28, offy=dy2/dl*28;
+                        svg.append('text')
+                            .attr('x',pt[0]+offx).attr('y',pt[1]+offy+3)
+                            .attr('fill','#ff0').attr('font-size','8px')
+                            .attr('text-anchor','middle')
+                            .text(tile.labels[vi]);
+                    }
+                });
+            }
+
+            // Tile name label at centroid
+            if(showLabels){
+                var centX2=0,centY2=0;
+                tile.pts.forEach(function(p2){centX2+=p2[0];centY2+=p2[1];});
+                centX2/=tile.pts.length; centY2/=tile.pts.length;
+                svg.append('text')
+                    .attr('x',centX2).attr('y',centY2+4)
+                    .attr('fill','#fff').attr('font-size','10px').attr('font-weight','bold')
+                    .attr('text-anchor','middle')
+                    .text(tile.name);
+            }
+        });
+
+        // Tips
+        tips.forEach(function(tp,i){
+            svg.append('circle').attr('cx',tp[0]).attr('cy',tp[1]).attr('r',4)
+                .attr('fill','#fff').attr('stroke','#333').attr('stroke-width',1);
+            var ang=i*sector;
+            svg.append('text').attr('x',tp[0]+16*Math.sin(ang)).attr('y',tp[1]-16*Math.cos(ang)+4)
+                .attr('fill','#fff').attr('font-size','12px').attr('font-weight','bold').attr('text-anchor','middle').text(i);
+        });
+
+        // INFO
+        var infoHtml='<h2>Tiles in Sector '+s+'</h2>';
+        infoHtml+='<div>Total tiles: <span class="stat">'+tiles.length+'</span></div>';
+        infoHtml+='<table><tr><th>Tile</th><th>Type</th><th>Vertices</th></tr>';
+        tiles.forEach(function(t,ti){
+            infoHtml+='<tr class="tile-row"><td>'+t.name+'</td><td>'+t.type+'</td><td>'+t.pts.length+'</td></tr>';
+        });
+        infoHtml+='</table>';
+
+        infoHtml+='<h2>Vertex Coordinates</h2>';
+        infoHtml+='<table><tr><th>Tile</th><th>Vertex</th><th>x</th><th>y</th><th>r</th></tr>';
+        tiles.forEach(function(t){
+            t.pts.forEach(function(pt,vi){
+                if(!pt) return;
+                var r2=distFC(pt,cx,cy,scale);
+                infoHtml+='<tr><td style="font-size:9px">'+t.name+'</td><td>'+(t.labels?t.labels[vi]:'v'+vi)+'</td>'+
+                    '<td>'+((pt[0]-cx)/scale).toFixed(4)+'</td><td>'+((cy-pt[1])/scale).toFixed(4)+'</td>'+
+                    '<td>'+r2.toFixed(4)+'</td></tr>';
+            });
+        });
+        infoHtml+='</table>';
+
+        document.getElementById('info').innerHTML=infoHtml;
+    }
+
+    // URL params
+    var params=new URLSearchParams(window.location.search);
+    if(params.has('n')) document.getElementById('pN').value=params.get('n');
+    if(params.has('k')) document.getElementById('pK').value=params.get('k');
+    if(params.has('R')){document.getElementById('pR').value=params.get('R');document.getElementById('pRval').textContent=params.get('R');}
+    if(params.has('bandWidth')){document.getElementById('pBW').value=params.get('bandWidth');document.getElementById('pBWval').textContent=params.get('bandWidth');}
+    if(params.has('satDist')){document.getElementById('pSD').value=params.get('satDist');document.getElementById('pSDval').textContent=params.get('satDist');}
+    if(params.has('satR')){document.getElementById('pSR').value=params.get('satR');document.getElementById('pSRval').textContent=params.get('satR');}
+
+    ['pR','pBW','pSD','pSR'].forEach(function(id){
+        document.getElementById(id).addEventListener('input',function(){document.getElementById(id+'val').textContent=this.value;});
+    });
+
+    render();
+    </script>
+</body>
+</html>

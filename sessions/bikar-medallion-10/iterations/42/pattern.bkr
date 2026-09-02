@@ -1,0 +1,83 @@
+# Medallion-10: Iteration 42 — wave-2 gate: dart ring (2026-06-11)
+#
+# DELTA-FROM-ITER-41: one construction idea — a ring of 10 dart kites in
+# layer 1, wedged between the center star's points. Blueprint gains C1
+# radius 41 (measured reference dart-tip radius: ink r_max 53.5px / 739px
+# medallion -> 41.0 pattern units) divided into 20 so odd points land on
+# the 18-degree dart axes. One rotated zigzag (star tip -> dart point ->
+# next star tip) closes each dart face against the star's own outer edges.
+# Hypothesis + falsifier: iterations/42/hypothesis.md
+
+blueprint center_star
+  circle C0 center(0,0) radius 22.6
+  divide C0 into 10
+  # Dart-tip ring: 20 divisions put cpt(2k+1) at 18 deg mod 36 — exactly
+  # between adjacent star tips, where the reference darts point outward.
+  circle C1 center(0,0) radius 41
+  divide C1 into 20
+
+pattern medallion10_iter42 on center_star
+  girih field decagonal 62 shells 1 pockets star
+
+  # Wave-1 overlay: explicit {10/4} center star in its own layer (iter-41,
+  # wave-1 gate PASSED). Wave-2 overlay: the dart zigzag — each segment
+  # pair (tip -> C1 odd point -> next tip) plus the star's two outer edges
+  # encloses one dart kite; planar face extraction closes them in layer 1.
+  layer 1
+  connect every 4 on C0
+  rotate 10 around C0.mpt
+    connect C0.cpt0 -> C1.cpt1
+    connect C1.cpt1 -> C0.cpt1
+  layer 0
+
+  # The field emits strapwork segments; voids detect closes them into faces so
+  # the gt-emitter has shapes to measure (without this, gt.json has 0 shapes).
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #262E3D
+      navy = #132A61
+      royal = #2B61B7
+      cobalt = #32B0CA
+      turquoise = #BBC5D5
+      white = #FFFFFF
+
+  # Classify rules give every face a face_class — bikar's gt-emitter drops
+  # unclassified polygons, so without these the field renders but exports 0
+  # shapes (the iter-33 first-render finding, 2026-05-28).
+  classify .center_star where layer == 1
+  classify .pocket where source == _girih_hexagon_star and area >= 360
+  classify .deep_navy where sides == 10
+  classify .royal where sides == 4
+  classify .turquoise where sides == 3
+  classify .cobalt where sides == 5
+  classify .navy where sides >= 6
+
+  # First-match-wins cascade. The two wave-1 rules lead: every layer-1 face
+  # (star tiling + dart kites) is navy ink, and the field's central
+  # decoration decagon (the only layer-0 10-sided face at ring 0) is the
+  # flower's white canvas.
+  fill void where layer == 1 color navy
+  fill void where ring == 0 and sides == 10 color white
+  fill void where source == _girih_hexagon_star and area >= 360 color cobalt
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 5 and area >= 360 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 5 color cobalt
+  fill void where sides >= 6 color navy
+
+  # Edges near-invisible: the white strapwork bands carry the line work now, so
+  # the tile/decoration edge strokes would only add clutter under the bands.
+  edges color deep_navy width 0.2
+  # The construction circles (C0 star ring, C1 dart ring) would otherwise
+  # rasterize as dark rings through the wave-1/2 envelopes.
+  circles color #FFFFFF width 0.1
+
+  # Slice-4 overlay: weave the decoration centerlines into white interlacing
+  # bands. Deco-only weaving (bikar#653 kernel change) excludes tile outlines
+  # AND the layer-1 star segments (non-girih), so the star stays crisp.
+  strapwork
+      width 8
+      crossing alternating
+      color #FFFFFF

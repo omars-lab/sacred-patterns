@@ -1,0 +1,139 @@
+# Medallion-10: Iteration 27 — Direct `face` declaration for the central 20-gon
+#
+# iter-25 + iter-26 falsified the "{20/3} chord polygon" approach for
+# the central inner-star v20 (Tenet 7 stop rule fired). iter-25 in
+# layer 0 got subdivided by C1 chord intersections; iter-26 in
+# isolated layer 4 got subdivided by strapwork band crossings.
+#
+# iter-27 applies Resolution Path #1 from iter-26's evaluation:
+# direct `face` declaration. The bikar DSL supports
+# `face [<p1> <p2> ... <pN>]` to assert a face at evaluation time
+# without deriving it from chord intersections. This decouples from
+# strapwork's subdivision entirely.
+#
+# Declares a regular 20-gon at the center using the 20 division
+# points on Cstar20 (r=20) in angular order: Cstar20.cpt0..cpt19.
+# (Not {20/3} star polygon — a {20/3} face has self-intersecting
+# boundary which bikar's face declaration likely doesn't support.
+# A convex 20-gon is the simplest single 20-vertex face.)
+#
+# Predicted Δ vs iter-26:
+#   - A6 inner-star--star-v20: MISSING → PASS (1 expected, 1 found)
+#   - A6 score: 0/18 → 1/18
+#   - A2/A4/A5 should hold near iter-26's ceiling
+#   - total_shapes: +1 (the 20-gon face)
+#
+# What this validates:
+#   - Whether the baseline's "inner-star v20" expectation accepts a
+#     convex regular 20-gon as the v20 shape, or specifically requires
+#     a {20/3} star polygon (in which case A6 stays 0/18 and the
+#     conclusion is to either ditch the v20 expectation or declare
+#     a self-intersecting 20-vertex face — non-trivial in any DSL).
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  circle C1 center(0,0) radius 30
+  divide C1 into 10
+  circle Cstar20 center(0,0) radius 20
+  divide Cstar20 into 20
+  circle Cmid2 center(0,0) radius 50
+  divide Cmid2 into 10
+  circle Cmid center(0,0) radius 80
+  divide Cmid into 10
+  circle S0 center(C0.cpt0) radius 30
+  divide S0 into 10
+  circle S1 center(C0.cpt1) radius 30
+  divide S1 into 10
+  circle S2 center(C0.cpt2) radius 30
+  divide S2 into 10
+  circle S3 center(C0.cpt3) radius 30
+  divide S3 into 10
+  circle S4 center(C0.cpt4) radius 30
+  divide S4 into 10
+  circle S5 center(C0.cpt5) radius 30
+  divide S5 into 10
+  circle S6 center(C0.cpt6) radius 30
+  divide S6 into 10
+  circle S7 center(C0.cpt7) radius 30
+  divide S7 into 10
+  circle S8 center(C0.cpt8) radius 30
+  divide S8 into 10
+  circle S9 center(C0.cpt9) radius 30
+  divide S9 into 10
+  boundary outline = union(C0, S0, S1, S2, S3, S4, S5, S6, S7, S8, S9)
+
+pattern medallion on medallion
+  layer 0
+    connect every 4 on C1
+    connect every 3 on C1
+    connect every 2 on C1
+
+  layer 1
+    extend connect every 4 on S0 beyond 1.5
+    extend connect every 4 on S1 beyond 1.5
+    extend connect every 4 on S2 beyond 1.5
+    extend connect every 4 on S3 beyond 1.5
+    extend connect every 4 on S4 beyond 1.5
+    extend connect every 4 on S5 beyond 1.5
+    extend connect every 4 on S6 beyond 1.5
+    extend connect every 4 on S7 beyond 1.5
+    extend connect every 4 on S8 beyond 1.5
+    extend connect every 4 on S9 beyond 1.5
+
+  layer 2
+    connect every 3 on Cmid
+
+  layer 3
+    connect every 4 on Cmid2
+
+  # NEW iter-27: direct face declaration for the central 20-vertex shape.
+  # bikar's `face` statement takes arc sub-statements only (boundary arcs
+  # bow along the named circle between successive vertices). 20 tiny
+  # outward arcs on Cstar20 between consecutive cpt's give a face with
+  # 20 vertices and 20 arc edges — qiyas should encode this as a single
+  # 20-vertex shape (likely shape_type=polygon-with-arc-edges or similar).
+  face
+    arc Cstar20.cpt0 -> Cstar20.cpt1 on Cstar20
+    arc Cstar20.cpt1 -> Cstar20.cpt2 on Cstar20
+    arc Cstar20.cpt2 -> Cstar20.cpt3 on Cstar20
+    arc Cstar20.cpt3 -> Cstar20.cpt4 on Cstar20
+    arc Cstar20.cpt4 -> Cstar20.cpt5 on Cstar20
+    arc Cstar20.cpt5 -> Cstar20.cpt6 on Cstar20
+    arc Cstar20.cpt6 -> Cstar20.cpt7 on Cstar20
+    arc Cstar20.cpt7 -> Cstar20.cpt8 on Cstar20
+    arc Cstar20.cpt8 -> Cstar20.cpt9 on Cstar20
+    arc Cstar20.cpt9 -> Cstar20.cpt10 on Cstar20
+    arc Cstar20.cpt10 -> Cstar20.cpt11 on Cstar20
+    arc Cstar20.cpt11 -> Cstar20.cpt12 on Cstar20
+    arc Cstar20.cpt12 -> Cstar20.cpt13 on Cstar20
+    arc Cstar20.cpt13 -> Cstar20.cpt14 on Cstar20
+    arc Cstar20.cpt14 -> Cstar20.cpt15 on Cstar20
+    arc Cstar20.cpt15 -> Cstar20.cpt16 on Cstar20
+    arc Cstar20.cpt16 -> Cstar20.cpt17 on Cstar20
+    arc Cstar20.cpt17 -> Cstar20.cpt18 on Cstar20
+    arc Cstar20.cpt18 -> Cstar20.cpt19 on Cstar20
+    arc Cstar20.cpt19 -> Cstar20.cpt0 on Cstar20
+
+  clip pattern to outline
+
+  strapwork
+      width 5
+      crossing over
+
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #091428
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      turquoise = #48C9B0
+
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 20 color navy
+  fill void where sides >= 5 color cobalt
+
+  edges color navy width 0.5

@@ -1,0 +1,42 @@
+
+blueprint medallion
+  circle C0 center(0,0) radius 100
+  divide C0 into 10
+  repeat at C0 depth 1
+    circle center($point) radius $radius
+    divide into 10
+
+pattern medallion on medallion
+  # Central star
+  connect every 4
+  # Satellite stars — full-length {10/4} chords on each ring-1 circle
+  connect every 4 on @0.0
+  connect every 4 on @0.1
+  connect every 4 on @0.2
+  connect every 4 on @0.3
+  connect every 4 on @0.4
+  connect every 4 on @0.5
+  connect every 4 on @0.6
+  connect every 4 on @0.7
+  connect every 4 on @0.8
+  connect every 4 on @0.9
+  strapwork
+      width 6
+      crossing alternating
+      color #FFFFFF
+  voids detect
+  palette blue
+      navy = #0D1B3E
+      royal = #1B4F72
+      cobalt = #2874A6
+      cerulean = #5DADE2
+      turquoise = #48C9B0
+  fill void where sides == 10 color navy
+  fill void where ring == 0 color navy
+  fill void where ring == 1 and sides == 3 color turquoise
+  fill void where ring == 1 color cobalt
+  fill void where ring == 2 and sides == 3 color cerulean
+  fill void where ring == 2 color royal
+  fill void where ring >= 3 and sides == 3 color turquoise
+  fill void where ring >= 3 color cobalt
+  edges color navy width 0

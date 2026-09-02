@@ -1,0 +1,238 @@
+# Medallion-10: Iteration 50 — wave-8 gate: middle-ring axis diamonds (2026-06-11)
+#
+# DELTA-FROM-ITER-49: one construction idea — the wave-8 ring: 10 navy
+# diamonds, one per 36-deg repeat sitting ON the dart axes at r
+# 118.6-134.8, each a 4-vertex tile bounded by the white band lattice
+# (corners chamfered by band crossings in the reference). Same
+# standalone-closed-cycle technique that passed waves 2-7. Model fit
+# by IoU coordinate-descent against the 20-witness consensus (10
+# rotated masks + their 18-deg mirrors); grid snap FREE (snapped IoU
+# 0.932 = fitted 0.932; w=4.8 on the 1.2-deg grid).
+# Hypothesis + falsifier: iterations/50/hypothesis.md
+
+blueprint center_star
+  circle C0 center(0,0) radius 22.6
+  divide C0 into 10
+  # Dart-tip ring: 20 divisions put cpt(2k+1) at 18 deg mod 36 — exactly
+  # between adjacent star tips, where the reference darts point outward.
+  circle C1 center(0,0) radius 41
+  divide C1 into 20
+  # Dart inner-vertex ring (measured ink base r 22.8 -> 23) and lateral-
+  # vertex ring: 160 divisions (2.25-deg grid) put cpt(8k+3)/cpt(8k+13) at
+  # 6.75/29.25 deg mod 36 = the dart axis +-11.25 deg, matching the
+  # reference dart's wide base (23.1 deg measured at r 25-27).
+  circle C2 center(0,0) radius 23
+  divide C2 into 20
+  circle C3 center(0,0) radius 25
+  divide C3 into 160
+  # Petal rings (wave 3): 6-vertex shield per star-tip axis — base C4,
+  # hips C5 (+-14.4 deg on the 3.6-deg grid), shoulders C6 (+-10.8 deg),
+  # tip C7. Vertex radii/angles measured from the reference contour
+  # (iterations/45/hypothesis.md); hexagon area 576 sq units vs the
+  # reference petal's 578.
+  circle C4 center(0,0) radius 30.5
+  divide C4 into 10
+  circle C5 center(0,0) radius 50
+  divide C5 into 100
+  circle C6 center(0,0) radius 62
+  divide C6 into 100
+  circle C7 center(0,0) radius 65.5
+  divide C7 into 10
+  # Pentagram rings (wave 4): 10-vertex star outline per DART axis (18 deg
+  # mod 36). Each grid step divides gcd(18, vertex-angle-offset), so every
+  # measured vertex angle is exact: C9 0.9-deg grid (+-2.7), C10 0.6-deg
+  # grid (+-10.2), C11 0.3-deg grid (+-3.9), C12 0.4-deg grid (+-5.6).
+  # Radii from the reference contour fit (iterations/46/hypothesis.md).
+  circle C8 center(0,0) radius 58
+  divide C8 into 20
+  circle C9 center(0,0) radius 66.4
+  divide C9 into 400
+  circle C10 center(0,0) radius 67.8
+  divide C10 into 600
+  circle C11 center(0,0) radius 72.3
+  divide C11 into 1200
+  circle C12 center(0,0) radius 81.3
+  divide C12 into 900
+  circle C13 center(0,0) radius 75.5
+  divide C13 into 20
+  # Arrowhead rings (wave 5): 6-vertex shield per STAR-TIP axis (0 deg
+  # mod 36), pointing outward — base-mid C14 (axis), base corners C15
+  # (0.3-deg grid, +-9.3), shoulders C16 (9-deg grid, +-9), apex C17.
+  # Radii/angles from the reference mask fit (iterations/47/hypothesis.md).
+  circle C14 center(0,0) radius 69.5
+  divide C14 into 10
+  circle C15 center(0,0) radius 75
+  divide C15 into 1200
+  circle C16 center(0,0) radius 86
+  divide C16 into 40
+  circle C17 center(0,0) radius 104.3
+  divide C17 into 10
+  # Inward-shield rings (wave 6): 8-vertex shield per DART axis (18 deg
+  # mod 36), pointing inward — apex C18 (axis), side bends C19 (2.25-deg
+  # grid, +-6.75), outer corners C20 (9-deg grid, +-9), dips C21
+  # (0.5-deg grid, +-2.5), center peak C22 (axis). Radii/angles from the
+  # reference mask fit (iterations/48/hypothesis.md).
+  circle C18 center(0,0) radius 82.7
+  divide C18 into 20
+  circle C19 center(0,0) radius 91
+  divide C19 into 160
+  circle C20 center(0,0) radius 111.2
+  divide C20 into 40
+  circle C21 center(0,0) radius 109.7
+  divide C21 into 720
+  circle C22 center(0,0) radius 112.9
+  divide C22 into 20
+  # Interstice rings (wave 7): two mirror-pair tiles per dart axis, both
+  # pointing inward. Outer 5-vertex teardrop — apex C23 (0.5-deg grid,
+  # +-2.5), radial-edge base C24/top C25 (0.45-deg grid, both +-9.45 so
+  # the edge is exactly radial), far corner C26 (0.9-deg grid, +-7.2),
+  # near corner C27 (0.9-deg grid, +-6.3). Inner 4-vertex wedge — tip
+  # C28 (0.5-deg grid, +-11), shoulder C29 (0.5-deg grid, +-11.5), outer
+  # corner C30 (3.6-deg grid, +-14.4), trailing corner C31 (1.8-deg
+  # grid, +-16.2). Radii/angles from the consensus-mask fit
+  # (iterations/49/measure/wave7-snap.json).
+  circle C23 center(0,0) radius 114.8
+  divide C23 into 720
+  circle C24 center(0,0) radius 115.5
+  divide C24 into 800
+  circle C25 center(0,0) radius 121.8
+  divide C25 into 800
+  circle C26 center(0,0) radius 124.4
+  divide C26 into 400
+  circle C27 center(0,0) radius 122.5
+  divide C27 into 400
+  circle C28 center(0,0) radius 97.2
+  divide C28 into 720
+  circle C29 center(0,0) radius 111.1
+  divide C29 into 720
+  circle C30 center(0,0) radius 112.6
+  divide C30 into 100
+  circle C31 center(0,0) radius 107.1
+  divide C31 into 200
+  # Middle-ring diamonds (wave 8): one axis-symmetric 4-vertex tile per
+  # dart axis. Inner/outer vertices ON the axis (18-deg grid, cpt1);
+  # side vertices at +-4.8 deg on the 1.2-deg grid (cpt19 = 22.8,
+  # cpt11 = 13.2). Radii/angles from the consensus-mask fit
+  # (iterations/50/measure/wave8-fit.json).
+  circle C32 center(0,0) radius 118.6
+  divide C32 into 20
+  circle C33 center(0,0) radius 126.9
+  divide C33 into 300
+  circle C34 center(0,0) radius 134.8
+  divide C34 into 20
+
+pattern medallion10_iter50 on center_star
+  girih field decagonal 62 shells 1 pockets star
+
+  # Wave-1 overlay: explicit {10/4} center star in its own layer (iter-41,
+  # wave-1 gate PASSED). Wave-2 overlay: 10 standalone dart kites — each a
+  # closed 4-cycle (inner C2 -> lateral C3 -> tip C1 -> lateral C3) on the
+  # 18-deg axis, never touching the star.
+  layer 1
+  connect every 4 on C0
+  rotate 10 around C0.mpt
+    connect cycle [C2.cpt1 C3.cpt3 C1.cpt1 C3.cpt13]
+  # Wave-3 overlay: 10 standalone petal shields on the star-tip axes —
+  # base -> hip -> shoulder -> tip -> shoulder -> hip; never touches the
+  # star, darts, or canvas rim except where the tip pokes past r 59 into
+  # the field (accepted noise, see hypothesis).
+  rotate 10 around C0.mpt
+    connect cycle [C4.cpt0 C5.cpt4 C6.cpt3 C7.cpt0 C6.cpt97 C5.cpt96]
+  # Wave-4 overlay: 10 standalone pentagrams on the dart axes — the
+  # 10-vertex star outline walks point/valley alternately from the inward
+  # tip (C8, axis) CCW: valley C9 +2.7 -> wing C10 +10.2 -> valley C11
+  # +3.9 -> prong C12 +5.6 -> valley C13 axis -> prong C12 -5.6 ->
+  # valley C11 -3.9 -> wing C10 -10.2 -> valley C9 -2.7. Never touches
+  # the darts (17u radial gap) or the petals (different axes).
+  rotate 10 around C0.mpt
+    connect cycle [C8.cpt1 C9.cpt23 C10.cpt47 C11.cpt73 C12.cpt59 C13.cpt1 C12.cpt31 C11.cpt47 C10.cpt13 C9.cpt17]
+  # Wave-5 overlay: 10 standalone arrowheads on the star-tip axes — a
+  # 6-vertex shield pointing outward, walked CCW from the base-mid notch:
+  # base-mid C14 axis -> corner C15 +9.3 -> shoulder C16 +9 -> apex C17
+  # axis -> shoulder C16 -9 -> corner C15 -9.3. Sits 4u above the wave-3
+  # petal tip on the same axis; clears the wave-4 pentagrams by >= 3 deg.
+  rotate 10 around C0.mpt
+    connect cycle [C14.cpt0 C15.cpt31 C16.cpt1 C17.cpt0 C16.cpt39 C15.cpt1169]
+  # Wave-6 overlay: 10 standalone inward shields on the dart axes — an
+  # 8-vertex walk CCW from the inward apex: apex C18 axis -> bend C19
+  # +6.75 -> corner C20 +9 -> dip C21 +2.5 -> peak C22 axis -> dip C21
+  # -2.5 -> corner C20 -9 -> bend C19 -6.75. Apex sits 7.2u above the
+  # wave-4 pentagram's axis valley; corners clear the wave-5 arrowheads
+  # by 25u radially at the closest ray (rel +-9).
+  rotate 10 around C0.mpt
+    connect cycle [C18.cpt1 C19.cpt11 C20.cpt3 C21.cpt41 C22.cpt1 C21.cpt31 C20.cpt1 C19.cpt5]
+  # Wave-7 overlay: 40 standalone interstice tiles — two mirror-pairs per
+  # dart axis, four cycles. Outer teardrop (+side): apex C23 +2.5 ->
+  # radial-edge base C24 +9.45 -> top C25 +9.45 -> far corner C26 +7.2 ->
+  # near corner C27 +6.3; the -side cycle mirrors every angle about the
+  # axis (cpt indices reflect: 18+rel <-> 18-rel). Inner wedge (+side):
+  # tip C28 +11 -> shoulder C29 +11.5 -> outer corner C30 +14.4 ->
+  # trailing corner C31 +16.2; mirrored likewise. Clearance: outer apex
+  # r 114.8 vs wave-6 peak r 112.9 (>= 3.6u radial at every shared ray);
+  # inner wedge >= 5u above the wave-5 shoulder->apex edge; zero overlap
+  # with reference waves 1-6 (measured, iterations/49/hypothesis.md).
+  rotate 10 around C0.mpt
+    connect cycle [C23.cpt41 C24.cpt61 C25.cpt61 C26.cpt28 C27.cpt27]
+  rotate 10 around C0.mpt
+    connect cycle [C23.cpt31 C24.cpt19 C25.cpt19 C26.cpt12 C27.cpt13]
+  rotate 10 around C0.mpt
+    connect cycle [C28.cpt58 C29.cpt59 C30.cpt9 C31.cpt19]
+  rotate 10 around C0.mpt
+    connect cycle [C28.cpt14 C29.cpt13 C30.cpt1 C31.cpt1]
+  # Wave-8 overlay: 10 standalone middle-ring diamonds on the dart axes —
+  # inner tip C32 axis -> side C33 +4.8 -> outer tip C34 axis -> side C33
+  # -4.8. Clearance: inner tip r 118.6 vs the wave-7 outer teardrop's
+  # nearest edge >= 7.4u along every shared ray; zero overlap with
+  # reference waves 1-7 (measured, iterations/50/hypothesis.md).
+  rotate 10 around C0.mpt
+    connect cycle [C32.cpt1 C33.cpt19 C34.cpt1 C33.cpt11]
+  layer 0
+
+  # The field emits strapwork segments; voids detect closes them into faces so
+  # the gt-emitter has shapes to measure (without this, gt.json has 0 shapes).
+  voids detect
+
+  palette medallion_blue
+      deep_navy = #262E3D
+      navy = #132A61
+      royal = #2B61B7
+      cobalt = #32B0CA
+      turquoise = #BBC5D5
+      white = #FFFFFF
+
+  # Classify rules give every face a face_class — bikar's gt-emitter drops
+  # unclassified polygons, so without these the field renders but exports 0
+  # shapes (the iter-33 first-render finding, 2026-05-28).
+  classify .center_star where layer == 1
+  classify .pocket where source == _girih_hexagon_star and area >= 360
+  classify .deep_navy where sides == 10
+  classify .royal where sides == 4
+  classify .turquoise where sides == 3
+  classify .cobalt where sides == 5
+  classify .navy where sides >= 6
+
+  # First-match-wins cascade. The two wave-1 rules lead: every layer-1 face
+  # (star tiling + dart kites) is navy ink, and the field's central
+  # decoration decagon (the only layer-0 10-sided face at ring 0) is the
+  # flower's white canvas.
+  fill void where layer == 1 color navy
+  fill void where ring == 0 and sides == 10 color white
+  fill void where source == _girih_hexagon_star and area >= 360 color cobalt
+  fill void where sides == 10 color deep_navy
+  fill void where sides == 4 color royal
+  fill void where sides == 5 and area >= 360 color royal
+  fill void where sides == 3 color turquoise
+  fill void where sides == 5 color cobalt
+  fill void where sides >= 6 color navy
+
+  # Edges near-invisible: the white strapwork bands carry the line work now, so
+  # the tile/decoration edge strokes would only add clutter under the bands.
+  edges color deep_navy width 0.2
+  # The construction circles (C0 star ring, C1 dart ring) would otherwise
+  # rasterize as dark rings through the wave-1/2 envelopes.
+  circles color #FFFFFF width 0.1
+
+  # Slice-4 overlay: weave the decoration centerlines into white interlacing
+  # bands. Deco-only weaving (bikar#653 kernel change) excludes tile outlines
+  # AND the layer-1 star segments (non-girih), so the star stays crisp.
+  # strapwork removed: coverage-attribution probe (not an iteration)

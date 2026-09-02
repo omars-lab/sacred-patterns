@@ -1,0 +1,35 @@
+animate buildin
+  keyframes assemble
+    target [sides == 4]
+    property radial_assemble
+    from 1.6
+    to 0
+    duration 1s
+    delay_per_layer 0.3s
+    easing ease_out
+
+style swatch
+  palette pal
+    petal = #D2691E
+
+  [sides == 4]
+    fill petal
+
+blueprint w
+  circle CN center(0,-60) radius 15
+  circle CE center(60,0) radius 15
+  circle CS center(0,60) radius 15
+  circle CW center(-60,0) radius 15
+  divide CN into 4
+  divide CE into 4
+  divide CS into 4
+  divide CW into 4
+
+pattern p on w
+  connect cycle [CN.cpt0 CN.cpt1 CN.cpt2 CN.cpt3]
+  connect cycle [CE.cpt0 CE.cpt1 CE.cpt2 CE.cpt3]
+  connect cycle [CS.cpt0 CS.cpt1 CS.cpt2 CS.cpt3]
+  connect cycle [CW.cpt0 CW.cpt1 CW.cpt2 CW.cpt3]
+  voids detect
+  style swatch
+  animate buildin

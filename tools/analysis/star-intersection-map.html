@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Star Polygon Intersection Map</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a14; color: #ccc; display: flex; min-height: 100vh; }
+        #sidebar { width: 340px; padding: 16px; background: #12121f; overflow-y: auto; border-right: 1px solid #333; }
+        #main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; }
+        h1 { font-size: 18px; color: #7af; margin-bottom: 8px; }
+        h2 { font-size: 14px; color: #8cf; margin: 12px 0 6px; }
+        .param-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+        .param-row label { width: 80px; font-size: 13px; color: #aaa; }
+        .param-row input { width: 70px; background: #1a1a2a; border: 1px solid #444; color: #fff; padding: 4px 6px; border-radius: 3px; font-size: 13px; }
+        .param-row input[type=range] { width: 120px; }
+        .param-row .val { width: 40px; font-size: 12px; color: #8cf; text-align: right; }
+        button { background: #2a4a8a; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; margin: 4px 0; }
+        button:hover { background: #3a6aba; }
+        #info { margin-top: 12px; font-size: 12px; line-height: 1.6; }
+        #info .stat { color: #8cf; font-weight: bold; }
+        table { border-collapse: collapse; width: 100%; margin-top: 8px; font-size: 11px; }
+        th, td { padding: 3px 6px; border: 1px solid #333; text-align: center; }
+        th { background: #1a1a2a; color: #8cf; }
+        .radius-row { cursor: pointer; }
+        .radius-row:hover { background: #1a2a4a; }
+        .radius-row.active { background: #2a3a5a; }
+        #hover-info { position: fixed; bottom: 16px; left: 356px; background: #1a1a2a; border: 1px solid #555; padding: 8px 12px; border-radius: 4px; font-size: 12px; color: #adf; pointer-events: none; opacity: 0; transition: opacity 0.15s; }
+        #hover-info.show { opacity: 1; }
+        .legend { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+        .legend-swatch { width: 10px; height: 10px; border-radius: 50%; }
+        svg text { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h1>{n/k} Star Polygon Intersection Map</h1>
+        <div class="param-row">
+            <label>n (points):</label>
+            <input type="number" id="pN" value="10" min="3" max="24" step="1">
+        </div>
+        <div class="param-row">
+            <label>k (skip):</label>
+            <input type="number" id="pK" value="4" min="1" max="11" step="1">
+        </div>
+        <div class="param-row">
+            <label>R (radius):</label>
+            <input type="range" id="pR" value="0.55" min="0.2" max="0.9" step="0.01">
+            <span class="val" id="pRval">0.55</span>
+        </div>
+        <div class="param-row">
+            <label>Show labels:</label>
+            <input type="checkbox" id="showLabels" checked>
+        </div>
+        <div class="param-row">
+            <label>Show radii:</label>
+            <input type="checkbox" id="showRadii" checked>
+        </div>
+        <div class="param-row">
+            <label>Show parallel:</label>
+            <input type="checkbox" id="showParallel" checked>
+        </div>
+        <button onclick="render()">Update</button>
+
+        <div id="info"></div>
+    </div>
+    <div id="main">
+        <div id="canvas"></div>
+    </div>
+    <div id="hover-info"></div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+    // ================================================================
+    // GEOMETRY LIBRARY — Standardized functions for all analysis tools
+    // Corresponds to: iter 46 output.html lines 66-133
+    // ================================================================
+
+    function lineIntersect(p1, p2, p3, p4) {
+        var x1=p1[0],y1=p1[1],x2=p2[0],y2=p2[1],x3=p3[0],y3=p3[1],x4=p4[0],y4=p4[1];
+        var d=(x1-x2)*(y3-y4)-(y1-y2)*(x3-x4);
+        if(Math.abs(d)<1e-10) return null;
+        var t=((x1-x3)*(y3-y4)-(y1-y3)*(x3-x4))/d;
+        return [x1+t*(x2-x1),y1+t*(y2-y1)];
+    }
+
+    // ================================================================
+    // STAR POLYGON ANALYSIS
+    // ================================================================
+
+    function analyzeStarPolygon(n, k) {
+        var sector = 2 * Math.PI / n;
+
+        // Tip positions on unit circle
+        var tips = [];
+        for (var i = 0; i < n; i++) {
+            tips.push([Math.sin(i * sector), -Math.cos(i * sector)]);
+        }
+
+        // Diagonals: diag i connects tip[i] to tip[(i+k)%n]
+        var diags = [];
+        for (var i = 0; i < n; i++) {
+            var j = (i + k) % n;
+            var dx = tips[j][0] - tips[i][0], dy = tips[j][1] - tips[i][1];
+            var len = Math.sqrt(dx*dx + dy*dy);
+            var ux = dx/len, uy = dy/len;
+            // Extend far in both directions
+            var far = 3.0;
+            var mid = [(tips[i][0]+tips[j][0])/2, (tips[i][1]+tips[j][1])/2];
+            diags.push({
+                from: [mid[0]-ux*far, mid[1]-uy*far],
+                to: [mid[0]+ux*far, mid[1]+uy*far],
+                tipFrom: i, tipTo: j,
+                ux: ux, uy: uy, px: -uy, py: ux,
+                angle: Math.atan2(ux, -uy)
+            });
+        }
+
+        // Find parallel pairs
+        var parallelPairs = [];
+        for (var i = 0; i < n; i++) {
+            var j = (i + Math.floor(n/2)) % n;
+            if (j > i) {
+                // Check if actually parallel
+                var cross = diags[i].ux * diags[j].uy - diags[i].uy * diags[j].ux;
+                if (Math.abs(cross) < 1e-8) {
+                    parallelPairs.push([i, j]);
+                }
+            }
+        }
+
+        // All pairwise intersections
+        var intersections = [];
+        for (var i = 0; i < n; i++) {
+            for (var j = i+1; j < n; j++) {
+                // Skip parallel pairs
+                var isParallel = false;
+                for (var pp = 0; pp < parallelPairs.length; pp++) {
+                    if ((parallelPairs[pp][0]===i && parallelPairs[pp][1]===j) ||
+                        (parallelPairs[pp][0]===j && parallelPairs[pp][1]===i)) {
+                        isParallel = true; break;
+                    }
+                }
+                if (isParallel) continue;
+
+                var pt = lineIntersect(diags[i].from, diags[i].to, diags[j].from, diags[j].to);
+                if (pt) {
+                    var r = Math.sqrt(pt[0]*pt[0] + pt[1]*pt[1]);
+                    var ang = Math.atan2(pt[0], -pt[1]);
+                    if (ang < 0) ang += 2 * Math.PI;
+                    intersections.push({
+                        point: pt,
+                        diags: [i, j],
+                        radius: r,
+                        angle: ang
+                    });
+                }
+            }
+        }
+
+        // Group by radius (with tolerance)
+        var radiusGroups = [];
+        var tolerance = 0.001;
+        intersections.forEach(function(int) {
+            var found = false;
+            for (var g = 0; g < radiusGroups.length; g++) {
+                if (Math.abs(radiusGroups[g].radius - int.radius) < tolerance) {
+                    radiusGroups[g].points.push(int);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                radiusGroups.push({ radius: int.radius, points: [int] });
+            }
+        });
+        radiusGroups.sort(function(a,b) { return a.radius - b.radius; });
+
+        return {
+            n: n, k: k, sector: sector,
+            tips: tips, diags: diags,
+            parallelPairs: parallelPairs,
+            intersections: intersections,
+            radiusGroups: radiusGroups
+        };
+    }
+
+    // ================================================================
+    // RENDERING
+    // ================================================================
+
+    var W = 700, H = 700;
+
+    function render() {
+        var n = parseInt(document.getElementById('pN').value);
+        var k = parseInt(document.getElementById('pK').value);
+        var R = parseFloat(document.getElementById('pR').value);
+        var showLabels = document.getElementById('showLabels').checked;
+        var showRadii = document.getElementById('showRadii').checked;
+        var showParallel = document.getElementById('showParallel').checked;
+
+        document.getElementById('pRval').textContent = R.toFixed(2);
+
+        if (k >= n || k < 1) { document.getElementById('info').innerHTML = '<span style="color:#f88">Invalid: k must be 1..n-1</span>'; return; }
+
+        var analysis = analyzeStarPolygon(n, k);
+        var cx = W/2, cy = H/2;
+        var scale = Math.min(W, H) / 2;
+
+        function px(p) { return [cx + p[0]*R*scale, cy + p[1]*R*scale]; }
+
+        // Clear
+        d3.select('#canvas').selectAll('*').remove();
+        var svg = d3.select('#canvas').append('svg').attr('width', W).attr('height', H);
+
+        // Background
+        svg.append('rect').attr('width',W).attr('height',H).attr('fill','#0a0a14');
+
+        // Radius circles
+        if (showRadii) {
+            analysis.radiusGroups.forEach(function(rg, gi) {
+                var colors = ['#334','#343','#433','#344','#434','#443'];
+                svg.append('circle')
+                    .attr('cx', cx).attr('cy', cy)
+                    .attr('r', rg.radius * R * scale)
+                    .attr('fill', 'none')
+                    .attr('stroke', colors[gi % colors.length])
+                    .attr('stroke-width', 1)
+                    .attr('stroke-dasharray', '4,3');
+
+                if (showLabels) {
+                    svg.append('text')
+                        .attr('x', cx + rg.radius * R * scale + 4)
+                        .attr('y', cy - 4)
+                        .attr('fill', '#667')
+                        .attr('font-size', '10px')
+                        .text('r=' + (rg.radius * R).toFixed(3));
+                }
+            });
+
+            // Outer circle (star boundary)
+            svg.append('circle')
+                .attr('cx', cx).attr('cy', cy)
+                .attr('r', R * scale)
+                .attr('fill', 'none')
+                .attr('stroke', '#446')
+                .attr('stroke-width', 1.5)
+                .attr('stroke-dasharray', '6,4');
+        }
+
+        // Diagonals
+        var diagColors = d3.scaleOrdinal(d3.schemeCategory10);
+        analysis.diags.forEach(function(d, i) {
+            // Clip to visible area
+            var clampR = 1.1;
+            var p1 = px([-d.ux*clampR/R + d.from[0]*0 + analysis.tips[i][0]*(1-clampR/1),
+                          0]); // simplified: just draw between far points
+            svg.append('line')
+                .attr('x1', cx + d.from[0]*R*scale*0.45)
+                .attr('y1', cy + d.from[1]*R*scale*0.45)
+                .attr('x2', cx + d.to[0]*R*scale*0.45)
+                .attr('y2', cy + d.to[1]*R*scale*0.45)
+                .attr('stroke', diagColors(i))
+                .attr('stroke-width', 1.2)
+                .attr('stroke-opacity', 0.5);
+
+            if (showLabels) {
+                var labelPt = px(analysis.tips[i]);
+                var nudge = 14;
+                var ang = i * analysis.sector;
+                svg.append('text')
+                    .attr('x', labelPt[0] + nudge * Math.sin(ang))
+                    .attr('y', labelPt[1] - nudge * Math.cos(ang))
+                    .attr('fill', diagColors(i))
+                    .attr('font-size', '10px')
+                    .attr('text-anchor', 'middle')
+                    .text('d' + i);
+            }
+        });
+
+        // Draw actual diagonal lines (proper clipping)
+        analysis.diags.forEach(function(d, i) {
+            var ext = 1.15 / R; // extend to just past the star
+            var tipPx = px(analysis.tips[i]);
+            var tipPx2 = px(analysis.tips[d.tipTo]);
+            // Extend line beyond both tips
+            var dx = tipPx2[0] - tipPx[0], dy = tipPx2[1] - tipPx[1];
+            var len = Math.sqrt(dx*dx+dy*dy);
+            if (len < 1) return;
+            var ux = dx/len, uy = dy/len;
+            svg.append('line')
+                .attr('x1', tipPx[0] - ux*len*0.3)
+                .attr('y1', tipPx[1] - uy*len*0.3)
+                .attr('x2', tipPx2[0] + ux*len*0.3)
+                .attr('y2', tipPx2[1] + uy*len*0.3)
+                .attr('stroke', diagColors(i))
+                .attr('stroke-width', 1.5)
+                .attr('stroke-opacity', 0.4);
+        });
+
+        // Tip vertices
+        analysis.tips.forEach(function(tip, i) {
+            var p = px(tip);
+            svg.append('circle')
+                .attr('cx', p[0]).attr('cy', p[1])
+                .attr('r', 5)
+                .attr('fill', '#fff')
+                .attr('stroke', '#333')
+                .attr('stroke-width', 1);
+
+            if (showLabels) {
+                var ang = i * analysis.sector;
+                var nudge = 20;
+                svg.append('text')
+                    .attr('x', p[0] + nudge * Math.sin(ang))
+                    .attr('y', p[1] - nudge * Math.cos(ang) + 4)
+                    .attr('fill', '#fff')
+                    .attr('font-size', '12px')
+                    .attr('font-weight', 'bold')
+                    .attr('text-anchor', 'middle')
+                    .text(i);
+            }
+        });
+
+        // Intersection points
+        var intColors = ['#f55','#5f5','#55f','#ff5','#f5f','#5ff','#fa5','#5fa'];
+        analysis.intersections.forEach(function(int) {
+            var p = px(int.point);
+            // Find which radius group
+            var gi = 0;
+            for (var g = 0; g < analysis.radiusGroups.length; g++) {
+                if (Math.abs(analysis.radiusGroups[g].radius - int.radius) < 0.001) { gi = g; break; }
+            }
+            var dot = svg.append('circle')
+                .attr('cx', p[0]).attr('cy', p[1])
+                .attr('r', 3.5)
+                .attr('fill', intColors[gi % intColors.length])
+                .attr('stroke', '#000')
+                .attr('stroke-width', 0.5)
+                .attr('cursor', 'pointer');
+
+            dot.on('mouseover', function() {
+                var info = document.getElementById('hover-info');
+                info.innerHTML = 'Diag ' + int.diags[0] + ' × Diag ' + int.diags[1] +
+                    '<br>r = ' + (int.radius * R).toFixed(4) +
+                    ' (r/R = ' + int.radius.toFixed(4) + ')' +
+                    '<br>angle = ' + (int.angle * 180 / Math.PI).toFixed(1) + '°' +
+                    '<br>point = (' + (int.point[0]*R).toFixed(4) + ', ' + (int.point[1]*R).toFixed(4) + ')';
+                info.classList.add('show');
+            });
+            dot.on('mouseout', function() {
+                document.getElementById('hover-info').classList.remove('show');
+            });
+        });
+
+        // Parallel pair indicators
+        if (showParallel) {
+            analysis.parallelPairs.forEach(function(pp) {
+                var tipA = px(analysis.tips[pp[0]]);
+                var tipB = px(analysis.tips[pp[1]]);
+                svg.append('line')
+                    .attr('x1', tipA[0]).attr('y1', tipA[1])
+                    .attr('x2', tipB[0]).attr('y2', tipB[1])
+                    .attr('stroke', '#f44')
+                    .attr('stroke-width', 1)
+                    .attr('stroke-dasharray', '2,4')
+                    .attr('stroke-opacity', 0.4);
+            });
+        }
+
+        // INFO PANEL
+        var infoHtml = '<h2>Summary</h2>';
+        infoHtml += '<div>Star polygon: <span class="stat">{' + n + '/' + k + '}</span></div>';
+        infoHtml += '<div>Diagonals: <span class="stat">' + n + '</span></div>';
+        infoHtml += '<div>Total intersections: <span class="stat">' + analysis.intersections.length + '</span></div>';
+        infoHtml += '<div>Distinct radii: <span class="stat">' + analysis.radiusGroups.length + '</span></div>';
+        infoHtml += '<div>Parallel pairs: <span class="stat">' + analysis.parallelPairs.length + '</span></div>';
+
+        if (analysis.parallelPairs.length > 0) {
+            infoHtml += '<h2>Parallel Pairs</h2>';
+            analysis.parallelPairs.forEach(function(pp) {
+                infoHtml += '<div style="font-size:11px;color:#f88">d' + pp[0] + ' ∥ d' + pp[1] + '</div>';
+            });
+        }
+
+        infoHtml += '<h2>Intersection Radii</h2>';
+        infoHtml += '<table><tr><th>r/R</th><th>r (abs)</th><th>Count</th></tr>';
+        analysis.radiusGroups.forEach(function(rg, gi) {
+            infoHtml += '<tr class="radius-row" data-gi="' + gi + '">' +
+                '<td style="color:' + intColors[gi % intColors.length] + '">' + rg.radius.toFixed(4) + '</td>' +
+                '<td>' + (rg.radius * R).toFixed(4) + '</td>' +
+                '<td>' + rg.points.length + '</td></tr>';
+        });
+        infoHtml += '</table>';
+
+        infoHtml += '<h2>Legend</h2><div class="legend">';
+        for (var i = 0; i < n; i++) {
+            infoHtml += '<div class="legend-item"><div class="legend-swatch" style="background:' + diagColors(i) + '"></div>d' + i + '</div>';
+        }
+        infoHtml += '</div>';
+
+        document.getElementById('info').innerHTML = infoHtml;
+    }
+
+    // Read URL params
+    var params = new URLSearchParams(window.location.search);
+    if (params.has('n')) document.getElementById('pN').value = params.get('n');
+    if (params.has('k')) document.getElementById('pK').value = params.get('k');
+    if (params.has('R')) { document.getElementById('pR').value = params.get('R'); document.getElementById('pRval').textContent = params.get('R'); }
+
+    // Auto-update on slider change
+    document.getElementById('pR').addEventListener('input', function() {
+        document.getElementById('pRval').textContent = this.value;
+    });
+
+    render();
+    </script>
+</body>
+</html>

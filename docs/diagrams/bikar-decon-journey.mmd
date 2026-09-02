@@ -1,0 +1,15 @@
+%% bikar self-service human deconstruction journey
+%% Persona: pattern author asserting what the pattern IS (producer of record, Tenet 23)
+flowchart TD
+    A[Author has a reference image] --> B["start-deconstruction skill<br/>make deconstruct IMG=… NAME=…"]
+    B --> C[Session scaffolded:<br/>session.json + reference.jpg + first .bkr render]
+    C --> D[bikar studio /sessions :5173]
+    D --> E{Iterate on the construction}
+    E --> F["iteratively-deconstruct-pattern skill<br/>(wave-by-wave Stage-1, G8 stage ladder, ghost technique)"]
+    F --> G["wave cockpit :8765<br/>(wave-plan-server.py — the wave/ghost UI)"]
+    G --> E
+    E --> H[Author flags faces by eye<br/>FaceAnnotation status approved/flagged<br/>PointSet missing/expected-star/note]
+    H --> I[(feedback.json)]
+    E --> J["emitGroundTruth()<br/>confidence = 1.0 (authored truth)"]
+    J --> K[(pattern.gt.json<br/>GT_SCHEMA_VERSION 1.23)]
+    K -.->|crosses the seam to qiyas| L[qiyas calibration / review]
