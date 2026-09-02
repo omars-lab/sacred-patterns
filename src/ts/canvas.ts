@@ -4,6 +4,7 @@ import {Line} from "./lines"
 import {Point} from "./points"
 import {IO} from "./types"
 import {LineTheme} from "./theme"
+import {FaceConstruct} from "./faces"
 import {all} from "./helpers"
 
 // https://www.typescriptlang.org/docs/handbook/advanced-types.html
@@ -174,4 +175,56 @@ export function appendText(onto:d3SVG, text:string, point:Point, metadata:unknow
             x.style(key, value)
         }
     )
+}
+
+/**
+ * `faceKey` — the shared data-join key across all three d3 surfaces:
+ * a face's identity ordinal as a string. Byte-identical to bikar surface
+ * A's `faceKey` (`bikar packages/web/src/viz-d3.ts`) and to surface B's
+ * key function, so the same face keys the same way everywhere (the
+ * convergence graduation invariant).
+ */
+export const faceKey = (f: {readonly index: number}): string => String(f.index);
+
+/**
+ * `faceD` — the SVG path `d` for a face ring: `M` to the first vertex,
+ * then `L` to each subsequent one. The ring already returns to its start
+ * (`polygonFromLines`), so the point sequence — and therefore every
+ * `${x},${y}` substring — matches the prior `<polyline points=...>`
+ * exactly; fill auto-closes identically for a path and a polyline, so the
+ * rendered pixels are unchanged.
+ */
+function faceD(polygon: readonly Point[]): string {
+    if (polygon.length === 0) {
+        return "";
+    }
+    const [head, ...rest] = polygon;
+    const move = `M ${head.x},${head.y}`;
+    return rest.length ? `${move} ${_.map(rest, p => `L ${p.x},${p.y}`).join(" ")}` : move;
+}
+
+/**
+ * `joinFaces` — the d3 data-join renderer that replaces per-shape
+ * `appendPolygon`/`<polyline>` emission with one keyed enter/update/exit
+ * join binding a `FaceConstruct[]` onto `<path class="face">`. The surface-C
+ * analog of A's `joinFaces` (`bikar packages/web/src/viz-d3.ts`): keyed by
+ * `faceKey`, one `<path>` per face, `data-face-index` carrying the join
+ * key for inspection. `theme` styles every path through the exact three
+ * keys and defaults `appendPolygon` used, so the cutover is pixel-identical.
+ *
+ * Call it AT MOST ONCE per target `onto`: a second call would re-select
+ * and mutate the first call's `path.face` nodes. Collect every face for a
+ * canvas, then make one join.
+ */
+export function joinFaces(onto:d3SVG, constructs: readonly FaceConstruct[], theme:LineTheme={}): void {
+    const drawable = _.filter(constructs, f => f.polygon.length > 0);
+    onto.selectAll<SVGPathElement, FaceConstruct>("path.face")
+        .data(drawable as FaceConstruct[], (d) => faceKey(d as FaceConstruct))
+        .join("path")
+        .attr("class", f => _.join(f.classes, " "))
+        .attr("data-face-index", f => f.index)
+        .style('stroke', _.get(theme, "stroke", "black"))
+        .style('stroke-width', _.get(theme, "stroke-width", "1"))
+        .style('fill', _.get(theme, "fill", 'none'))
+        .attr("d", f => faceD(f.polygon));
 }

@@ -6,9 +6,18 @@ import {Star, ElongatedFivePointStar, FivePointStar} from "./star"
 import * as d3 from 'd3'
 import {_map_even_odd} from "./helpers"
 // import {isEven} from "./helpers"
-import {appendText, appendPolygon, appendCircle, appendCircleWithMidpoint, d3SVG, d3CIRCLE, d3SvgElement} from "./canvas"
+import {appendText, appendCircle, appendCircleWithMidpoint, joinFaces, d3SVG, d3CIRCLE, d3SvgElement} from "./canvas"
+import {faceConstructs} from "./faces"
 import {BackgroundTheme, LineTheme} from "./theme"
 import {Decagon} from "./polygons"
+
+// The shared face-list vocabulary (d3 surface C of the convergence — see
+// `3d-models:docs/vocabulary-convergence-design.md`). Re-exported on the
+// public surface so callers, and the regression harness, speak the same
+// `FaceConstruct`/`faceKey`/`joinFaces` names as bikar surfaces A and B.
+export {faceConstructs, polygonFromLines, centroidOf} from "./faces";
+export type {FaceConstruct, HasLines} from "./faces";
+export {faceKey, joinFaces} from "./canvas";
 
 
 /**
@@ -220,7 +229,7 @@ export function drawDifferentPolygons(drawingId:string, radius:number, size:numb
         (cls, num_sides) => {
             svg = appendSVGToDOM(`${drawingId}-${num_sides}`, radius * size, radius * size, mountSelector);
             applyBackground(svg, background_theme);
-            appendPolygon(svg, new cls(new Point(radius * size / 2, radius * size / 2), radius).lines, lines_theme);
+            joinFaces(svg, faceConstructs([new cls(new Point(radius * size / 2, radius * size / 2), radius)]), lines_theme);
         }
     )
     // PolygonWithSides is non-empty, so the loop always assigns svg; the
@@ -243,18 +252,20 @@ export function drawStarGrid(drawingId:string, radius:number, size:number, backg
     const star = new Star(new Point(radius * size / 2, radius * size / 2), 6, radius);
     const svg = appendSVGToDOM(drawingId, radius * size, radius * size, mountSelector);
     applyBackground(svg, background_theme);
-    appendPolygon(svg, star.lines, lines_theme);
-    appendPolygon(svg, star.rotate(Math.PI/2).lines, lines_theme);
-    appendPolygon(svg, Hexagon.withinCircle(star.outerCircle).lines, lines_theme);
-    appendPolygon(svg, star.right().lines, lines_theme);
-    appendPolygon(svg, star.right().rotate(Math.PI/2).lines, lines_theme);
-    appendPolygon(svg, Hexagon.withinCircle(star.right().outerCircle).lines, lines_theme);
-    appendPolygon(svg, star.above().lines, lines_theme);
-    appendPolygon(svg, star.above().rotate(Math.PI/2).lines, lines_theme);
-    appendPolygon(svg, Hexagon.withinCircle(star.above().outerCircle).lines, lines_theme);
-    appendPolygon(svg, star.above().right().lines, lines_theme);
-    appendPolygon(svg, star.above().right().rotate(Math.PI/2).lines, lines_theme);
-    appendPolygon(svg, Hexagon.withinCircle(star.above().right().outerCircle).lines, lines_theme);
+    joinFaces(svg, faceConstructs([
+        star,
+        star.rotate(Math.PI/2),
+        Hexagon.withinCircle(star.outerCircle),
+        star.right(),
+        star.right().rotate(Math.PI/2),
+        Hexagon.withinCircle(star.right().outerCircle),
+        star.above(),
+        star.above().rotate(Math.PI/2),
+        Hexagon.withinCircle(star.above().outerCircle),
+        star.above().right(),
+        star.above().right().rotate(Math.PI/2),
+        Hexagon.withinCircle(star.above().right().outerCircle),
+    ]), lines_theme);
     return svg;
 }
 
@@ -273,7 +284,7 @@ export function drawRotatedStar(drawingId:string, radius:number, size:number, ba
     const star = new Star(new Point(radius * size / 2, radius * size / 2), 6, radius);
     const svg = appendSVGToDOM(drawingId, radius * size, radius * size, mountSelector);
     applyBackground(svg, background_theme);
-    appendPolygon(svg, star.rotate(Math.PI/4).lines, lines_theme);
+    joinFaces(svg, faceConstructs([star.rotate(Math.PI/4)]), lines_theme);
     _.forEach(
         star.rotate(Math.PI/4).circles,
         c => {
@@ -302,7 +313,7 @@ export function drawDifferentStars(drawingId:string, radius:number, size:number,
             star = new Star(new Point(radius * size / 2, radius * size / 2), points, radius);
             svg = appendSVGToDOM(`${drawingId}-${points}`, radius * size, radius * size, mountSelector);
             applyBackground(svg, background_theme);
-            appendPolygon(svg, star.lines, lines_theme);
+            joinFaces(svg, faceConstructs([star]), lines_theme);
             appendCircleWithMidpoint(svg, star.outerCircle);
         }
     )
@@ -383,14 +394,12 @@ export function drawHexagonWithSurroundingNonagons(drawingId: string, radius: nu
         ),
         Hexagon.withinCircle<Hexagon>(circle),
     );
-    _.forEach(
-        _.flatMap(
-            hexagons,
-            nonagonsThatFormA6PointStarCenteredAt
+    joinFaces(
+        svg,
+        faceConstructs(
+            _.flatMap(hexagons, nonagonsThatFormA6PointStarCenteredAt)
         ),
-        function (p) {
-            appendPolygon(svg, p.lines, lines_theme);
-        }
+        lines_theme,
     );
     return <d3SVG>(svg);
 }
@@ -414,12 +423,16 @@ export function drawCirclesRecursively(drawingId:string, radius:number, size:num
     // Recursively Add circles around middle circle ...
     const circle = new Circle(radius*size/2, radius*size/2,radius*2/5.25);
     const circles = (circle).surroundWithFlowersRecursively(maxLevels);
+    // Scaffolding circles first, then the inscribed hexagons as faces on
+    // top — the hexagons are the figure this drawing foregrounds.
     _.forEach(
         circles,
-        c => {
-            appendCircleWithMidpoint(<d3SVG>svg, c, maxLevels);
-            appendPolygon(<d3SVG>svg, Hexagon.withinCircle(c).lines, lines_theme);
-        }
+        c => appendCircleWithMidpoint(<d3SVG>svg, c, maxLevels),
+    );
+    joinFaces(
+        <d3SVG>svg,
+        faceConstructs(_.map(circles, c => Hexagon.withinCircle(c))),
+        lines_theme,
     );
     return svg;
 }
@@ -445,17 +458,34 @@ export function drawChainedStars(drawingId:string, radius:number, size:number, b
     const circle = new Circle(radius*size/2, radius*size/2, radius*2/5);
     const points = (circle).pointsOnCircumference(numbereOfStars, Math.PI/numbereOfStars);
 
-    _.forEach(
+    const chainedStars = _.map(
         points,
         (p, i) => {
             const finalRotation = 2*Math.PI - (i * (2*Math.PI/numbereOfStars));
             const elongationFactor : Record<number, number> = {};
             elongationFactor[(3+(i*2)) % 10] = 1.5;
-            const s = new ElongatedFivePointStar(
+            return new ElongatedFivePointStar(
                 FivePointStar(p, radius/numbereOfStars/1.35).rotate(finalRotation),
                 elongationFactor
             );
-            appendPolygon(<d3SVG>svg, s.lines, lines_theme);
+        }
+    );
+    // Faces first — the ten chained stars plus the central star and the
+    // encircling decagon — then the numeric index labels on top, since the
+    // labels are the diagnostic signal this view exists to show.
+    joinFaces(
+        <d3SVG>svg,
+        faceConstructs([
+            ...chainedStars,
+            FivePointStar(circle.midpoint, radius/numbereOfStars/1.5),
+            new Decagon(circle.midpoint, radius*2/5.25),
+        ]),
+        lines_theme,
+    );
+    _.forEach(
+        points,
+        (p, i) => {
+            const finalRotation = 2*Math.PI - (i * (2*Math.PI/numbereOfStars));
             appendText(<d3SVG>svg, `${i}: ${Math.round(180*finalRotation/Math.PI)}`, p, {
                 "font-size": `${radius/50}px`,
                 "text-anchor": "middle",
@@ -463,8 +493,6 @@ export function drawChainedStars(drawingId:string, radius:number, size:number, b
             });
         }
     );
-    appendPolygon(<d3SVG>svg, FivePointStar(circle.midpoint, radius/numbereOfStars/1.5).lines, lines_theme);
-    appendPolygon(<d3SVG>svg, (new Decagon(circle.midpoint, radius*2/5.25)).lines, lines_theme);
     return svg;
 }
 

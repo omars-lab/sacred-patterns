@@ -74,15 +74,28 @@ if (!svgElement) {
 
 const current = svgElement.outerHTML;
 
-// Extract geometry for comparison
+// Extract geometry for comparison.
+//
+// Format-agnostic: pull each face's coordinate ring whether it is a
+// `<polyline points="x,y, ...">` (the historical baseline) or a
+// `<path d="M x,y L x,y ...">` (the current face-list renderer, surface C
+// of the d3 vocabulary convergence). Each element is normalized to a
+// space-joined sequence of `x,y` pairs — the M/L path commands are
+// dropped — so a polyline baseline and a path render compare EQUAL when
+// the vertices match. That is the pixel-identity invariant of the
+// polyline->path cutover; the element-count check below separately pins
+// that the cutover actually happened.
 function extractGeometry(svgString) {
-  const pointsRegex = /points="([^"]+)"/g;
-  const points = [];
+  const attrRegex = /(?:points|d)="([^"]+)"/g;
+  const shapes = [];
   let match;
-  while ((match = pointsRegex.exec(svgString)) !== null) {
-    points.push(match[1]);
+  while ((match = attrRegex.exec(svgString)) !== null) {
+    const pairs = match[1].match(/-?[\d.]+,-?[\d.]+/g) || [];
+    if (pairs.length) {
+      shapes.push(pairs.join(' '));
+    }
   }
-  return points.sort();
+  return shapes.sort();
 }
 
 function countElements(svgString, tag) {
@@ -97,16 +110,16 @@ let passed = true;
 
 // Check polyline count
 if (refPoints.length !== curPoints.length) {
-  console.error(`FAIL: Polyline count differs (reference: ${refPoints.length}, current: ${curPoints.length})`);
+  console.error(`FAIL: Face count differs (reference: ${refPoints.length}, current: ${curPoints.length})`);
   passed = false;
 } else {
-  console.log(`  Polyline count: ${curPoints.length} (matches)`);
+  console.log(`  Face count: ${curPoints.length} (matches)`);
 }
 
 // Check all polyline points are identical
 for (let i = 0; i < Math.min(refPoints.length, curPoints.length); i++) {
   if (refPoints[i] !== curPoints[i]) {
-    console.error(`FAIL: Polyline ${i} geometry differs!`);
+    console.error(`FAIL: Face ${i} geometry differs!`);
     console.error(`  Reference: ${refPoints[i].substring(0, 80)}...`);
     console.error(`  Current:   ${curPoints[i].substring(0, 80)}...`);
     passed = false;
@@ -114,11 +127,11 @@ for (let i = 0; i < Math.min(refPoints.length, curPoints.length); i++) {
   }
 }
 if (passed) {
-  console.log('  All polyline coordinates match');
+  console.log('  All face coordinates match');
 }
 
 // Check element counts
-for (const tag of ['polyline', 'circle', 'linearGradient', 'stop', 'defs']) {
+for (const tag of ['path', 'polyline', 'circle', 'linearGradient', 'stop', 'defs']) {
   const refCount = countElements(reference, tag);
   const curCount = countElements(current, tag);
   if (refCount !== curCount) {

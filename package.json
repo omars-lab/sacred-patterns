@@ -6,7 +6,7 @@
   "scripts": {
     "build": "webpack --config webpack.config.js",
     "serve": "npx serve site",
-    "test": "npm run test:hooks && node test/regression/check.js",
+    "test": "npm run test:hooks && node test/regression/check.js && node test/regression/faces.test.js",
     "test:hooks": "sh test/hooks/worktree-wiring.sh",
     "test:visual": "playwright test",
     "test:studio": "playwright test --config tools/tests/studio-visual/studio.config.ts",
