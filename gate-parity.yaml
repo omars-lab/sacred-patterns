@@ -79,9 +79,11 @@ gates:
     requires: yq-jq
     # check-decision-coherence.sh + gen-decision-ledger.sh --check +
     # gen-decision-ledger-xrepo.sh --check. The hook runs the same three, gated
-    # on `docs/decisions/` being staged. LEDGER-XREPO.md joins all three repos'
-    # frontmatter, so it goes stale from edits made in bikar and qiyas — commits
-    # this repo's hook never sees.
+    # on `docs/decisions/` being staged. LEDGER-XREPO.md joins three repos'
+    # frontmatter and indexes 3d-models' decision headings, so it goes stale
+    # from edits made in bikar, qiyas and 3d-models — commits this repo's hook
+    # never sees — and it blocks on a `D-0xx` cited anywhere that resolves in
+    # neither 3d-models' log nor bikar's tree (3d-models D-049 §3).
 
   - id: 'pre-commit::xrepo-generator-test'
     wholesale: npm run test:scripts

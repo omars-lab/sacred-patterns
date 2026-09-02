@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 # Generate docs/decisions/LEDGER-XREPO.md — the cross-repo roll-up of decided /
-# dead / authoritative-per-tag across qiyas + bikar + sacred-patterns.
+# dead / authoritative-per-tag across qiyas + bikar + sacred-patterns, plus an
+# index of 3d-models' decisions.
 #
 # Why a cross-repo roll-up: problem-tags span repos (face-class-identity lives
 # in both qiyas and bikar; svg-direct's spine crosses qiyas + SP). A future
@@ -8,7 +9,18 @@
 # joins all three repos' frontmatter. The per-repo LEDGER.md answers
 # within-repo; this answers across.
 #
-# Reads ONLY structured frontmatter keys via `yq --front-matter=extract`.
+# Why 3d-models is an index and not more rows: it keeps its decisions in ONE
+# file, docs/decisions-log.md, one `## D-0xx — title` heading each — its D-004
+# chose that over mirroring this tree, and its D-049 §3 chose "index only,
+# generated" for the join. So this reads those headings at the repo's origin
+# ref and emits one link per heading; nothing is transcribed, so nothing can
+# drift between two copies. The same D-049 §3 names what the cross-repo check
+# blocks on: a `D-0xx` cited in any of the four repos that is neither a heading
+# in that file nor a file in bikar's docs/decisions/ is a broken reference —
+# the rule the doc-pointer gates already apply to paths.
+#
+# Reads ONLY structured frontmatter keys via `yq --front-matter=extract`, and
+# ONLY the `## D-0xx — ` heading lines of 3d-models' log.
 # Sibling repos are READ FROM A GIT REF, not from their working trees — see
 # "Where each repo is read from" below. Refuses to write if any is unreadable.
 #
@@ -23,7 +35,7 @@ LEDGER="$SP_ROOT/docs/decisions/LEDGER-XREPO.md"
 # Sibling discovery must not depend on WHICH worktree this ran from. The old
 # `cd "$SP_ROOT/.."` made that a function of where the worktree was created,
 # and the two placements measurably disagree: a worktree made beside the repos
-# ran fine, while one under a scratch directory reported all three siblings
+# ran fine, while one under a scratch directory reported all the siblings
 # missing — write mode refusing and check mode skipping, both correctly, and
 # both for a reason that had nothing to do with the repos. Resolve the MAIN
 # worktree via --git-common-dir and take ITS parent, so every worktree reads
@@ -206,6 +218,117 @@ for repo in qiyas bikar sacred-patterns; do
   done
 done
 
+# ---------------------------------------------------------------------------
+# 3d-models: one file, headings only, links out.
+#
+# heading_anchor <heading text> — the fragment GitHub renders for a heading:
+# lowercase, drop everything but letters, digits, spaces and hyphens, then
+# spaces to hyphens. "D-004 — Decisions live in this file" becomes
+# "d-004--decisions-live-in-this-file" (the em dash goes, its two spaces stay).
+# The log's headings are ASCII plus that em dash, so the byte-wise class is
+# exact for them; a heading with an accented letter would lose it here where
+# GitHub keeps it, and the link would land on the page, not the heading.
+# ---------------------------------------------------------------------------
+heading_anchor() {
+  printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9 -]//g' -e 's/ /-/g'
+}
+
+# origin_https <dir> — the browsable URL of a repo's origin, or fail. Links in
+# the index must open from a rendered page, not only from a checkout that has
+# the sibling beside it, so they are absolute; the URL is derived from the
+# remote the ref was fetched from rather than typed here.
+origin_https() {
+  _u=$(git -C "$1" remote get-url origin 2>/dev/null) || return 1
+  case "$_u" in
+    git@github.com:*) _u="https://github.com/${_u#git@github.com:}" ;;
+    ssh://git@github.com/*) _u="https://github.com/${_u#ssh://git@github.com/}" ;;
+  esac
+  printf '%s' "${_u%.git}"
+}
+
+DM_LOG="docs/decisions-log.md"
+dm_rows=""        # "id\ttitle\tanchor" per heading
+dm_ids=""         # newline-separated heading ids — the resolver for citations
+dm_url=""
+dm_ref=""
+d="$GIT_ROOT/3d-models"
+if [ ! -e "$d/.git" ]; then
+  missing="${missing}${missing:+, }3d-models (not cloned under $GIT_ROOT)"
+elif ! dm_ref=$(sibling_ref "$d"); then
+  missing="${missing}${missing:+, }3d-models (no origin/HEAD, origin/main or origin/master)"
+elif ! blob=$(git -C "$d" rev-parse --verify --quiet "$dm_ref:$DM_LOG" 2>/dev/null); then
+  missing="${missing}${missing:+, }3d-models ($dm_ref has no $DM_LOG)"
+elif ! dm_url=$(origin_https "$d"); then
+  missing="${missing}${missing:+, }3d-models (no origin URL to link to)"
+else
+  echo "gen-decision-ledger-xrepo: 3d-models read at $dm_ref ($DM_LOG blob $(printf '%.12s' "$blob"))" >&2
+  sources="${sources}${sources:+ | }3d-models ${dm_ref}"
+  dm_url="$dm_url/blob/${dm_ref#origin/}/$DM_LOG"
+  # `## D-0xx — title`: the id is the first word, the title is everything past
+  # the FIRST " — " (titles carry their own dashes: D-024 has two more).
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    rest="${line#\#\# }"
+    id="${rest%% *}"
+    title="${rest#* — }"
+    dm_ids="${dm_ids}${id}
+"
+    dm_rows="${dm_rows}${id}\t$(printf '%s' "$title" | sed 's/|/\\|/g')\t$(heading_anchor "$rest")\n"
+  done <<EOF
+$(git -C "$d" show "$dm_ref:$DM_LOG" | grep -E '^## D-0[0-9]{2} — ')
+EOF
+  # A log with no headings is a file this reader cannot interpret, not a repo
+  # with no decisions (Tenet 29) — the 49 it has today cannot become 0 quietly.
+  if [ -z "$dm_ids" ]; then
+    missing="${missing}${missing:+, }3d-models ($dm_ref $DM_LOG has no \`## D-0xx — \` headings)"
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# The citation check. cited_ids <dir> [<ref>] prints the distinct `D-0xx`
+# tokens in a repo's tracked text — at the ref for a sibling, in the working
+# tree for this repo, since that is what each is read from above. A token is a
+# citation only with a non-identifier on both sides, so `LD-012` or `D-0123`
+# do not count; `D-0xx` itself never matches. This ledger is excluded from its
+# own scan: its rows are the index, not citations, and a heading that vanished
+# upstream shows up as staleness, which is the right name for it.
+# The test scaffold is excluded for the mirror reason: it plants
+# deliberately-dangling D-numbers as fixtures to prove this very check fires,
+# and (like every string in a decision doc) they would otherwise be scanned as
+# citations of nowhere. No literal id is written in this comment on purpose:
+# the test harness harvests every `D-0xx` token from THIS script to build the
+# fixture headings its cases resolve against, so an example id named here would
+# quietly become resolvable and defeat the very cases it illustrates.
+# ---------------------------------------------------------------------------
+CITE_RE='(^|[^A-Za-z0-9-])D-0[0-9]{2}([^A-Za-z0-9-]|$)'
+cited_ids() {
+  { git -C "$1" grep -h -o -I -E "$CITE_RE" ${2:+"$2"} -- . ':(exclude)docs/decisions/LEDGER-XREPO.md' ':(exclude)scripts/gen-decision-ledger-xrepo.test.sh' 2>/dev/null || true; } \
+    | grep -o -E 'D-0[0-9]{2}' | sort -u
+}
+
+# resolves <id> — 0 if the id is a heading in 3d-models' log or names a file
+# in bikar's docs/decisions/ at its ref (D-049 §3's two homes).
+resolves() {
+  printf '%s' "$dm_ids" | grep -q -x -F "$1" && return 0
+  [ -n "$bikar_files" ] && printf '%s\n' "$bikar_files" | grep -q -i -F "$1"
+}
+
+dangling=""
+if [ -z "$missing" ]; then
+  bikar_files=$(git -C "$GIT_ROOT/bikar" ls-tree --name-only "$(sibling_ref "$GIT_ROOT/bikar"):docs/decisions" 2>/dev/null || true)
+  for repo in qiyas bikar 3d-models sacred-patterns; do
+    if [ "$repo" = "sacred-patterns" ]; then
+      ids=$(cited_ids "$SP_ROOT"); where="this worktree"
+    else
+      ref=$(sibling_ref "$GIT_ROOT/$repo"); ids=$(cited_ids "$GIT_ROOT/$repo" "$ref"); where="$ref"
+    fi
+    for id in $ids; do
+      resolves "$id" || dangling="${dangling}  ${repo} (${where}) cites ${id}
+"
+    done
+  done
+fi
+
 # The two modes part ways on an incomplete environment, and the asymmetry is
 # the point.
 #
@@ -224,7 +347,7 @@ done
 if [ -n "$missing" ]; then
   if [ "$CHECK_MODE" -eq 1 ]; then
     echo "gen-decision-ledger-xrepo: SKIPPED — unreadable under $GIT_ROOT: $missing" >&2
-    echo "  The roll-up joins all three repos, so this machine cannot verify it." >&2
+    echo "  The roll-up joins all four repos, so this machine cannot verify it." >&2
     exit 0
   fi
   echo "gen-decision-ledger-xrepo: REFUSING to write a partial ledger." >&2
@@ -233,14 +356,30 @@ if [ -n "$missing" ]; then
   exit 1
 fi
 
+# A dangling D-number blocks in BOTH modes — it is a broken reference, not a
+# stale file, and no regeneration repairs it. Write refuses because an index
+# that other repos cite past is the drift the index exists to make impossible.
+# The usual cause is ordering, not a typo: bikar merged a citation before this
+# machine fetched the 3d-models PR that added the heading — so the first
+# repair named is the fetch.
+if [ -n "$dangling" ]; then
+  echo "gen-decision-ledger-xrepo: D-numbers that resolve in neither repo:" >&2
+  printf '%s' "$dangling" >&2
+  echo "  A cited D-0xx must be a \`## D-0xx — \` heading in 3d-models $DM_LOG ($dm_ref)" >&2
+  echo "  or a file in bikar docs/decisions/. Fetch both repos; if it is still dangling," >&2
+  echo "  fix the citation in the repo that made it (3d-models D-049 §3)." >&2
+  exit 1
+fi
+
 render() {
   printf '<!-- GENERATED by scripts/gen-decision-ledger-xrepo.sh — do not edit. -->\n'
   printf '<!-- inputs: %s -->\n' "$sources"
   printf '# Cross-repo Decision LEDGER\n\n'
   printf 'Decided / dead / authoritative-per-tag joined across qiyas + bikar +\n'
-  printf 'sacred-patterns. Grouped by problem-tag (shared vocabulary in each\n'
-  printf 'repo'\''s `docs/decisions/tags.yaml`). For within-repo detail see that\n'
-  printf 'repo'\''s `LEDGER.md`. Schema: `docs/decision-schema.md`.\n\n'
+  printf 'sacred-patterns, then an index of 3d-models'\'' decisions. Grouped by\n'
+  printf 'problem-tag (shared vocabulary in each repo'\''s `docs/decisions/tags.yaml`).\n'
+  printf 'For within-repo detail see that repo'\''s `LEDGER.md`. Schema:\n'
+  printf '`docs/decision-schema.md`.\n\n'
   printf 'Sibling repos are read at the remote-tracking ref named in the comment\n'
   printf 'above, not from their working trees, so no row here can move because\n'
   printf 'somebody else switched a branch. sacred-patterns is read from the\n'
@@ -255,7 +394,20 @@ render() {
   else
     printf '| _(no tagged docs yet — run after backfill)_ | | | | | |\n'
   fi
-  printf '\n_★ = live authoritative doc for that tag in that repo._\n'
+  printf '\n_★ = live authoritative doc for that tag in that repo._\n\n'
+
+  printf '## 3d-models decisions — index\n\n'
+  printf '3d-models keeps its decisions in one file, `%s`, one\n' "$DM_LOG"
+  printf '`## D-0xx — title` heading each (its D-004). Each row links to that heading at\n'
+  printf 'the ref named above; nothing is copied (its D-049 §3). Every `D-0xx` cited in\n'
+  printf 'qiyas, bikar, sacred-patterns or 3d-models must resolve to a row here or to a\n'
+  printf 'file in bikar'\''s `docs/decisions/`, or the generator refuses.\n\n'
+  printf '| id | decision |\n'
+  printf '|----|----------|\n'
+  printf '%b' "$dm_rows" | sort | while IFS="$(printf '\t')" read -r id title anchor; do
+    [ -z "$id" ] && continue
+    printf '| %s | [%s](%s#%s) |\n' "$id" "$title" "$dm_url" "$anchor"
+  done
 }
 
 if [ "$CHECK_MODE" -eq 1 ]; then
