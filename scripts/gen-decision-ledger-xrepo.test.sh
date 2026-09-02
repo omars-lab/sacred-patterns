@@ -39,6 +39,16 @@
 
 set -eu
 
+# A git hook runs with GIT_DIR / GIT_INDEX_FILE / GIT_WORK_TREE and friends
+# exported. git's environment wins over `-C`, so without this every scaffold
+# below would `init`, `commit` and `remote add` against the REAL repo running
+# the hook (the symptom is `remote origin already exists` on case 1). Unset them
+# so each throwaway repo is hermetic whether this suite is run by hand or from a
+# pre-commit hook — the same host-coupling the --no-verify scaffold commits and
+# case 5 both exist to kill, one layer up.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR \
+      GIT_OBJECT_DIRECTORY GIT_NAMESPACE GIT_ALTERNATE_OBJECT_DIRECTORIES
+
 SP_ROOT=$(cd "$(dirname "$0")/.." && pwd)
 SCRIPT="$SP_ROOT/scripts/gen-decision-ledger-xrepo.sh"
 
