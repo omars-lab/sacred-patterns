@@ -29,6 +29,15 @@
 
 set -eu
 
+# A git hook runs with GIT_DIR / GIT_INDEX_FILE / GIT_WORK_TREE and friends
+# exported, and git's environment wins over `-C`. Left set, every sibling read
+# below (`git -C "$d" …`) silently reads THIS repo instead: from pre-commit,
+# qiyas and bikar both resolved to sacred-patterns' own tree and 3d-models was
+# skipped. Unset them so the join reads each sibling whether run by hand or
+# from a hook — the test suite does the same for its scaffolds (case 15).
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR \
+      GIT_OBJECT_DIRECTORY GIT_NAMESPACE GIT_ALTERNATE_OBJECT_DIRECTORIES
+
 SP_ROOT=$(cd "$(dirname "$0")/.." && pwd)
 LEDGER="$SP_ROOT/docs/decisions/LEDGER-XREPO.md"
 

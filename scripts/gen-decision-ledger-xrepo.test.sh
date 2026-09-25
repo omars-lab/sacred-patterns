@@ -392,6 +392,22 @@ else
 fi
 rm -rf "$root"
 
+# 15 — run as a hook runs it: GIT_DIR / GIT_WORK_TREE / GIT_INDEX_FILE exported
+# at sacred-patterns. git's environment beats `-C`, so without the script's own
+# unset every sibling read resolves to sacred-patterns and no sibling row
+# appears. Regression witness: against the pre-fix script qiyas-tag is missing.
+root=$(scaffold "$ALL")
+sp="$root/sacred-patterns"
+if GIT_DIR="$sp/.git" GIT_WORK_TREE="$sp" GIT_INDEX_FILE="$sp/.git/index" \
+  sh "$sp/scripts/gen-decision-ledger-xrepo.sh" >"$root/out" 2>"$root/err" &&
+  grep -q 'qiyas-tag' "$sp/docs/decisions/LEDGER-XREPO.md" &&
+  grep -q 'bikar-tag' "$sp/docs/decisions/LEDGER-XREPO.md"; then
+  ok "reads each sibling even with a hook's GIT_* environment exported"
+else
+  fail "a hook's GIT_DIR must not redirect sibling reads; stderr: $(cat "$root/err")"
+fi
+rm -rf "$root"
+
 if [ "$fails" -ne 0 ]; then
   echo "$fails assertion(s) failed" >&2
   exit 1
