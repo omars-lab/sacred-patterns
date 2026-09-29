@@ -212,7 +212,7 @@ attribute round-trip.
 ## Attributes — v1.6 ACCEPTED (base-face honesty: `data-orb-base-face` narrowed, `data-orb-unit` added)
 
 **Status (2026-09-09):** **ACCEPTED**. The substance is owner-directed
-(`3d-models/docs/decisions-log.md` D-052, 2026-09-02): `data-orb-base-face` / gt.json
+(`3d-models/docs/working-model/decisions-log.md` D-052, 2026-09-02): `data-orb-base-face` / gt.json
 `orb_base_face` now means **exactly one thing everywhere — the index of the base-polyhedron
 face a projected element was lifted through**. On the same footing as v1.4 and v1.5, this doc
 first published the change as a **draft** on 2026-09-09 (#49) and withheld ACCEPTED until — not

@@ -62,7 +62,7 @@ ok()   { echo "  ok   — $1"; }
 fail() { echo "  FAIL — $1" >&2; fails=$((fails + 1)); }
 
 # Lay out <root>/{qiyas,bikar,3d-models,sacred-patterns} — docs/decisions/ for
-# the three frontmatter repos, docs/decisions-log.md with two `## D-0xx — `
+# the three frontmatter repos, docs/working-model/decisions-log.md with two `## D-0xx — `
 # headings for 3d-models — and put a copy of the script where the real one
 # lives. `repos` names which siblings to create; the rest are simply absent.
 # 3d-models also gets an origin URL (never fetched): the index links out to
@@ -91,8 +91,8 @@ scaffold() {
   cp "$SCRIPT" "$root/sacred-patterns/scripts/"
   for repo in $1; do
     if [ "$repo" = "3d-models" ]; then
-      mkdir -p "$root/3d-models/docs"
-      cat >"$root/3d-models/docs/decisions-log.md" <<EOF
+      mkdir -p "$root/3d-models/docs/working-model"
+      cat >"$root/3d-models/docs/working-model/decisions-log.md" <<EOF
 # Decisions
 
 ## D-001 — First thing, with \`code\` in it
@@ -111,7 +111,7 @@ EOF
       for cited in $(grep -o -E 'D-0[0-9]{2}' "$SCRIPT" | sort -u); do
         case "$cited" in D-001 | D-002) continue ;; esac
         printf '\n## %s — Cited by the generator'\''s own comments\n\nBody.\n' "$cited" \
-          >>"$root/3d-models/docs/decisions-log.md"
+          >>"$root/3d-models/docs/working-model/decisions-log.md"
       done
       git_init "$root/3d-models"
       git -C "$root/3d-models" remote add origin git@github.com:omars-lab/3d-models.git
@@ -265,7 +265,7 @@ rm -rf "$root" "$outside"
 root=$(scaffold "$ALL")
 ledger="$root/sacred-patterns/docs/decisions/LEDGER-XREPO.md"
 if run "$root"; then
-  grep -q '^| D-001 | \[First thing, with `code` in it\](https://github.com/omars-lab/3d-models/blob/main/docs/decisions-log.md#d-001--first-thing-with-code-in-it) |$' "$ledger" &&
+  grep -q '^| D-001 | \[First thing, with `code` in it\](https://github.com/omars-lab/3d-models/blob/main/docs/working-model/decisions-log.md#d-001--first-thing-with-code-in-it) |$' "$ledger" &&
     ok "a heading becomes one linked row, id and title, nothing copied" ||
     fail "D-001 row missing or mis-linked: $(grep 'D-001' "$ledger" || echo '<none>')"
   grep -q '#d-002--second-thing--with-a-dash-of-its-own) |$' "$ledger" &&
@@ -365,7 +365,7 @@ rm -rf "$root"
 # 13 — a log with no headings is unreadable input, not a repo with no
 # decisions (Tenet 29): the index must not quietly become empty.
 root=$(scaffold "$ALL")
-printf '# Decisions\n\nNo headings of the expected shape.\n' >"$root/3d-models/docs/decisions-log.md"
+printf '# Decisions\n\nNo headings of the expected shape.\n' >"$root/3d-models/docs/working-model/decisions-log.md"
 commit_to_ref "$root/3d-models"
 if run "$root"; then
   fail "a headingless log should refuse, not render an empty index"

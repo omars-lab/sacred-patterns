@@ -10,7 +10,7 @@
 # within-repo; this answers across.
 #
 # Why 3d-models is an index and not more rows: it keeps its decisions in ONE
-# file, docs/decisions-log.md, one `## D-0xx — title` heading each — its D-004
+# file, docs/working-model/decisions-log.md, one `## D-0xx — title` heading each — its D-004
 # chose that over mirroring this tree, and its D-049 §3 chose "index only,
 # generated" for the join. So this reads those headings at the repo's origin
 # ref and emits one link per heading; nothing is transcribed, so nothing can
@@ -255,7 +255,7 @@ origin_https() {
   printf '%s' "${_u%.git}"
 }
 
-DM_LOG="docs/decisions-log.md"
+DM_LOG="docs/working-model/decisions-log.md"
 dm_rows=""        # "id\ttitle\tanchor" per heading
 dm_ids=""         # newline-separated heading ids — the resolver for citations
 dm_url=""
