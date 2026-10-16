@@ -58,6 +58,6 @@ module.exports = {
     static: {
       directory: path.join(__dirname, 'site'),
     },
-    port: 3000,
+    port: 7116, // the hubs port plan's (~/Workspace/git/hubs/design.md); 3000 was shared with the blog and portfolio
   },
 };

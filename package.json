@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "build": "webpack --config webpack.config.js",
-    "serve": "npx serve site",
+    "serve": "npx serve site -l 7116",
     "test": "npm run test:hooks && node test/regression/check.js && node test/regression/faces.test.js",
     "test:hooks": "sh test/hooks/worktree-wiring.sh",
     "test:visual": "playwright test",

@@ -1,0 +1,22 @@
+# How this repo shows on the local launcher (~/Workspace/git/hubs).
+# Check it with `uv run ~/Workspace/git/hubs/launcher/check.py --repo .`
+
+runners:
+  - id: sacred-patterns
+    port: 7116                    # the port plan's; `npm run serve` passes it to `serve -l`
+    health: /
+    build: make build             # webpack bundle into site/
+    start: make serve
+
+hubs:
+  - id: sacred-patterns
+    name: Sacred patterns
+    description: Sacred geometric patterns drawn as SVG in the browser, plus the gallery and pattern analysis tools.
+    visibility: public
+    use: published
+    fallback: local
+    local: { runner: sacred-patterns }
+    published:
+      url: https://art.bytesofpurpose.com/
+      host: github-pages          # the gh-pages branch, custom domain
+      deploy: make deploy

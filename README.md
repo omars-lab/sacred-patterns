@@ -25,7 +25,7 @@ npm install
 # Dev mode with watch (compile + bundle + auto-restart server)
 make ~run
 
-# Then open http://localhost:3000
+# Then open http://localhost:7116 (make serve uses the same port)
 ```
 
 The app serves an interactive page where you can edit the JSON config to change background and line themes, then click "Regenerate SVG" to re-render. SVGs can be downloaded directly from the browser.
