@@ -110,6 +110,24 @@ elif [ -n "$hooks_path" ]; then
   echo "ok    $hooks_path/pre-commit is tracked, so a fresh clone and every worktree have it"
 fi
 
+# The setup script must wire THIS repo, whatever folder it is run from. It once
+# found the repo from the caller's folder, so `sh sacred-patterns/scripts/setup-hooks.sh`
+# run from a parent repo set the parent's core.hooksPath to `.husky`, a folder
+# the parent doesn't have (2026-11-16). The witness: run it from a throwaway
+# repo and check that repo's setting is untouched.
+outer=$(mktemp -d)
+git init -q "$outer"
+(cd "$outer" && sh "$root/scripts/setup-hooks.sh" >/dev/null 2>&1) || true
+outer_hooks=$(git -C "$outer" config core.hooksPath || echo "")
+rm -rf "$outer"
+if [ -n "$outer_hooks" ]; then
+  echo "FAIL  setup-hooks.sh run from another repo set THAT repo's core.hooksPath to $outer_hooks"
+  echo "      It must find the repo from its own folder, not the caller's."
+  fail=1
+else
+  echo "ok    setup-hooks.sh run from another repo left that repo's hooks setting alone"
+fi
+
 if [ "$fail" -ne 0 ]; then
   echo ""
   echo "hooks: WIRING BROKEN — the gates exist and git is not running them."
