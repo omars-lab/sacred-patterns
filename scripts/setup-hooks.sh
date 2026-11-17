@@ -26,7 +26,11 @@
 # Run by `npm install` (via `prepare`) and by hand as `npm run setup-hooks`.
 set -e
 
-root=$(git rev-parse --show-toplevel)
+# Find the repo from this script's own folder, not the caller's. Run as
+# `sh sacred-patterns/scripts/setup-hooks.sh` from a parent repo, the old
+# `git rev-parse` from the current folder set the PARENT's core.hooksPath to
+# `.husky`, a folder it doesn't have (2026-11-16, NaqshCoffee command center).
+root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 cd "$root"
 
 git config core.hooksPath .husky
